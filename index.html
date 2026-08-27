@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Freezer Inventory</title>
+<script>
+  window.onerror = function(msg, src, line, col, err){
+    document.addEventListener('DOMContentLoaded', function(){
+      var b = document.getElementById('setupBanner');
+      if (b){
+        b.style.display = 'block';
+        b.style.background = '#5c1c1c';
+        b.style.borderColor = '#f0806b';
+        b.textContent = '⚠️ JS ERROR: ' + msg + ' (line ' + line + ')';
+      }
+    });
+    if (document.readyState !== 'loading'){
+      var b2 = document.getElementById('setupBanner');
+      if (b2){
+        b2.style.display = 'block';
+        b2.style.background = '#5c1c1c';
+        b2.style.borderColor = '#f0806b';
+        b2.textContent = '⚠️ JS ERROR: ' + msg + ' (line ' + line + ')';
+      }
+    }
+  };
+</script>
+<style>
+  :root{
+    --bg: #0a1220;
+    --panel: #101c30;
+    --panel-2: #16233b;
+    --edge: #23324c;
+    --frost: #d7ecf7;
+    --frost-dim: #8ba3bc;
+    --cyan: #6fe3d6;
+    --cyan-dim: #2c5951;
+    --amber: #f5b350;
+    --amber-dim: #5c451c;
+    --danger: #f0806b;
+    --mono: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 50% -10%, #14283f 0%, transparent 60%),
+      var(--bg);
+    color: var(--frost);
+    font-family: var(--sans);
+    min-height:100vh;
+    padding: 18px 14px 60px;
+  }
+  .wrap{ max-width: 560px; margin: 0 auto; }
+
+  header{ margin-bottom: 16px; }
+  .eyebrow{
+    font-family: var(--mono); font-size: 11px; letter-spacing: .18em;
+    color: var(--cyan); text-transform: uppercase; margin-bottom: 4px;
+  }
+  h1{
+    font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 2px;
+  }
+  .sub{ color: var(--frost-dim); font-size: 13px; }
+
+  /* Mode toggle */
+  .mode-toggle{
+    display:flex; gap:8px; margin: 16px 0 14px; background: var(--panel);
+    border: 1px solid var(--edge); border-radius: 14px; padding: 5px;
+  }
+  .mode-btn{
+    flex:1; border:none; background:transparent; color: var(--frost-dim);
+    font-family: var(--sans); font-weight: 700; font-size: 14px;
+    padding: 12px 8px; border-radius: 10px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    transition: background .15s, color .15s;
+  }
+  .mode-btn.active.add{ background: var(--cyan-dim); color: var(--cyan); }
+  .mode-btn.active.remove{ background: var(--amber-dim); color: var(--amber); }
+
+  /* Scanner panel */
+  .panel{
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 16px;
+    padding: 14px; margin-bottom: 14px;
+  }
+  .scan-frame{
+    position: relative; width: 100%; aspect-ratio: 4/3; border-radius: 12px;
+    overflow: hidden; background: #050a13; border: 1px solid var(--edge);
+  }
+  .scan-frame video{ width:100%; height:100%; object-fit: cover; display:block; }
+  .scan-frame canvas{ display:none; }
+  #scannerContainer{ width:100%; height:100%; }
+  .scan-overlay{
+    position:absolute; inset: 18%; border: 2px solid var(--cyan);
+    border-radius: 10px; opacity: .85; pointer-events:none;
+    box-shadow: 0 0 0 999px rgba(5,10,19,0.35);
+  }
+  .mode-btn.active.remove ~ * .scan-overlay,
+  body.remove-mode .scan-overlay{ border-color: var(--amber); }
+  .scan-hint{
+    position:absolute; left:0; right:0; bottom:8px; text-align:center;
+    font-family: var(--mono); font-size: 11px; color: var(--frost-dim);
+  }
+  .scan-placeholder{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    height:100%; gap:10px; color: var(--frost-dim); text-align:center; padding: 0 20px;
+  }
+  .scan-placeholder .icon{ font-size: 34px; }
+  .btn{
+    border:none; border-radius: 12px; padding: 13px 16px; font-weight: 700;
+    font-size: 14px; cursor:pointer; font-family: var(--sans);
+  }
+  .btn-primary{ background: var(--cyan); color: #04211d; width:100%; margin-top: 10px; }
+  body.remove-mode .btn-primary{ background: var(--amber); color: #3a2a08; }
+  .btn-ghost{ background: var(--panel-2); color: var(--frost); border:1px solid var(--edge); width:100%; margin-top:10px; }
+
+  /* Manual entry */
+  .manual-row{ display:flex; gap:8px; margin-top: 12px; }
+  .manual-row input{
+    flex:1; background: var(--panel-2); border: 1px solid var(--edge); color: var(--frost);
+    border-radius: 10px; padding: 12px; font-family: var(--mono); font-size: 14px;
+  }
+  .manual-row input:focus{ outline: 2px solid var(--cyan); outline-offset: -1px; }
+  .manual-row button{ background: var(--panel-2); color: var(--frost-dim); border: 1px solid var(--edge); border-radius: 10px; padding: 0 16px; font-weight:700; }
+
+  /* List */
+  .list-head{ display:flex; align-items:baseline; justify-content:space-between; margin: 22px 0 10px; }
+  .list-head h2{ font-size: 15px; margin:0; letter-spacing: -0.01em; }
+  .count{ font-family: var(--mono); font-size: 12px; color: var(--frost-dim); }
+  .search{
+    width:100%; background: var(--panel); border:1px solid var(--edge); color: var(--frost);
+    border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-bottom: 10px; font-family: var(--sans);
+  }
+  .empty{
+    text-align:center; color: var(--frost-dim); padding: 34px 10px; font-size: 13px;
+    border: 1px dashed var(--edge); border-radius: 14px;
+  }
+  .item{
+    display:flex; align-items:center; gap: 12px; background: var(--panel);
+    border: 1px solid var(--edge); border-radius: 14px; padding: 12px 12px 12px 0;
+    margin-bottom: 8px; position:relative; overflow:hidden;
+  }
+  .item::before{
+    content:''; width:5px; align-self:stretch; border-radius: 3px 0 0 3px; margin-right: 10px;
+    background: var(--frost-fresh, var(--cyan));
+  }
+  .item.age-fresh::before{ background: var(--cyan); }
+  .item.age-ok::before{ background: var(--amber); }
+  .item.age-old::before{ background: var(--danger); }
+  .item-main{ flex:1; min-width:0; }
+  .item-name{ font-weight: 700; font-size: 14.5px; margin-bottom: 3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .item-meta{ display:flex; gap: 10px; flex-wrap:wrap; font-family: var(--mono); font-size: 11px; color: var(--frost-dim); }
+  .chip{
+    font-family: var(--mono); font-size: 10.5px; padding: 3px 7px; border-radius: 999px;
+    border: 1px solid var(--edge); white-space:nowrap;
+  }
+  .chip.age-fresh{ color: var(--cyan); border-color: var(--cyan-dim); }
+  .chip.age-ok{ color: var(--amber); border-color: var(--amber-dim); }
+  .chip.age-old{ color: var(--danger); border-color: #5c2a22; }
+  .item-del{
+    background: transparent; border: none; color: var(--frost-dim); font-size: 18px;
+    padding: 6px 8px; cursor:pointer; line-height:1;
+  }
+  .item-del:active{ color: var(--danger); }
+
+  /* Toast */
+  .toast{
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(20px);
+    background: var(--panel-2); border: 1px solid var(--edge); color: var(--frost);
+    padding: 12px 18px; border-radius: 12px; font-size: 13.5px; font-weight:600;
+    opacity:0; transition: opacity .2s, transform .2s; max-width: 88%; text-align:center;
+    box-shadow: 0 10px 30px rgba(0,0,0,.4); z-index: 50;
+  }
+  .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
+  .toast.ok{ border-color: var(--cyan-dim); }
+  .toast.warn{ border-color: var(--amber-dim); }
+  .toast.err{ border-color: #5c2a22; }
+
+  /* Modal */
+  .modal-back{
+    position: fixed; inset:0; background: rgba(4,8,15,.72); display:flex; align-items:flex-end;
+    justify-content:center; z-index: 60; opacity:0; pointer-events:none; transition: opacity .15s;
+  }
+  .modal-back.show{ opacity:1; pointer-events:auto; }
+  .modal{
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 18px 18px 0 0;
+    width:100%; max-width: 560px; padding: 20px 18px 26px; transform: translateY(12px);
+    transition: transform .15s;
+  }
+  .modal-back.show .modal{ transform: translateY(0); }
+  .modal h3{ margin: 0 0 4px; font-size: 17px; }
+  .modal-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .modal-head h3{ margin: 0; }
+  .modal-x{
+    background: transparent; border: none; color: var(--frost-dim); font-size: 22px;
+    padding: 4px 6px; cursor:pointer; line-height:1; border-radius: 8px;
+  }
+  .modal-x:active{ color: var(--frost); background: var(--panel-2); }
+  .modal .barcode-tag{ font-family: var(--mono); font-size: 12px; color: var(--frost-dim); margin-bottom: 14px; }
+  .modal input[type=text]{
+    width:100%; background: var(--panel-2); border: 1px solid var(--edge); color: var(--frost);
+    border-radius: 10px; padding: 13px 12px; font-size: 15px; margin-bottom: 12px; font-family: var(--sans);
+  }
+  .modal-actions{ display:flex; gap: 10px; }
+  .modal-actions .btn{ flex:1; margin:0; }
+  .btn-cancel{ background: transparent; color: var(--frost-dim); border: 1px solid var(--edge); }
+
+  footer{ text-align:center; color: var(--frost-dim); font-size: 11px; margin-top: 26px; font-family: var(--mono); }
+
+  .setup-banner{
+    background: var(--amber-dim); border: 1px solid var(--amber); color: var(--frost);
+    border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 12.5px; line-height:1.5;
+  }
+  .setup-banner code{ font-family: var(--mono); background: rgba(0,0,0,.25); padding: 1px 5px; border-radius: 4px; }
+  .conn-dot{ display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; background: var(--frost-dim); }
+  .conn-dot.live{ background: var(--cyan); }
+  .conn-dot.err{ background: var(--danger); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow"><span class="conn-dot" id="connDot"></span>Household · Shared inventory</div>
+    <h1>Freezer Inventory</h1>
+    <div class="sub" id="subline">Loading…</div>
+  </header>
+
+  <div class="setup-banner" id="setupBanner" style="display:none">
+    ⚠️ Add your Firebase config to start syncing. Open this file, find <code>firebaseConfig</code> near the bottom, and paste in the values from your Firebase project's web app settings.
+  </div>
+
+  <div class="mode-toggle">
+    <button class="mode-btn add active" id="modeAddBtn">❄️ Add stock</button>
+    <button class="mode-btn remove" id="modeRemoveBtn">🍽️ Remove stock</button>
+  </div>
+
+  <div class="panel">
+    <div class="scan-frame" id="scanFrame">
+      <div class="scan-placeholder" id="scanPlaceholder">
+        <div class="icon">📷</div>
+        <div>Tap start to scan a barcode with your camera</div>
+      </div>
+      <div id="scannerContainer" style="display:none; position:absolute; inset:0;"></div>
+      <div class="scan-overlay" id="scanOverlay" style="display:none"></div>
+      <div class="scan-hint" id="scanHint" style="display:none">Hold barcode steady in frame</div>
+    </div>
+    <button class="btn btn-primary" id="scanToggleBtn">Start scanning</button>
+    <button class="btn btn-ghost" id="photoScanBtn">📷 Or scan from a photo</button>
+    <input type="file" accept="image/*" capture="environment" id="photoInput" style="display:none">
+    <div id="photoScanStatus" style="display:none; text-align:center; font-size:12.5px; color:var(--frost-dim); margin-top:8px; font-family:var(--mono);">Reading barcode from photo…</div>
+
+    <div class="manual-row">
+      <input type="text" id="manualInput" placeholder="Or type / gun-scan barcode number" inputmode="numeric">
+      <button id="manualBtn">Add</button>
+    </div>
+  </div>
+
+  <div class="list-head">
+    <h2 id="listTitle">In the freezer</h2>
+    <div class="count" id="listCount">0 items</div>
+  </div>
+  <input type="text" class="search" id="searchInput" placeholder="Search inventory…">
+  <div id="listContainer"></div>
+
+  <footer>Synced to this shared board · scans from any household member appear for everyone</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-back" id="nameModalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Confirm item</h3>
+      <button class="modal-x" id="modalClose" aria-label="Cancel">✕</button>
+    </div>
+    <div class="barcode-tag" id="modalBarcode">Barcode: —</div>
+    <input type="text" id="modalNameInput" placeholder="e.g. Chicken thighs (1kg)">
+    <div class="modal-actions">
+      <button class="btn btn-cancel" id="modalCancel">Cancel</button>
+      <button class="btn btn-primary" id="modalSave">Save & add</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-back" id="removeModalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Remove item?</h3>
+      <button class="modal-x" id="removeModalClose" aria-label="Cancel">✕</button>
+    </div>
+    <div class="barcode-tag" id="removeModalBarcode">Barcode: —</div>
+    <div id="removeModalInfo" style="margin-bottom:16px; font-size:15px; line-height:1.5;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" id="removeModalCancel">Cancel</button>
+      <button class="btn btn-primary" id="removeModalConfirm">Remove item</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script>
+  // ====== PASTE YOUR FIREBASE CONFIG HERE ======
+  // Firebase console -> Project settings -> Your apps -> Web app -> SDK setup and configuration
+  var firebaseConfig = {
+    apiKey: "AIzaSyC_PZ4VUuXeBSgfrCRVGOF1_TPPWxScfX4",
+    authDomain: "freezer-app-f78c2.firebaseapp.com",
+    projectId: "freezer-app-f78c2",
+    storageBucket: "freezer-app-f78c2.firebasestorage.app",
+    messagingSenderId: "1044770823838",
+    appId: "1:1044770823838:web:b942d584fbc88ded20258f"
+  };
+  // ==============================================
+</script>
+<script>
+(function(){
+  var state = { mode:'add', items:[], products:{}, scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0 };
+
+  var els = {
+    subline: document.getElementById('subline'),
+    modeAdd: document.getElementById('modeAddBtn'),
+    modeRemove: document.getElementById('modeRemoveBtn'),
+    scanToggle: document.getElementById('scanToggleBtn'),
+    photoScanBtn: document.getElementById('photoScanBtn'),
+    photoInput: document.getElementById('photoInput'),
+    photoScanStatus: document.getElementById('photoScanStatus'),
+    scanFrame: document.getElementById('scanFrame'),
+    scanPlaceholder: document.getElementById('scanPlaceholder'),
+    video: document.getElementById('scannerContainer'),
+    scanOverlay: document.getElementById('scanOverlay'),
+    scanHint: document.getElementById('scanHint'),
+    manualInput: document.getElementById('manualInput'),
+    manualBtn: document.getElementById('manualBtn'),
+    listTitle: document.getElementById('listTitle'),
+    listCount: document.getElementById('listCount'),
+    listContainer: document.getElementById('listContainer'),
+    searchInput: document.getElementById('searchInput'),
+    toast: document.getElementById('toast'),
+    modalBack: document.getElementById('nameModalBack'),
+    modalBarcode: document.getElementById('modalBarcode'),
+    modalNameInput: document.getElementById('modalNameInput'),
+    modalCancel: document.getElementById('modalCancel'),
+    modalClose: document.getElementById('modalClose'),
+    modalSave: document.getElementById('modalSave'),
+    removeModalBack: document.getElementById('removeModalBack'),
+    removeModalBarcode: document.getElementById('removeModalBarcode'),
+    removeModalInfo: document.getElementById('removeModalInfo'),
+    removeModalCancel: document.getElementById('removeModalCancel'),
+    removeModalClose: document.getElementById('removeModalClose'),
+    removeModalConfirm: document.getElementById('removeModalConfirm'),
+  };
+
+  function toast(msg, kind){
+    els.toast.textContent = msg;
+    els.toast.className = 'toast show ' + (kind || 'ok');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function(){ els.toast.className = 'toast ' + (kind||'ok'); }, 2600);
+  }
+
+  // ---------- storage (Firebase Firestore, real-time synced across everyone) ----------
+  var db = null;
+  var docRef = null;
+  var configured = firebaseConfig.apiKey && firebaseConfig.apiKey !== 'PASTE_ME';
+  var connDot = document.getElementById('connDot');
+  var suppressNextSnapshot = false;
+
+  function initStorage(){
+    if (!configured){
+      document.getElementById('setupBanner').style.display = 'block';
+      els.subline.textContent = 'Not connected — add your Firebase config to sync';
+      render();
+      return;
+    }
+    try{
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      docRef = db.collection('freezer').doc('inventory');
+      docRef.onSnapshot(function(snap){
+        connDot.className = 'conn-dot live';
+        var data = snap.data();
+        if (data){
+          state.items = data.items || [];
+          state.products = data.products || {};
+        } else {
+          // first ever run for this project — create the doc
+          docRef.set({ items: [], products: {} });
+        }
+        render();
+      }, function(err){
+        console.error(err);
+        connDot.className = 'conn-dot err';
+        toast('Sync error — check Firestore rules/config', 'err');
+      });
+    }catch(e){
+      console.error(e);
+      toast('Firebase config looks invalid', 'err');
+    }
+  }
+
+  async function saveItems(){
+    if (!docRef) return;
+    try{ await docRef.set({ items: state.items, products: state.products }, { merge: true }); }
+    catch(e){ toast('Could not sync — check connection', 'err'); }
+  }
+  async function saveProducts(){
+    if (!docRef) return;
+    try{ await docRef.set({ items: state.items, products: state.products }, { merge: true }); }
+    catch(e){ /* non-fatal */ }
+  }
+
+  // ---------- mode ----------
+  function setMode(mode){
+    state.mode = mode;
+    document.body.classList.toggle('remove-mode', mode === 'remove');
+    els.modeAdd.classList.toggle('active', mode === 'add');
+    els.modeRemove.classList.toggle('active', mode === 'remove');
+    els.listTitle.textContent = mode === 'add' ? 'In the freezer' : 'In the freezer';
+    els.scanToggle.textContent = state.scanning ? 'Stop scanning' : (mode === 'add' ? 'Start scanning to add' : 'Start scanning to remove');
+    els.manualBtn.textContent = mode === 'add' ? 'Add' : 'Remove';
+    els.subline.textContent = mode === 'add' ? 'Scanning will ask you to confirm the name, then add it with today\u2019s date' : 'Scanning will remove the oldest matching item';
+  }
+  els.modeAdd.onclick = function(){ setMode('add'); };
+  els.modeRemove.onclick = function(){ setMode('remove'); };
+
+  // ---------- scanning ----------
+  function startScan(){
+    if (typeof Quagga === 'undefined'){
+      toast('Camera scanner failed to load — use manual entry', 'err');
+      return;
+    }
+    els.scanPlaceholder.style.display = 'none';
+    els.video.style.display = 'block';
+    els.scanOverlay.style.display = 'block';
+    els.scanHint.style.display = 'block';
+    state.scanPaused = false;
+    state.candidateCode = null;
+    state.candidateCount = 0;
+
+    Quagga.init({
+      inputStream: {
+        type: 'LiveStream',
+        target: els.video,
+        constraints: {
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      },
+      locator: { patchSize: 'medium', halfSample: true },
+      numOfWorkers: 2,
+      decoder: { readers: ['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader'] },
+      locate: true
+    }, function(err){
+      if (err){
+        console.error(err);
+        var detail = err && (err.name || err.message) ? ((err.name || '') + (err.message ? ': ' + err.message : '')) : String(err);
+        var banner = document.getElementById('setupBanner');
+        if (banner){
+          banner.style.display = 'block';
+          banner.style.background = '#5c1c1c';
+          banner.style.borderColor = '#f0806b';
+          banner.textContent = '⚠️ Camera error — ' + detail;
+        }
+        toast('Could not access camera — see banner above', 'err');
+        try{ if (Quagga.CameraAccess && Quagga.CameraAccess.release) Quagga.CameraAccess.release(); }catch(e2){}
+        stopScan();
+        return;
+      }
+      Quagga.start();
+      state.scanning = true;
+      state.quaggaReady = true;
+      els.scanToggle.textContent = 'Stop scanning';
+    });
+
+    Quagga.onDetected(onDetected);
+  }
+
+  var SCAN_CONFIRM_COUNT = 5; // must read the same code this many times in a row before it counts
+
+  function onDetected(result){
+    if (state.scanPaused) return;
+    var code = result && result.codeResult && result.codeResult.code;
+    if (!code) return;
+
+    if (code === state.candidateCode){
+      state.candidateCount++;
+    } else {
+      state.candidateCode = code;
+      state.candidateCount = 1;
+    }
+    if (state.candidateCount < SCAN_CONFIRM_COUNT) return; // not stable yet, keep reading
+
+    var now = Date.now();
+    if (code === state.lastCode && (now - state.lastScanAt) < 2500) return; // debounce repeat scans
+    state.lastCode = code;
+    state.lastScanAt = now;
+    state.candidateCode = null;
+    state.candidateCount = 0;
+    if (navigator.vibrate) navigator.vibrate(60);
+    handleScan(code);
+  }
+
+  function stopScan(){
+    if (state.quaggaReady && typeof Quagga !== 'undefined'){
+      try{ Quagga.offDetected(onDetected); Quagga.stop(); }catch(e){}
+      try{ if (Quagga.CameraAccess && Quagga.CameraAccess.release) Quagga.CameraAccess.release(); }catch(e){}
+    }
+    state.scanning = false;
+    state.quaggaReady = false;
+    els.video.style.display = 'none';
+    els.video.innerHTML = '';
+    els.scanOverlay.style.display = 'none';
+    els.scanHint.style.display = 'none';
+    els.scanPlaceholder.style.display = 'flex';
+    els.scanToggle.textContent = state.mode === 'add' ? 'Start scanning to add' : 'Start scanning to remove';
+  }
+
+  els.scanToggle.onclick = function(){ state.scanning ? stopScan() : startScan(); };
+
+  els.manualBtn.onclick = function(){
+    var v = els.manualInput.value.trim();
+    if (!v) return;
+    handleScan(v);
+    els.manualInput.value = '';
+  };
+  els.manualInput.addEventListener('keydown', function(e){
+    if (e.key === 'Enter'){ els.manualBtn.click(); }
+  });
+
+  // ---------- photo-based scan (uses the phone's native camera app, avoids
+  // the live-stream camera API entirely — sidesteps browser focus limits) ----------
+  els.photoScanBtn.onclick = function(){ els.photoInput.click(); };
+  els.photoInput.addEventListener('change', function(){
+    var file = els.photoInput.files && els.photoInput.files[0];
+    els.photoInput.value = ''; // allow re-selecting the same file later
+    if (!file) return;
+    if (typeof Quagga === 'undefined' || !Quagga.decodeSingle){
+      toast('Photo scanning failed to load — try manual entry', 'err');
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e){
+      els.photoScanStatus.style.display = 'block';
+      Quagga.decodeSingle({
+        src: e.target.result,
+        numOfWorkers: 0,
+        locate: true,
+        inputStream: { size: 1280 },
+        decoder: { readers: ['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader'] }
+      }, function(result){
+        els.photoScanStatus.style.display = 'none';
+        var code = result && result.codeResult && result.codeResult.code;
+        if (code){
+          if (navigator.vibrate) navigator.vibrate(60);
+          handleScan(code);
+        } else {
+          toast('Could not read a barcode in that photo — try again with the barcode filling more of the frame', 'warn');
+        }
+      });
+    };
+    reader.onerror = function(){
+      els.photoScanStatus.style.display = 'none';
+      toast('Could not read that photo file', 'err');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // ---------- core add/remove logic ----------
+  function handleScan(code){
+    if (state.mode === 'add'){
+      openNameModal(code);
+    } else {
+      removeOneByBarcode(code);
+    }
+  }
+
+  function addItem(barcode, name){
+    state.items.push({
+      id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random(),
+      barcode: barcode,
+      name: name,
+      dateAdded: new Date().toISOString()
+    });
+    saveItems();
+    render();
+  }
+
+  var pendingRemoveItem = null;
+  function removeOneByBarcode(code){
+    var matches = state.items.filter(function(i){ return i.barcode === code; });
+    if (matches.length === 0){
+      toast('No matching item in freezer for that barcode', 'warn');
+      return;
+    }
+    matches.sort(function(a,b){ return new Date(a.dateAdded) - new Date(b.dateAdded); });
+    openRemoveModal(matches[0]);
+  }
+
+  function openRemoveModal(item){
+    state.scanPaused = true;
+    pendingRemoveItem = item;
+    els.removeModalBarcode.textContent = 'Barcode: ' + item.barcode;
+    els.removeModalInfo.innerHTML =
+      '<strong>' + escapeHtml(item.name) + '</strong><br>' +
+      'Added ' + fmtDate(item.dateAdded) + ' \u2014 ' + daysLabel(item.dateAdded);
+    els.removeModalBack.classList.add('show');
+  }
+  function closeRemoveModal(){
+    state.scanPaused = false;
+    state.candidateCode = null;
+    state.candidateCount = 0;
+    els.removeModalBack.classList.remove('show');
+    pendingRemoveItem = null;
+  }
+  els.removeModalCancel.onclick = closeRemoveModal;
+  els.removeModalClose.onclick = closeRemoveModal;
+  els.removeModalConfirm.onclick = function(){
+    if (!pendingRemoveItem) return;
+    var item = pendingRemoveItem;
+    state.items = state.items.filter(function(i){ return i.id !== item.id; });
+    saveItems();
+    render();
+    toast('Removed: ' + item.name, 'ok');
+    closeRemoveModal();
+  };
+  els.removeModalBack.addEventListener('click', function(e){
+    if (e.target === els.removeModalBack) closeRemoveModal();
+  });
+
+  function deleteItem(id){
+    var item = state.items.find(function(i){ return i.id === id; });
+    state.items = state.items.filter(function(i){ return i.id !== id; });
+    saveItems();
+    render();
+    if (item) toast('Removed: ' + item.name, 'ok');
+  }
+
+  // ---------- naming modal ----------
+  var pendingBarcode = null;
+  function openNameModal(barcode){
+    state.scanPaused = true;
+    pendingBarcode = barcode;
+    els.modalBarcode.textContent = 'Barcode: ' + barcode;
+    var known = state.products[barcode];
+    els.modalNameInput.value = known || '';
+    els.modalBack.classList.add('show');
+    setTimeout(function(){ els.modalNameInput.focus(); els.modalNameInput.select(); }, 50);
+    if (!known) tryLookup(barcode);
+  }
+  function closeModal(){
+    state.scanPaused = false;
+    state.candidateCode = null;
+    state.candidateCount = 0;
+    els.modalBack.classList.remove('show');
+    pendingBarcode = null;
+  }
+  els.modalCancel.onclick = closeModal;
+  els.modalClose.onclick = closeModal;
+  els.modalBack.addEventListener('click', function(e){
+    if (e.target === els.modalBack) closeModal();
+  });
+  els.modalSave.onclick = function(){
+    var name = els.modalNameInput.value.trim();
+    if (!name || !pendingBarcode) return;
+    state.products[pendingBarcode] = name;
+    saveProducts();
+    addItem(pendingBarcode, name);
+    toast('Added: ' + name, 'ok');
+    closeModal();
+  };
+  els.modalNameInput.addEventListener('keydown', function(e){
+    if (e.key === 'Enter'){ els.modalSave.click(); }
+  });
+
+  // best-effort open product lookup; silently ignored if blocked
+  function tryLookup(barcode){
+    try{
+      var controller = new AbortController();
+      var t = setTimeout(function(){ controller.abort(); }, 3000);
+      fetch('https://world.openfoodfacts.org/api/v0/product/' + encodeURIComponent(barcode) + '.json', { signal: controller.signal })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          clearTimeout(t);
+          if (pendingBarcode === barcode && d && d.status === 1 && d.product && d.product.product_name){
+            els.modalNameInput.value = d.product.product_name;
+          }
+        })
+        .catch(function(){ /* ignore — manual entry still works */ });
+    }catch(e){ /* ignore */ }
+  }
+
+  // ---------- rendering ----------
+  function ageClass(dateAdded){
+    var days = Math.floor((Date.now() - new Date(dateAdded).getTime()) / 86400000);
+    if (days <= 30) return 'age-fresh';
+    if (days <= 90) return 'age-ok';
+    return 'age-old';
+  }
+  function daysLabel(dateAdded){
+    var days = Math.floor((Date.now() - new Date(dateAdded).getTime()) / 86400000);
+    return days <= 0 ? 'today' : (days + 'd frozen');
+  }
+  function fmtDate(iso){
+    var d = new Date(iso);
+    return d.toLocaleDateString(undefined, { day:'numeric', month:'short', year: 'numeric' });
+  }
+
+  function render(){
+    var q = els.searchInput.value.trim().toLowerCase();
+    var sorted = state.items.slice().sort(function(a,b){ return new Date(a.dateAdded) - new Date(b.dateAdded); });
+    var filtered = q ? sorted.filter(function(i){ return i.name.toLowerCase().indexOf(q) > -1 || i.barcode.indexOf(q) > -1; }) : sorted;
+
+    els.listCount.textContent = state.items.length + (state.items.length === 1 ? ' item' : ' items');
+
+    if (filtered.length === 0){
+      els.listContainer.innerHTML = '<div class="empty">' + (state.items.length === 0
+        ? 'Freezer is empty — scan something to add it.'
+        : 'No items match your search.') + '</div>';
+      return;
+    }
+
+    els.listContainer.innerHTML = filtered.map(function(item){
+      var ac = ageClass(item.dateAdded);
+      return '' +
+        '<div class="item ' + ac + '">' +
+          '<div class="item-main">' +
+            '<div class="item-name">' + escapeHtml(item.name) + '</div>' +
+            '<div class="item-meta">' +
+              '<span>' + escapeHtml(item.barcode) + '</span>' +
+              '<span>Added ' + fmtDate(item.dateAdded) + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<span class="chip ' + ac + '">' + daysLabel(item.dateAdded) + '</span>' +
+          '<button class="item-del" data-id="' + item.id + '" title="Remove">✕</button>' +
+        '</div>';
+    }).join('');
+
+    Array.prototype.forEach.call(els.listContainer.querySelectorAll('.item-del'), function(btn){
+      btn.onclick = function(){ deleteItem(btn.getAttribute('data-id')); };
+    });
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+
+  els.searchInput.addEventListener('input', render);
+
+  // ---------- init ----------
+  setMode('add');
+  initStorage();
+})();
+</script>
+</body>
+</html>
