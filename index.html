@@ -326,6 +326,7 @@
 </script>
 <script>
 (function(){
+ try{
   var state = { mode:'add', items:[], products:{}, scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0 };
 
   var els = {
@@ -388,19 +389,25 @@
       db = firebase.firestore();
       docRef = db.collection('freezer').doc('inventory');
       docRef.onSnapshot(function(snap){
-        connDot.className = 'conn-dot live';
-        var data = snap.data();
-        if (data){
-          state.items = data.items || [];
-          state.products = data.products || {};
-        } else {
-          // first ever run for this project — create the doc
-          docRef.set({ items: [], products: {} });
+        try{
+          connDot.className = 'conn-dot live';
+          var data = snap.data();
+          if (data){
+            state.items = data.items || [];
+            state.products = data.products || {};
+          } else {
+            // first ever run for this project — create the doc
+            docRef.set({ items: [], products: {} });
+          }
+          render();
+        }catch(e){
+          console.error(e);
+          showJsErrorBanner('CAUGHT (onSnapshot): ' + e.message + ' — ' + (e.stack||'').split('\n').slice(0,2).join(' | '));
         }
-        render();
       }, function(err){
         console.error(err);
         connDot.className = 'conn-dot err';
+        showJsErrorBanner('FIRESTORE ERROR: ' + (err && (err.code || err.message) || err));
         toast('Sync error — check Firestore rules/config', 'err');
       });
     }catch(e){
@@ -762,6 +769,10 @@
   // ---------- init ----------
   setMode('add');
   initStorage();
+ }catch(e){
+   console.error(e);
+   showJsErrorBanner('CAUGHT (init): ' + e.message + ' \u2014 ' + (e.stack||'').split('\n').slice(0,3).join(' | '));
+ }
 })();
 
 if ('serviceWorker' in navigator){
