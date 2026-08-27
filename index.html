@@ -12,26 +12,28 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Freezr">
 <script>
-  window.onerror = function(msg, src, line, col, err){
-    document.addEventListener('DOMContentLoaded', function(){
+  function showJsErrorBanner(text){
+    function apply(){
       var b = document.getElementById('setupBanner');
       if (b){
         b.style.display = 'block';
         b.style.background = '#5c1c1c';
         b.style.borderColor = '#f0806b';
-        b.textContent = '⚠️ JS ERROR: ' + msg + ' (line ' + line + ')';
-      }
-    });
-    if (document.readyState !== 'loading'){
-      var b2 = document.getElementById('setupBanner');
-      if (b2){
-        b2.style.display = 'block';
-        b2.style.background = '#5c1c1c';
-        b2.style.borderColor = '#f0806b';
-        b2.textContent = '⚠️ JS ERROR: ' + msg + ' (line ' + line + ')';
+        b.textContent = '⚠️ ' + text;
       }
     }
+    if (document.readyState !== 'loading') apply();
+    else document.addEventListener('DOMContentLoaded', apply);
+  }
+  window.onerror = function(msg, src, line, col, err){
+    var fileName = src ? src.split('/').pop() : 'unknown file';
+    showJsErrorBanner('JS ERROR in ' + fileName + ' (line ' + line + '): ' + msg);
   };
+  window.addEventListener('unhandledrejection', function(event){
+    var reason = event.reason;
+    var text = (reason && (reason.message || reason.toString)) ? (reason.message || reason.toString()) : String(reason);
+    showJsErrorBanner('UNHANDLED PROMISE ERROR: ' + text);
+  });
 </script>
 <style>
   :root{
@@ -306,9 +308,9 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js" crossorigin="anonymous"></script>
 <script>
   // ====== PASTE YOUR FIREBASE CONFIG HERE ======
   // Firebase console -> Project settings -> Your apps -> Web app -> SDK setup and configuration
