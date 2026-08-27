@@ -3,7 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Freezer Inventory</title>
+<title>Freezr</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0a1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Freezr">
 <script>
   window.onerror = function(msg, src, line, col, err){
     document.addEventListener('DOMContentLoaded', function(){
@@ -223,7 +230,7 @@
 <div class="wrap">
   <header>
     <div class="eyebrow"><span class="conn-dot" id="connDot"></span>Household · Shared inventory</div>
-    <h1>Freezer Inventory</h1>
+    <h1>Freezr</h1>
     <div class="sub" id="subline">Loading…</div>
   </header>
 
@@ -754,6 +761,12 @@
   setMode('add');
   initStorage();
 })();
+
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('service-worker.js').catch(function(){ /* not critical if it fails */ });
+  });
+}
 </script>
 </body>
 </html>
