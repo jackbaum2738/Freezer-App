@@ -4,6 +4,13 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+2.0.0 -- 2026-08-27
+--------------------
+- Added item categories: each item now has a category (Meat, Poultry, Fish & Seafood, Vegetables, Fruit, Bread & Bakery, Ready Meals & Leftovers, Dairy & Ice Cream, Other by default), shown as a tag on each list row and searchable.
+- New category is suggested automatically from the product name via built-in keyword matching (no external AI call — keeps the app dependency-free and offline-friendly), same as the item detail popup, before Save.
+- The app learns a barcode's category the first time you set it, the same way it already learns item names, so the same product defaults to the same category on future scans (works in single-item add, batch mode, and the item detail popup).
+- Added a Categories settings page (⚙️ button next to backup) to rename, add, or delete categories at any time. Renaming or deleting a category updates every item using it (deleted categories fall back to "Other"). Open to everyone for now; could be restricted to an administrator later.
+
 1.2.0 -- 2026-08-27
 --------------------
 - Added a Backup button (download icon next to search) that exports your full inventory as a JSON file.
