@@ -16,7 +16,12 @@ Running list of possible improvements. Nothing here is built yet unless marked �
 - **Opened / sealed toggle** — staged toggle in the item detail popup, shown as a badge on the list (applies to the oldest unit in a group).
 - **Categories or shelf tags** — every item has a category, shown on the list and searchable.
 - **AI-generated category tags** — category is auto-suggested from the product name via keyword matching, editable before saving (and learned per barcode, same as the item name).
-- **Editable category list** — a Categories settings page (⚙️ button) to rename, add, or delete categories at any time. Currently open to anyone; not yet locked to an administrator.
+- **Editable category list** — a Categories page (Settings tab) to rename, add, or delete categories at any time. Currently open to anyone; not yet locked to an administrator.
+- **Category colours** — each category has an editable colour, shown as a coloured pill on list rows and category tiles.
+- **Settings page** — bottom tab navigation (Inventory / Settings), with Categories and Appearance living there. Built to make room for more settings later.
+- **Dark/light mode** — appearance setting (Settings tab) for Dark, Light, or Match device. Defaults to dark, stored per-device.
+- **Browse by category** — a tile view (▦ button) showing item counts per category, tap through to a filtered list, with a Back button.
+- **Tidier item rows** — removed the barcode number and the small ✕ delete button from list rows (barcode still shown in the item detail popup; delete still available there too).
 
 ## Known issues (parked for later investigation)
 - **Safari Share button JS error** — tapping the native Share icon on iPhone triggers a generic, detail-free "Script error." banner. Traced as far as possible without real browser devtools — doesn't affect any real functionality. Worth a proper look if we ever get access to real Safari devtools.
@@ -27,7 +32,7 @@ Running list of possible improvements. Nothing here is built yet unless marked �
 
 ## Bigger features
 - **Historical log** — a record of items that used to be in the freezer but were removed (separate from the live inventory view), so you can look back at what's been used.
-- **Shopping list tab** — a separate tab for a shopping list. When removing an item from the freezer, offer the option to add it to the shopping list.
+- **Shopping list tab** — a third bottom tab (alongside Inventory and Settings) for a shopping list. When removing an item from the freezer, offer the option to add it to the shopping list.
 - **Multiple freezers** — manage more than one freezer (e.g. garage chest freezer + kitchen freezer) via a settings page where you can add/delete/name freezers, and items get assigned to one. In future, this could be locked to a specific administrator user, same as categories above.
 - **Receipt scanning (mass import)** — scan a shopping receipt, extract the list of product names from it, then choose which ones to add to the freezer in one go.
 - **Package as a real app (Play Store / App Store)** — wrap the existing web app natively via Trusted Web Activity (Android, lightweight) and/or Capacitor (iOS, needs Apple Developer account + review). Would likely also fix the camera focus/torch quirks we've hit, since native camera APIs are far more capable than what a browser can do. Not urgent — the current PWA architecture carries over directly whenever this gets tackled, so no need to prepare for it now.
