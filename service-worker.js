@@ -1,8 +1,14 @@
-// Intentionally does NOT cache anything. This exists only to satisfy the
-// browser's "installable app" requirements (Add to Home Screen / install
-// prompt). Every request is passed straight through to the network so that
-// any update to index.html reaches everyone immediately, with no stale
-// cached version and no need to reinstall the app.
+// Intentionally does NOT cache anything and does NOT intercept any request.
+// This exists only to satisfy Android's "installable app" criteria (which
+// wants a registered service worker with a fetch listener present). iOS
+// doesn't require this at all for Add to Home Screen.
+//
+// The fetch listener below deliberately never calls event.respondWith() —
+// that means every request (including ones the browser makes internally,
+// e.g. Safari's Share-sheet preview generation) is handled entirely
+// natively, with zero involvement from this file. This also guarantees
+// every update to index.html reaches everyone immediately, since nothing
+// here can ever serve a stale cached response.
 self.addEventListener('install', function(event){
   self.skipWaiting();
 });
@@ -10,5 +16,6 @@ self.addEventListener('activate', function(event){
   event.waitUntil(self.clients.claim());
 });
 self.addEventListener('fetch', function(event){
-  event.respondWith(fetch(event.request));
+  // intentionally empty — no respondWith(), request passes through untouched
 });
+

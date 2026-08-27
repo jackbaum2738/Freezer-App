@@ -60,7 +60,7 @@
     color: var(--frost);
     font-family: var(--sans);
     min-height:100vh;
-    padding: 18px 14px 60px;
+    padding: calc(18px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(60px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
   }
   .wrap{ max-width: 560px; margin: 0 auto; }
 
