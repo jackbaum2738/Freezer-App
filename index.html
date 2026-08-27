@@ -575,7 +575,7 @@
       </div>
     </div>
 
-    <footer>Freezr &mdash; Version: 3.1.2</footer>
+    <footer>Freezr &mdash; Version: 3.2.0</footer>
   </div>
 </div>
 
@@ -745,11 +745,13 @@
 
   // 24 preset swatches (bright + pastel), picked from exclusively — this is the only way to
   // choose a category colour, so every stored colour is guaranteed to be one of these.
+  // 6 hue columns (Red, Orange, Yellow, Green, Blue, Purple), each bright -> medium -> pastel,
+  // plus a row of neutrals for categories with no real hue (e.g. Bread & Bakery, Other).
   var CATEGORY_COLOR_PALETTE = [
     '#e53935','#fb8c00','#fdd835','#43a047','#1e88e5','#8e24aa',
-    '#d81b60','#6d4c41','#00897b','#3949ab','#f4511e','#7cb342',
-    '#f28b82','#fbbc04','#fff475','#ccff90','#a7ffeb','#cbf0f8',
-    '#aecbfa','#d7aefb','#fdcfe8','#e6c9a8','#e0e0e0','#9e9e9e'
+    '#ef5350','#ffa726','#ffee58','#66bb6a','#42a5f5','#ab47bc',
+    '#f28b82','#ffcc80','#fff475','#a5d6a7','#90caf9','#ce93d8',
+    '#212121','#616161','#9e9e9e','#e0e0e0','#f5f5f5','#a1887f'
   ];
   var NEW_CATEGORY_DEFAULT_COLOR = '#9e9e9e'; // grey — user picks a real colour if they want one
   var FALLBACK_CATEGORY_COLOR = '#9e9e9e';
@@ -759,8 +761,8 @@
     'Poultry': '#fb8c00',
     'Fish & Seafood': '#1e88e5',
     'Vegetables': '#43a047',
-    'Fruit': '#d81b60',
-    'Bread & Bakery': '#6d4c41',
+    'Fruit': '#ce93d8',
+    'Bread & Bakery': '#a1887f',
     'Ready Meals & Leftovers': '#8e24aa',
     'Dairy & Ice Cream': '#fdd835',
     'Other': '#9e9e9e'
@@ -834,6 +836,36 @@
 
   function categoryColor(name){
     return state.categoryColors[name] || FALLBACK_CATEGORY_COLOR;
+  }
+
+  function hexToRgb(hex){
+    var h = hex.replace('#', '');
+    return { r: parseInt(h.substr(0,2),16), g: parseInt(h.substr(2,2),16), b: parseInt(h.substr(4,2),16) };
+  }
+  function nearestPaletteColor(hex){
+    var target = hexToRgb(hex);
+    var best = CATEGORY_COLOR_PALETTE[0];
+    var bestDist = Infinity;
+    CATEGORY_COLOR_PALETTE.forEach(function(c){
+      var rgb = hexToRgb(c);
+      var d = Math.pow(rgb.r - target.r, 2) + Math.pow(rgb.g - target.g, 2) + Math.pow(rgb.b - target.b, 2);
+      if (d < bestDist){ bestDist = d; best = c; }
+    });
+    return best;
+  }
+  // Older data (from before the preset palette existed, or before it was reordered) can hold a
+  // colour that's no longer one of the 24 presets — snap it onto the nearest one so it's always
+  // re-selectable from the picker.
+  function normalizeCategoryColors(){
+    var changed = false;
+    state.categories.forEach(function(cat){
+      var current = state.categoryColors[cat];
+      if (!current || CATEGORY_COLOR_PALETTE.indexOf(current) === -1){
+        state.categoryColors[cat] = DEFAULT_CATEGORY_COLORS[cat] || nearestPaletteColor(current || FALLBACK_CATEGORY_COLOR);
+        changed = true;
+      }
+    });
+    return changed;
   }
 
   var state = {
@@ -981,6 +1013,7 @@
             state.categories = (data.categories && data.categories.length) ? data.categories : DEFAULT_CATEGORIES.slice();
             state.categoryByBarcode = data.categoryByBarcode || {};
             state.categoryColors = (data.categoryColors && Object.keys(data.categoryColors).length) ? data.categoryColors : Object.assign({}, DEFAULT_CATEGORY_COLORS);
+            if (normalizeCategoryColors()) saveCategories();
           } else {
             // first ever run for this project — create the doc
             docRef.set({ items: [], products: {}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode: {}, categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS) });
