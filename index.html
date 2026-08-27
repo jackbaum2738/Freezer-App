@@ -297,11 +297,12 @@
     padding: 12px 14px; margin-bottom: 14px;
   }
   .qty-row-label{ font-size: 13.5px; color: var(--frost-dim); font-weight:700; }
-  .qty-row select{
+  .qty-row input[type=text]{
+    flex:1; margin-left:14px; margin-bottom:0; text-align:right;
     background: var(--panel); border: 1px solid var(--edge); color: var(--frost);
-    border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: var(--sans);
-    max-width: 60%;
+    border-radius: 8px; padding: 8px 10px; font-size: 13.5px; font-family: var(--sans);
   }
+  .qty-row-stack{ flex-direction:column; align-items:stretch; gap:10px; }
   .qty-stepper{ display:flex; align-items:center; gap: 14px; }
   .qty-stepper button{
     width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--edge);
@@ -373,11 +374,17 @@
     cursor:pointer; flex-shrink:0; padding: 4px 2px;
   }
   .batch-row-del:active{ color: var(--danger); }
-  .batch-category-select{
-    width:100%; background: var(--panel); border: 1px solid var(--edge); color: var(--frost-dim);
-    border-radius: 8px; padding: 7px 8px; font-size: 12.5px; font-family: var(--sans);
-  }
   .batch-row input.empty-warn, .settings-cat-row input.empty-warn{ border-color: var(--danger); }
+
+  .category-picker{ display:flex; flex-wrap:wrap; gap:8px; }
+  .category-chip-option{
+    display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:999px;
+    border:1.5px solid var(--edge); font-family: var(--sans); font-size:13px; font-weight:600;
+    cursor:pointer;
+  }
+  .category-chip-option .chip-dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .category-picker-compact .category-chip-option{ padding:6px 10px; font-size:11.5px; }
+  .category-picker-compact .chip-dot{ width:7px; height:7px; }
 
   .settings-cat-row{
     display:flex; align-items:center; gap: 10px; background: var(--panel-2);
@@ -387,17 +394,28 @@
     flex:1; background: var(--panel); border: 1px solid var(--edge); color: var(--frost);
     border-radius: 8px; padding: 9px 10px; font-size: 13.5px; font-family: var(--sans);
   }
-  .settings-category-color{
-    -webkit-appearance:none; appearance:none; width:34px; height:34px; flex-shrink:0;
-    padding:2px; border-radius:8px; border: 1px solid var(--edge); background: var(--panel); cursor:pointer;
+  .settings-category-swatch{
+    width:32px; height:32px; flex-shrink:0; border-radius:50%; border: 2px solid var(--panel);
+    box-shadow: 0 0 0 1px var(--edge); cursor:pointer; padding:0;
   }
-  .settings-category-color::-webkit-color-swatch-wrapper{ padding:0; border-radius:6px; }
-  .settings-category-color::-webkit-color-swatch{ border:none; border-radius:6px; }
   .settings-cat-del{
     background: transparent; border: none; color: var(--frost-dim); font-size: 16px;
     cursor:pointer; flex-shrink:0; padding: 4px 2px;
   }
   .settings-cat-del:active{ color: var(--danger); }
+  .drag-handle{
+    cursor: grab; color: var(--frost-dim); font-size: 16px; padding: 4px 6px; flex-shrink:0;
+    touch-action: none; line-height:1;
+  }
+  .settings-cat-row.dragging{ opacity:.85; box-shadow: 0 6px 16px rgba(0,0,0,.3); position:relative; z-index:5; }
+
+  .color-swatch-grid{ display:grid; grid-template-columns: repeat(6, 1fr); gap:12px; padding: 4px 0 6px; }
+  .color-swatch-option{
+    width:100%; aspect-ratio:1; border-radius:50%; border: 2px solid transparent; cursor:pointer;
+    padding:0; display:flex; align-items:center; justify-content:center;
+  }
+  .color-swatch-option.selected{ border-color: var(--frost); }
+  .color-swatch-option .swatch-check{ color:#fff; font-size:15px; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.5); }
 
   .detail-meta{ font-size: 13px; color: var(--frost-dim); margin-bottom: 14px; line-height: 1.7; }
   .detail-meta span{ color: var(--frost); font-weight: 700; }
@@ -548,13 +566,13 @@
       </div>
     </div>
 
-    <footer>Freezr &mdash; Version: 3.0.0</footer>
+    <footer>Freezr &mdash; Version: 3.1.0</footer>
   </div>
 </div>
 
 <nav class="tab-bar">
   <button class="tab-btn active" id="tabInventoryBtn" data-tab="inventory">
-    <span class="tab-icon">📦</span><span>Inventory</span>
+    <span class="tab-icon">❄️</span><span>Freezr</span>
   </button>
   <button class="tab-btn" id="tabSettingsBtn" data-tab="settings">
     <span class="tab-icon">⚙️</span><span>Settings</span>
@@ -571,7 +589,7 @@
     </div>
     <div class="barcode-tag" id="modalBarcode">Barcode: —</div>
     <input type="text" id="modalNameInput" placeholder="e.g. Chicken thighs (1kg)">
-    <select id="modalCategorySelect"></select>
+    <div class="category-picker" id="modalCategoryPicker" style="margin-bottom:14px;"></div>
     <div class="modal-actions">
       <button class="btn btn-cancel" id="modalCancel">Cancel</button>
       <button class="btn btn-primary" id="modalSave">Save & add</button>
@@ -601,11 +619,15 @@
       <button class="modal-x" id="detailModalClose" aria-label="Close">✕</button>
     </div>
     <div class="barcode-tag" id="detailBarcode">Barcode: —</div>
-    <input type="text" id="detailNameInput" placeholder="Item name">
 
     <div class="qty-row">
+      <span class="qty-row-label">Name</span>
+      <input type="text" id="detailNameInput" placeholder="Item name">
+    </div>
+
+    <div class="qty-row qty-row-stack">
       <span class="qty-row-label">Category</span>
-      <select id="detailCategorySelect"></select>
+      <div class="category-picker" id="detailCategoryPicker"></div>
     </div>
 
     <div class="qty-row">
@@ -631,7 +653,7 @@
       <button class="btn btn-cancel" id="detailModalCancelBtn">Close</button>
       <button class="btn btn-primary" id="detailModalSaveBtn">Save</button>
     </div>
-    <button class="btn btn-danger-outline" id="detailDeleteBtn">Remove from freezer</button>
+    <button class="btn btn-danger-outline" id="detailDeleteBtn">Remove from Freezr</button>
   </div>
 </div>
 
@@ -668,6 +690,16 @@
   </div>
 </div>
 
+<div class="modal-back" id="colorPickerModalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Choose a colour</h3>
+      <button class="modal-x" id="colorPickerModalClose" aria-label="Close">✕</button>
+    </div>
+    <div class="color-swatch-grid" id="colorSwatchGrid"></div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js" crossorigin="anonymous"></script>
@@ -689,22 +721,28 @@
  try{
   var DEFAULT_CATEGORIES = ['Meat','Poultry','Fish & Seafood','Vegetables','Fruit','Bread & Bakery','Ready Meals & Leftovers','Dairy & Ice Cream','Other'];
 
+  // 24 preset swatches (bright + pastel), picked from exclusively — this is the only way to
+  // choose a category colour, so every stored colour is guaranteed to be one of these.
+  var CATEGORY_COLOR_PALETTE = [
+    '#e53935','#fb8c00','#fdd835','#43a047','#1e88e5','#8e24aa',
+    '#d81b60','#6d4c41','#00897b','#3949ab','#f4511e','#7cb342',
+    '#f28b82','#fbbc04','#fff475','#ccff90','#a7ffeb','#cbf0f8',
+    '#aecbfa','#d7aefb','#fdcfe8','#e6c9a8','#e0e0e0','#9e9e9e'
+  ];
+  var NEW_CATEGORY_DEFAULT_COLOR = '#9e9e9e'; // grey — user picks a real colour if they want one
+  var FALLBACK_CATEGORY_COLOR = '#9e9e9e';
+
   var DEFAULT_CATEGORY_COLORS = {
-    'Meat': '#e2574c',
-    'Poultry': '#e8a33d',
-    'Fish & Seafood': '#3ea8d8',
-    'Vegetables': '#4caf6d',
-    'Fruit': '#d94f96',
-    'Bread & Bakery': '#c98a4b',
-    'Ready Meals & Leftovers': '#8a6fd1',
-    'Dairy & Ice Cream': '#f2c14e',
-    'Other': '#8ba3bc'
+    'Meat': '#e53935',
+    'Poultry': '#fb8c00',
+    'Fish & Seafood': '#1e88e5',
+    'Vegetables': '#43a047',
+    'Fruit': '#d81b60',
+    'Bread & Bakery': '#6d4c41',
+    'Ready Meals & Leftovers': '#8e24aa',
+    'Dairy & Ice Cream': '#fdd835',
+    'Other': '#9e9e9e'
   };
-  var FALLBACK_CATEGORY_COLOR = '#8ba3bc';
-  var NEW_CATEGORY_COLOR_PALETTE = ['#e2574c','#e8a33d','#3ea8d8','#4caf6d','#d94f96','#c98a4b','#8a6fd1','#f2c14e','#8ba3bc','#5ac8c8'];
-  function pickNewCategoryColor(usedCount){
-    return NEW_CATEGORY_COLOR_PALETTE[usedCount % NEW_CATEGORY_COLOR_PALETTE.length];
-  }
 
   var CATEGORY_KEYWORDS = {
     'Meat': ['beef','pork','lamb','mince','steak','sausage','bacon','ham','burger','ribs','venison','gammon'],
@@ -732,10 +770,20 @@
     return state.categories.indexOf('Other') > -1 ? 'Other' : (state.categories[0] || 'Other');
   }
 
-  function renderCategoryOptions(selectEl, selected){
-    selectEl.innerHTML = state.categories.map(function(c){
-      return '<option value="' + escapeHtml(c) + '"' + (c === selected ? ' selected' : '') + '>' + escapeHtml(c) + '</option>';
+  function renderCategoryPicker(container, selected, onSelect){
+    container.innerHTML = state.categories.map(function(c){
+      var color = categoryColor(c);
+      var isSel = c === selected;
+      var style = isSel
+        ? 'border-color:' + color + '; background:' + color + '22; color:' + color + ';'
+        : 'border-color: var(--edge); background: var(--panel); color: var(--frost-dim);';
+      return '<button type="button" class="category-chip-option" data-category="' + escapeHtml(c) + '" style="' + style + '">' +
+        '<span class="chip-dot" style="background:' + color + ';"></span>' + escapeHtml(c) +
+      '</button>';
     }).join('');
+    Array.prototype.forEach.call(container.querySelectorAll('.category-chip-option'), function(btn){
+      btn.onclick = function(){ onSelect(btn.getAttribute('data-category')); };
+    });
   }
 
   function categoryColor(name){
@@ -786,6 +834,9 @@
     settingsModalCancelBtn: document.getElementById('settingsModalCancelBtn'),
     settingsModalSaveBtn: document.getElementById('settingsModalSaveBtn'),
     settingsModalClose: document.getElementById('settingsModalClose'),
+    colorPickerModalBack: document.getElementById('colorPickerModalBack'),
+    colorSwatchGrid: document.getElementById('colorSwatchGrid'),
+    colorPickerModalClose: document.getElementById('colorPickerModalClose'),
     batchModeToggle: document.getElementById('batchModeToggle'),
     reviewBatchBtn: document.getElementById('reviewBatchBtn'),
     batchModalBack: document.getElementById('batchModalBack'),
@@ -799,7 +850,7 @@
     modalTitle: document.getElementById('modalTitle'),
     modalBarcode: document.getElementById('modalBarcode'),
     modalNameInput: document.getElementById('modalNameInput'),
-    modalCategorySelect: document.getElementById('modalCategorySelect'),
+    modalCategoryPicker: document.getElementById('modalCategoryPicker'),
     modalCancel: document.getElementById('modalCancel'),
     modalClose: document.getElementById('modalClose'),
     modalSave: document.getElementById('modalSave'),
@@ -812,7 +863,7 @@
     detailModalBack: document.getElementById('detailModalBack'),
     detailBarcode: document.getElementById('detailBarcode'),
     detailNameInput: document.getElementById('detailNameInput'),
-    detailCategorySelect: document.getElementById('detailCategorySelect'),
+    detailCategoryPicker: document.getElementById('detailCategoryPicker'),
     detailQtyMinus: document.getElementById('detailQtyMinus'),
     detailQtyPlus: document.getElementById('detailQtyPlus'),
     detailQtyValue: document.getElementById('detailQtyValue'),
@@ -1181,6 +1232,14 @@
   var pendingBarcode = null;
   var pendingEditOnly = false;
   var categoryManuallySet = false;
+  var modalSelectedCategory = 'Other';
+  function selectModalCategory(c){
+    modalSelectedCategory = c;
+    renderCategoryPicker(els.modalCategoryPicker, modalSelectedCategory, function(c2){
+      categoryManuallySet = true;
+      selectModalCategory(c2);
+    });
+  }
   function openNameModal(barcode, opts){
     state.scanPaused = true;
     pendingBarcode = barcode;
@@ -1192,7 +1251,7 @@
     els.modalNameInput.value = known || '';
     var knownCategory = state.categoryByBarcode[barcode];
     categoryManuallySet = !!knownCategory;
-    renderCategoryOptions(els.modalCategorySelect, knownCategory || guessCategory(known || ''));
+    selectModalCategory(knownCategory || guessCategory(known || ''));
     els.modalBack.classList.add('show');
     setTimeout(function(){ els.modalNameInput.focus(); els.modalNameInput.select(); }, 50);
     if (!known && !pendingEditOnly) tryLookup(barcode);
@@ -1213,7 +1272,7 @@
   els.modalSave.onclick = function(){
     var name = els.modalNameInput.value.trim();
     if (!name || !pendingBarcode) return;
-    var category = els.modalCategorySelect.value || 'Other';
+    var category = modalSelectedCategory || 'Other';
     state.products[pendingBarcode] = name;
     state.categoryByBarcode[pendingBarcode] = category;
     saveProducts();
@@ -1237,9 +1296,8 @@
     if (e.key === 'Enter'){ els.modalSave.click(); }
   });
   els.modalNameInput.addEventListener('input', function(){
-    if (!categoryManuallySet) renderCategoryOptions(els.modalCategorySelect, guessCategory(els.modalNameInput.value));
+    if (!categoryManuallySet) selectModalCategory(guessCategory(els.modalNameInput.value));
   });
-  els.modalCategorySelect.addEventListener('change', function(){ categoryManuallySet = true; });
 
   // ---------- batch scan mode ----------
   els.batchModeToggle.onclick = function(){
@@ -1282,13 +1340,20 @@
             '<input type="text" class="batch-name-input" data-temp-id="' + q.tempId + '" placeholder="Item name" value="' + escapeHtml(q.name) + '">' +
             '<button class="batch-row-del" data-temp-id="' + q.tempId + '" title="Remove from batch">\u2715</button>' +
           '</div>' +
-          '<select class="batch-category-select" data-temp-id="' + q.tempId + '"></select>' +
+          '<div class="category-picker category-picker-compact" data-temp-id="' + q.tempId + '"></div>' +
         '</div>';
     }).join('');
 
-    Array.prototype.forEach.call(els.batchList.querySelectorAll('.batch-category-select'), function(sel){
-      var q = state.batchQueue.find(function(x){ return x.tempId === sel.getAttribute('data-temp-id'); });
-      if (q) renderCategoryOptions(sel, q.category);
+    function bindBatchCategoryPicker(pickerEl, q){
+      renderCategoryPicker(pickerEl, q.category, function(c){
+        q.category = c;
+        q.categoryManual = true;
+        bindBatchCategoryPicker(pickerEl, q);
+      });
+    }
+    Array.prototype.forEach.call(els.batchList.querySelectorAll('.category-picker'), function(pickerEl){
+      var q = state.batchQueue.find(function(x){ return x.tempId === pickerEl.getAttribute('data-temp-id'); });
+      if (q) bindBatchCategoryPicker(pickerEl, q);
     });
 
     Array.prototype.forEach.call(els.batchList.querySelectorAll('.batch-name-input'), function(inp){
@@ -1298,17 +1363,11 @@
           q.name = inp.value;
           if (!q.categoryManual){
             q.category = guessCategory(q.name);
-            var sel = els.batchList.querySelector('.batch-category-select[data-temp-id="' + q.tempId + '"]');
-            if (sel) sel.value = q.category;
+            var pickerEl = els.batchList.querySelector('.category-picker[data-temp-id="' + q.tempId + '"]');
+            if (pickerEl) bindBatchCategoryPicker(pickerEl, q);
           }
         }
         inp.classList.remove('empty-warn');
-      });
-    });
-    Array.prototype.forEach.call(els.batchList.querySelectorAll('.batch-category-select'), function(sel){
-      sel.addEventListener('change', function(){
-        var q = state.batchQueue.find(function(x){ return x.tempId === sel.getAttribute('data-temp-id'); });
-        if (q){ q.category = sel.value; q.categoryManual = true; }
       });
     });
     Array.prototype.forEach.call(els.batchList.querySelectorAll('.batch-row-del'), function(btn){
@@ -1378,7 +1437,7 @@
           clearTimeout(t);
           if (pendingBarcode === barcode && d && d.status === 1 && d.product && d.product.product_name){
             els.modalNameInput.value = d.product.product_name;
-            if (!categoryManuallySet) renderCategoryOptions(els.modalCategorySelect, guessCategory(d.product.product_name));
+            if (!categoryManuallySet) selectModalCategory(guessCategory(d.product.product_name));
           }
         })
         .catch(function(){ /* ignore — manual entry still works */ });
@@ -1576,7 +1635,7 @@
     pendingCategory = originalCategory;
     els.detailBarcode.textContent = 'Barcode: ' + barcode;
     els.detailNameInput.value = name;
-    renderCategoryOptions(els.detailCategorySelect, pendingCategory);
+    selectDetailCategory(pendingCategory);
     els.detailQtyValue.textContent = pendingQty;
     setOpenedToggleUI(pendingOpened);
     els.detailAddedDate.textContent = fmtDate(oldest.dateAdded);
@@ -1618,10 +1677,13 @@
     pendingOpened = !pendingOpened;
     setOpenedToggleUI(pendingOpened);
   };
-  els.detailCategorySelect.addEventListener('change', function(){
-    if (!pendingDetailKey) return;
-    pendingCategory = els.detailCategorySelect.value;
-  });
+  function selectDetailCategory(c){
+    pendingCategory = c;
+    renderCategoryPicker(els.detailCategoryPicker, pendingCategory, function(c2){
+      if (!pendingDetailKey) return;
+      selectDetailCategory(c2);
+    });
+  }
   els.detailModalSaveBtn.onclick = function(){
     if (!pendingDetailKey) return;
     var newName = els.detailNameInput.value.trim();
@@ -1727,7 +1789,8 @@
     els.settingsCategoryList.innerHTML = pendingCategoriesList.map(function(e){
       return '' +
         '<div class="settings-cat-row" data-key="' + e.key + '">' +
-          '<input type="color" class="settings-category-color" data-key="' + e.key + '" value="' + escapeHtml(e.color) + '" title="Category colour">' +
+          '<span class="drag-handle" title="Drag to reorder">☰</span>' +
+          '<button type="button" class="settings-category-swatch" data-key="' + e.key + '" style="background:' + e.color + ';" title="Category colour"></button>' +
           '<input type="text" class="settings-category-input" data-key="' + e.key + '" value="' + escapeHtml(e.value) + '">' +
           '<button class="settings-cat-del" data-key="' + e.key + '" title="Remove category">✕</button>' +
         '</div>';
@@ -1740,11 +1803,8 @@
         inp.classList.remove('empty-warn');
       });
     });
-    Array.prototype.forEach.call(els.settingsCategoryList.querySelectorAll('.settings-category-color'), function(inp){
-      inp.addEventListener('input', function(){
-        var entry = pendingCategoriesList.find(function(e){ return e.key === inp.getAttribute('data-key'); });
-        if (entry) entry.color = inp.value;
-      });
+    Array.prototype.forEach.call(els.settingsCategoryList.querySelectorAll('.settings-category-swatch'), function(btn){
+      btn.onclick = function(){ openColorPicker(btn.getAttribute('data-key')); };
     });
     Array.prototype.forEach.call(els.settingsCategoryList.querySelectorAll('.settings-cat-del'), function(btn){
       btn.onclick = function(){
@@ -1753,10 +1813,91 @@
         renderSettingsCategoryList();
       };
     });
+    attachCategoryDragHandlers();
+  }
+
+  // ---------- category colour picker ----------
+  var activeColorPickerKey = null;
+  function openColorPicker(key){
+    activeColorPickerKey = key;
+    var entry = pendingCategoriesList.find(function(e){ return e.key === key; });
+    var currentColor = entry ? entry.color : null;
+    els.colorSwatchGrid.innerHTML = CATEGORY_COLOR_PALETTE.map(function(c){
+      var sel = c === currentColor;
+      return '<button type="button" class="color-swatch-option' + (sel ? ' selected' : '') + '" data-color="' + c + '" style="background:' + c + ';">' +
+        (sel ? '<span class="swatch-check">✓</span>' : '') +
+      '</button>';
+    }).join('');
+    Array.prototype.forEach.call(els.colorSwatchGrid.querySelectorAll('.color-swatch-option'), function(btn){
+      btn.onclick = function(){
+        var e2 = pendingCategoriesList.find(function(x){ return x.key === activeColorPickerKey; });
+        if (e2) e2.color = btn.getAttribute('data-color');
+        closeColorPicker();
+        renderSettingsCategoryList();
+      };
+    });
+    els.colorPickerModalBack.classList.add('show');
+  }
+  function closeColorPicker(){
+    activeColorPickerKey = null;
+    els.colorPickerModalBack.classList.remove('show');
+  }
+  els.colorPickerModalClose.onclick = closeColorPicker;
+  els.colorPickerModalBack.addEventListener('click', function(e){
+    if (e.target === els.colorPickerModalBack) closeColorPicker();
+  });
+
+  // ---------- category drag-to-reorder ----------
+  function attachCategoryDragHandlers(){
+    var rows = Array.prototype.slice.call(els.settingsCategoryList.querySelectorAll('.settings-cat-row'));
+    rows.forEach(function(rowEl){
+      var handle = rowEl.querySelector('.drag-handle');
+      if (!handle) return;
+      handle.onpointerdown = function(e){
+        e.preventDefault();
+        var key = rowEl.getAttribute('data-key');
+        var origIndex = pendingCategoriesList.findIndex(function(x){ return x.key === key; });
+        if (origIndex === -1) return;
+        var startY = e.clientY;
+        var rowHeight = rowEl.getBoundingClientRect().height;
+        var currentIndex = origIndex;
+        rowEl.classList.add('dragging');
+        try{ handle.setPointerCapture(e.pointerId); }catch(err){}
+
+        function onMove(ev){
+          var dy = ev.clientY - startY;
+          rowEl.style.transform = 'translateY(' + dy + 'px)';
+          var draggedMid = rowEl.getBoundingClientRect().top + rowHeight / 2;
+          var newIndex = origIndex;
+          rows.forEach(function(sib){
+            if (sib === rowEl) return;
+            var r = sib.getBoundingClientRect();
+            var sibMid = r.top + r.height / 2;
+            var sibIndex = pendingCategoriesList.findIndex(function(x){ return x.key === sib.getAttribute('data-key'); });
+            if (draggedMid > sibMid && sibIndex > newIndex) newIndex = sibIndex;
+            else if (draggedMid < sibMid && sibIndex < newIndex) newIndex = sibIndex;
+          });
+          currentIndex = newIndex;
+        }
+        function onUp(){
+          handle.removeEventListener('pointermove', onMove);
+          handle.removeEventListener('pointerup', onUp);
+          handle.removeEventListener('pointercancel', onUp);
+          if (currentIndex !== origIndex){
+            var moved = pendingCategoriesList.splice(origIndex, 1)[0];
+            pendingCategoriesList.splice(currentIndex, 0, moved);
+          }
+          renderSettingsCategoryList();
+        }
+        handle.addEventListener('pointermove', onMove);
+        handle.addEventListener('pointerup', onUp);
+        handle.addEventListener('pointercancel', onUp);
+      };
+    });
   }
   function openSettingsModal(){
-    pendingCategoriesList = state.categories.map(function(c, idx){
-      return { key: makeId(), original: c, value: c, color: categoryColor(c) || pickNewCategoryColor(idx) };
+    pendingCategoriesList = state.categories.map(function(c){
+      return { key: makeId(), original: c, value: c, color: categoryColor(c) || NEW_CATEGORY_DEFAULT_COLOR };
     });
     els.settingsNewCategoryInput.value = '';
     renderSettingsCategoryList();
@@ -1775,7 +1916,10 @@
   function addSettingsCategory(){
     var val = els.settingsNewCategoryInput.value.trim();
     if (!val) return;
-    pendingCategoriesList.push({ key: makeId(), original: null, value: val, color: pickNewCategoryColor(pendingCategoriesList.length) });
+    var lower = val.toLowerCase();
+    var isDup = pendingCategoriesList.some(function(e){ return e.value.trim().toLowerCase() === lower; });
+    if (isDup){ toast('That category already exists', 'warn'); return; }
+    pendingCategoriesList.push({ key: makeId(), original: null, value: val, color: NEW_CATEGORY_DEFAULT_COLOR });
     els.settingsNewCategoryInput.value = '';
     renderSettingsCategoryList();
   }
