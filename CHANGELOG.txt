@@ -4,6 +4,15 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+3.0.0 -- 2026-08-27
+--------------------
+- Added bottom tab navigation: "Inventory" (the existing scan/list screen) and "Settings" (new), so future settings have a proper home.
+- Categories now have a colour, shown as a coloured pill on each list row instead of plain text. Colour is editable per category from Settings.
+- Added a "Browse by category" view (▦ button next to search): shows a tile per category with its item count, tap a tile to see just that category's items, with a Back button to return to the full list.
+- Added a dark/light/match-device appearance setting (Settings tab), stored per-device. Defaults to dark, same as before.
+- Removed the small ✕ delete button from list rows — tap into an item and use "Remove from freezer" instead.
+- Removed the barcode number from list rows (still shown in the item detail popup) to reduce clutter now that categories are visible there.
+
 2.0.0 -- 2026-08-27
 --------------------
 - Added item categories: each item now has a category (Meat, Poultry, Fish & Seafood, Vegetables, Fruit, Bread & Bakery, Ready Meals & Leftovers, Dairy & Ice Cream, Other by default), shown as a tag on each list row and searchable.

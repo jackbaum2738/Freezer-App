@@ -12,6 +12,19 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Freezr">
 <script>
+  // Applied before CSS renders, to avoid a flash of the wrong theme on load.
+  (function(){
+    try{
+      var pref = localStorage.getItem('freezr-theme') || 'dark';
+      var effective = pref;
+      if (pref === 'system'){
+        effective = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', effective);
+    }catch(e){ /* default (dark) styling applies */ }
+  })();
+</script>
+<script>
   function showJsErrorBanner(text){
     function apply(){
       var b = document.getElementById('setupBanner');
@@ -48,9 +61,31 @@
     --amber: #f5b350;
     --amber-dim: #5c451c;
     --danger: #f0806b;
+    --danger-dim: #5c2a22;
+    --danger-rgb: 240,128,107;
+    --on-cyan: #04211d;
+    --on-amber: #3a2a08;
     --mono: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
     --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   }
+  :root[data-theme="light"]{
+    --bg: #eef4f9;
+    --panel: #ffffff;
+    --panel-2: #f4f8fb;
+    --edge: #d7e1ea;
+    --frost: #10202f;
+    --frost-dim: #5b6b7c;
+    --cyan: #0f8f83;
+    --cyan-dim: #d7f2ee;
+    --amber: #a8660a;
+    --amber-dim: #fbe7c8;
+    --danger: #c1402b;
+    --danger-dim: #f7d4cc;
+    --danger-rgb: 193,64,43;
+    --on-cyan: #ffffff;
+    --on-amber: #ffffff;
+  }
+  :root[data-theme="light"] body{ background: var(--bg); }
   *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
   html,body{ margin:0; padding:0; }
   body{
@@ -60,7 +95,7 @@
     color: var(--frost);
     font-family: var(--sans);
     min-height:100vh;
-    padding: calc(18px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(60px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
+    padding: calc(18px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(76px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
   }
   .wrap{ max-width: 560px; margin: 0 auto; }
 
@@ -136,8 +171,8 @@
     border:none; border-radius: 12px; padding: 13px 16px; font-weight: 700;
     font-size: 14px; cursor:pointer; font-family: var(--sans);
   }
-  .btn-primary{ background: var(--cyan); color: #04211d; width:100%; margin-top: 10px; }
-  body.remove-mode .btn-primary{ background: var(--amber); color: #3a2a08; }
+  .btn-primary{ background: var(--cyan); color: var(--on-cyan); width:100%; margin-top: 10px; }
+  body.remove-mode .btn-primary{ background: var(--amber); color: var(--on-amber); }
   .btn-ghost{ background: var(--panel-2); color: var(--frost); border:1px solid var(--edge); width:100%; margin-top:10px; }
 
   /* Manual entry */
@@ -189,12 +224,7 @@
   }
   .chip.age-fresh{ color: var(--cyan); border-color: var(--cyan-dim); }
   .chip.age-ok{ color: var(--amber); border-color: var(--amber-dim); }
-  .chip.age-old{ color: var(--danger); border-color: #5c2a22; }
-  .item-del{
-    background: transparent; border: none; color: var(--frost-dim); font-size: 18px;
-    padding: 6px 8px; cursor:pointer; line-height:1;
-  }
-  .item-del:active{ color: var(--danger); }
+  .chip.age-old{ color: var(--danger); border-color: var(--danger-dim); }
 
   .item-edit{
     background: transparent; border: none; color: var(--frost-dim); font-size: 15px;
@@ -214,11 +244,11 @@
     font-size: 17px; display:none; align-items:center; justify-content:center;
     cursor:pointer; z-index: 5;
   }
-  .torch-btn.on{ background: var(--amber); border-color: var(--amber); color: #3a2a08; }
+  .torch-btn.on{ background: var(--amber); border-color: var(--amber); color: var(--on-amber); }
 
   /* Toast */
   .toast{
-    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(20px);
+    position: fixed; left: 50%; bottom: calc(74px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px);
     background: var(--panel-2); border: 1px solid var(--edge); color: var(--frost);
     padding: 12px 18px; border-radius: 12px; font-size: 13.5px; font-weight:600;
     opacity:0; transition: opacity .2s, transform .2s; max-width: 88%; text-align:center;
@@ -228,7 +258,7 @@
   .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
   .toast.ok{ border-color: var(--cyan-dim); }
   .toast.warn{ border-color: var(--amber-dim); }
-  .toast.err{ border-color: #5c2a22; }
+  .toast.err{ border-color: var(--danger-dim); }
   .toast-undo{
     background: transparent; border: 1px solid var(--cyan); color: var(--cyan);
     padding: 4px 10px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor:pointer;
@@ -305,6 +335,26 @@
     border: 1px solid var(--amber-dim); border-radius: 999px; padding: 2px 8px; white-space:nowrap;
   }
 
+  .cat-pill{
+    font-family: var(--mono); font-size: 10px; font-weight: 700; padding: 2px 8px;
+    border-radius: 999px; border: 1px solid; white-space:nowrap;
+  }
+
+  .list-back-btn{
+    background: transparent; border: none; color: var(--cyan); font-family: var(--sans);
+    font-weight: 700; font-size: 14px; padding: 4px 4px 4px 0; cursor:pointer;
+  }
+
+  .category-tile-grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; }
+  .category-tile{
+    display:flex; flex-direction:column; align-items:flex-start; gap:6px;
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 14px;
+    padding: 14px; cursor:pointer; font-family: var(--sans); text-align:left;
+  }
+  .category-tile-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .category-tile-name{ font-weight:700; font-size:13.5px; color: var(--frost); }
+  .category-tile-count{ font-family: var(--mono); font-size:11px; color: var(--frost-dim); }
+
   .batch-row{
     display:flex; flex-direction:column; gap: 6px; background: var(--panel-2);
     border: 1px solid var(--edge); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px;
@@ -337,6 +387,12 @@
     flex:1; background: var(--panel); border: 1px solid var(--edge); color: var(--frost);
     border-radius: 8px; padding: 9px 10px; font-size: 13.5px; font-family: var(--sans);
   }
+  .settings-category-color{
+    -webkit-appearance:none; appearance:none; width:34px; height:34px; flex-shrink:0;
+    padding:2px; border-radius:8px; border: 1px solid var(--edge); background: var(--panel); cursor:pointer;
+  }
+  .settings-category-color::-webkit-color-swatch-wrapper{ padding:0; border-radius:6px; }
+  .settings-category-color::-webkit-color-swatch{ border:none; border-radius:6px; }
   .settings-cat-del{
     background: transparent; border: none; color: var(--frost-dim); font-size: 16px;
     cursor:pointer; flex-shrink:0; padding: 4px 2px;
@@ -350,12 +406,51 @@
     background: transparent; border: 1px solid var(--danger); color: var(--danger);
     width:100%; margin-top: 12px;
   }
-  .btn-danger-outline:active{ background: rgba(240,128,107,0.12); }
+  .btn-danger-outline:active{ background: rgba(var(--danger-rgb), 0.12); }
   .modal-actions{ display:flex; gap: 10px; }
   .modal-actions .btn{ flex:1; margin:0; }
   .btn-cancel{ background: transparent; color: var(--frost-dim); border: 1px solid var(--edge); }
 
   footer{ text-align:center; color: var(--frost-dim); font-size: 11px; margin-top: 26px; font-family: var(--mono); }
+
+  .settings-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 14px;
+    padding: 14px; margin-bottom: 14px; cursor:pointer;
+  }
+  .settings-row:active{ background: var(--panel-2); }
+  .settings-row-title{ font-weight:700; font-size:14.5px; margin-bottom:2px; }
+  .settings-row-sub{ font-size:12px; color: var(--frost-dim); }
+  .settings-row-chevron{ font-size:20px; color: var(--frost-dim); flex-shrink:0; }
+  .settings-block{
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 14px;
+    padding: 14px; margin-bottom: 14px;
+  }
+  .settings-block .settings-row-title{ margin-bottom:10px; }
+
+  .segmented{
+    display:flex; gap:6px; background: var(--panel-2);
+    border: 1px solid var(--edge); border-radius: 12px; padding: 4px;
+  }
+  .segmented button{
+    flex:1; border:none; background:transparent; color: var(--frost-dim);
+    font-family: var(--sans); font-weight:700; font-size: 12.5px;
+    padding: 9px 6px; border-radius: 9px; cursor:pointer;
+  }
+  .segmented button.active{ background: var(--cyan-dim); color: var(--cyan); }
+
+  .tab-bar{
+    position: fixed; left:0; right:0; bottom:0; z-index: 40;
+    display:flex; background: var(--panel); border-top: 1px solid var(--edge);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tab-btn{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+    background:transparent; border:none; color: var(--frost-dim); font-family: var(--sans);
+    font-size: 10.5px; font-weight:700; padding: 8px 0 6px; cursor:pointer;
+  }
+  .tab-btn .tab-icon{ font-size: 20px; line-height:1; }
+  .tab-btn.active{ color: var(--cyan); }
 
   .setup-banner{
     background: var(--amber-dim); border: 1px solid var(--amber); color: var(--frost);
@@ -383,6 +478,7 @@
     ⚠️ Add your Firebase config to start syncing. Open this file, find <code>firebaseConfig</code> near the bottom, and paste in the values from your Firebase project's web app settings.
   </div>
 
+  <div id="inventoryView">
   <div class="mode-toggle">
     <button class="mode-btn add active" id="modeAddBtn">❄️ Add stock</button>
     <button class="mode-btn remove" id="modeRemoveBtn">🍽️ Remove stock</button>
@@ -417,18 +513,53 @@
   </div>
 
   <div class="list-head">
-    <h2 id="listTitle">In the freezer</h2>
+    <div style="display:flex; align-items:baseline; gap:2px;">
+      <button class="list-back-btn" id="listBackBtn" style="display:none;">&lsaquo; Back</button>
+      <h2 id="listTitle">In the freezer</h2>
+    </div>
     <div class="count" id="listCount">0 items</div>
   </div>
-  <div class="search-row">
+  <div class="search-row" id="searchRow">
     <input type="text" class="search" id="searchInput" placeholder="Search inventory…">
+    <button class="backup-btn" id="categoryViewBtn" title="Browse by category">▦</button>
     <button class="backup-btn" id="backupBtn" title="Download a backup of your inventory">⬇️</button>
-    <button class="backup-btn" id="settingsBtn" title="Manage categories">⚙️</button>
   </div>
   <div id="listContainer"></div>
+  </div>
 
-  <footer>Freezr &mdash; Version: 2.0.0</footer>
+  <div id="settingsView" style="display:none;">
+    <div class="list-head">
+      <h2>Settings</h2>
+    </div>
+    <div class="settings-row" id="openCategoriesBtn">
+      <div>
+        <div class="settings-row-title">Categories</div>
+        <div class="settings-row-sub">Rename, add, or remove item categories</div>
+      </div>
+      <span class="settings-row-chevron">&rsaquo;</span>
+    </div>
+
+    <div class="settings-block">
+      <div class="settings-row-title">Appearance</div>
+      <div class="segmented" id="themeSegmented">
+        <button data-theme="dark">Dark</button>
+        <button data-theme="light">Light</button>
+        <button data-theme="system">Match device</button>
+      </div>
+    </div>
+
+    <footer>Freezr &mdash; Version: 3.0.0</footer>
+  </div>
 </div>
+
+<nav class="tab-bar">
+  <button class="tab-btn active" id="tabInventoryBtn" data-tab="inventory">
+    <span class="tab-icon">📦</span><span>Inventory</span>
+  </button>
+  <button class="tab-btn" id="tabSettingsBtn" data-tab="settings">
+    <span class="tab-icon">⚙️</span><span>Settings</span>
+  </button>
+</nav>
 
 <div class="toast" id="toast"></div>
 
@@ -558,6 +689,23 @@
  try{
   var DEFAULT_CATEGORIES = ['Meat','Poultry','Fish & Seafood','Vegetables','Fruit','Bread & Bakery','Ready Meals & Leftovers','Dairy & Ice Cream','Other'];
 
+  var DEFAULT_CATEGORY_COLORS = {
+    'Meat': '#e2574c',
+    'Poultry': '#e8a33d',
+    'Fish & Seafood': '#3ea8d8',
+    'Vegetables': '#4caf6d',
+    'Fruit': '#d94f96',
+    'Bread & Bakery': '#c98a4b',
+    'Ready Meals & Leftovers': '#8a6fd1',
+    'Dairy & Ice Cream': '#f2c14e',
+    'Other': '#8ba3bc'
+  };
+  var FALLBACK_CATEGORY_COLOR = '#8ba3bc';
+  var NEW_CATEGORY_COLOR_PALETTE = ['#e2574c','#e8a33d','#3ea8d8','#4caf6d','#d94f96','#c98a4b','#8a6fd1','#f2c14e','#8ba3bc','#5ac8c8'];
+  function pickNewCategoryColor(usedCount){
+    return NEW_CATEGORY_COLOR_PALETTE[usedCount % NEW_CATEGORY_COLOR_PALETTE.length];
+  }
+
   var CATEGORY_KEYWORDS = {
     'Meat': ['beef','pork','lamb','mince','steak','sausage','bacon','ham','burger','ribs','venison','gammon'],
     'Poultry': ['chicken','turkey','duck','poultry','nugget','wing','drumstick','thigh','breast fillet'],
@@ -590,7 +738,16 @@
     }).join('');
   }
 
-  var state = { mode:'add', items:[], products:{}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode:{}, scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0, torchOn:false, batchMode:false, batchQueue:[] };
+  function categoryColor(name){
+    return state.categoryColors[name] || FALLBACK_CATEGORY_COLOR;
+  }
+
+  var state = {
+    mode:'add', items:[], products:{}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode:{},
+    categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS),
+    listView: 'items', activeCategory: null,
+    scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0, torchOn:false, batchMode:false, batchQueue:[]
+  };
 
   var els = {
     subline: document.getElementById('subline'),
@@ -610,10 +767,18 @@
     manualBtn: document.getElementById('manualBtn'),
     listTitle: document.getElementById('listTitle'),
     listCount: document.getElementById('listCount'),
+    listBackBtn: document.getElementById('listBackBtn'),
     listContainer: document.getElementById('listContainer'),
+    searchRow: document.getElementById('searchRow'),
     searchInput: document.getElementById('searchInput'),
+    categoryViewBtn: document.getElementById('categoryViewBtn'),
     backupBtn: document.getElementById('backupBtn'),
-    settingsBtn: document.getElementById('settingsBtn'),
+    openCategoriesBtn: document.getElementById('openCategoriesBtn'),
+    inventoryView: document.getElementById('inventoryView'),
+    settingsView: document.getElementById('settingsView'),
+    tabInventoryBtn: document.getElementById('tabInventoryBtn'),
+    tabSettingsBtn: document.getElementById('tabSettingsBtn'),
+    themeSegmented: document.getElementById('themeSegmented'),
     settingsModalBack: document.getElementById('settingsModalBack'),
     settingsCategoryList: document.getElementById('settingsCategoryList'),
     settingsNewCategoryInput: document.getElementById('settingsNewCategoryInput'),
@@ -713,9 +878,10 @@
             state.products = data.products || {};
             state.categories = (data.categories && data.categories.length) ? data.categories : DEFAULT_CATEGORIES.slice();
             state.categoryByBarcode = data.categoryByBarcode || {};
+            state.categoryColors = (data.categoryColors && Object.keys(data.categoryColors).length) ? data.categoryColors : Object.assign({}, DEFAULT_CATEGORY_COLORS);
           } else {
             // first ever run for this project — create the doc
-            docRef.set({ items: [], products: {}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode: {} });
+            docRef.set({ items: [], products: {}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode: {}, categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS) });
           }
           render();
         }catch(e){
@@ -739,7 +905,7 @@
     if (!docRef) return;
     var silent = opts && opts.silent;
     try{
-      await docRef.set({ items: state.items, products: state.products, categories: state.categories, categoryByBarcode: state.categoryByBarcode }, { merge: true });
+      await docRef.set({ items: state.items, products: state.products, categories: state.categories, categoryByBarcode: state.categoryByBarcode, categoryColors: state.categoryColors }, { merge: true });
       setSyncState('synced');
     }catch(e){
       setSyncState('failed');
@@ -1011,12 +1177,6 @@
     if (e.target === els.removeModalBack) closeRemoveModal();
   });
 
-  function deleteItem(id){
-    var item = state.items.find(function(i){ return i.id === id; });
-    if (!item) return;
-    removeItemWithUndo(item);
-  }
-
   // ---------- naming modal ----------
   var pendingBarcode = null;
   var pendingEditOnly = false;
@@ -1282,48 +1442,95 @@
     });
   }
 
+  function setListView(view, category){
+    state.listView = view;
+    state.activeCategory = category || null;
+    render();
+  }
+
+  function renderCategoryTiles(){
+    var counts = {};
+    state.items.forEach(function(i){
+      var c = i.category || 'Other';
+      counts[c] = (counts[c] || 0) + 1;
+    });
+    var cats = state.categories.filter(function(c){ return counts[c] > 0; });
+    if (cats.length === 0){
+      els.listContainer.innerHTML = '<div class="empty">No items yet.</div>';
+      return;
+    }
+    els.listContainer.innerHTML = '<div class="category-tile-grid">' + cats.map(function(c){
+      var color = categoryColor(c);
+      return '' +
+        '<button class="category-tile" data-category="' + escapeHtml(c) + '" style="border-color:' + color + '66;">' +
+          '<span class="category-tile-dot" style="background:' + color + ';"></span>' +
+          '<span class="category-tile-name">' + escapeHtml(c) + '</span>' +
+          '<span class="category-tile-count">' + counts[c] + (counts[c] === 1 ? ' item' : ' items') + '</span>' +
+        '</button>';
+    }).join('') + '</div>';
+    Array.prototype.forEach.call(els.listContainer.querySelectorAll('.category-tile'), function(btn){
+      btn.onclick = function(){ setListView('categoryItems', btn.getAttribute('data-category')); };
+    });
+  }
+
   function render(){
+    els.listBackBtn.style.display = (state.listView === 'items') ? 'none' : '';
+    els.categoryViewBtn.style.display = (state.listView === 'items') ? '' : 'none';
+    els.searchRow.style.display = (state.listView === 'categoryTiles') ? 'none' : 'flex';
+
+    if (state.listView === 'categoryTiles'){
+      els.listTitle.textContent = 'Categories';
+      els.listCount.textContent = state.items.length + (state.items.length === 1 ? ' item' : ' items');
+      renderCategoryTiles();
+      if (pendingDetailKey) refreshDetailModal();
+      return;
+    }
+
+    els.listTitle.textContent = (state.listView === 'categoryItems') ? state.activeCategory : 'In the freezer';
+
+    var base = (state.listView === 'categoryItems')
+      ? state.items.filter(function(i){ return (i.category || 'Other') === state.activeCategory; })
+      : state.items;
     var q = els.searchInput.value.trim().toLowerCase();
-    var filtered = q ? state.items.filter(function(i){ return i.name.toLowerCase().indexOf(q) > -1 || i.barcode.indexOf(q) > -1 || (i.category || '').toLowerCase().indexOf(q) > -1; }) : state.items;
+    var filtered = q ? base.filter(function(i){ return i.name.toLowerCase().indexOf(q) > -1 || i.barcode.indexOf(q) > -1 || (i.category || '').toLowerCase().indexOf(q) > -1; }) : base;
     var groups = groupItems(filtered);
 
-    els.listCount.textContent = state.items.length + (state.items.length === 1 ? ' item' : ' items');
+    els.listCount.textContent = base.length + (base.length === 1 ? ' item' : ' items');
 
     if (groups.length === 0){
-      els.listContainer.innerHTML = '<div class="empty">' + (state.items.length === 0
-        ? 'Freezer is empty — scan something to add it.'
-        : 'No items match your search.') + '</div>';
+      var emptyMsg;
+      if (base.length === 0 && state.listView === 'categoryItems') emptyMsg = 'No items in this category.';
+      else if (state.items.length === 0) emptyMsg = 'Freezer is empty \u2014 scan something to add it.';
+      else emptyMsg = 'No items match your search.';
+      els.listContainer.innerHTML = '<div class="empty">' + emptyMsg + '</div>';
     } else {
       els.listContainer.innerHTML = groups.map(function(g){
         var ac = ageClass(g.oldestDate);
         var qtyBadge = g.count > 1 ? ' <span class="qty-badge">\u00d7' + g.count + '</span>' : '';
         var openedBadge = g.oldestOpened ? '<span class="opened-badge">Opened</span>' : '';
+        var catColor = categoryColor(g.oldestCategory);
+        var catPill = '<span class="cat-pill" style="color:' + catColor + '; border-color:' + catColor + '66; background:' + catColor + '22;">' + escapeHtml(g.oldestCategory) + '</span>';
         return '' +
           '<div class="item ' + ac + '" data-barcode="' + escapeHtml(g.barcode) + '" data-name="' + escapeHtml(g.name) + '">' +
             '<div class="item-main">' +
               '<div class="item-name">' + escapeHtml(g.name) + qtyBadge + '</div>' +
               '<div class="item-meta">' +
-                '<span>' + escapeHtml(g.barcode) + '</span>' +
                 '<span>Added ' + fmtDate(g.oldestDate) + '</span>' +
-                '<span>' + escapeHtml(g.oldestCategory) + '</span>' +
+                catPill +
               '</div>' +
             '</div>' +
             openedBadge +
             '<span class="chip ' + ac + '">' + daysLabel(g.oldestDate) + '</span>' +
             '<button class="item-edit" data-barcode="' + escapeHtml(g.barcode) + '" data-name="' + escapeHtml(g.name) + '" title="View details">\u270e</button>' +
-            '<button class="item-del" data-id="' + g.oldestId + '" title="Remove">\u2715</button>' +
           '</div>';
       }).join('');
 
-      Array.prototype.forEach.call(els.listContainer.querySelectorAll('.item-del'), function(btn){
-        btn.onclick = function(){ deleteItem(btn.getAttribute('data-id')); };
-      });
       Array.prototype.forEach.call(els.listContainer.querySelectorAll('.item-edit'), function(btn){
         btn.onclick = function(){ openDetailModal(btn.getAttribute('data-barcode'), btn.getAttribute('data-name')); };
       });
       Array.prototype.forEach.call(els.listContainer.querySelectorAll('.item'), function(rowEl){
         rowEl.addEventListener('click', function(e){
-          if (e.target.closest('.item-edit') || e.target.closest('.item-del')) return;
+          if (e.target.closest('.item-edit')) return;
           openDetailModal(rowEl.getAttribute('data-barcode'), rowEl.getAttribute('data-name'));
         });
       });
@@ -1488,6 +1695,8 @@
   };
 
   els.searchInput.addEventListener('input', render);
+  els.categoryViewBtn.onclick = function(){ setListView('categoryTiles'); };
+  els.listBackBtn.onclick = function(){ setListView('items'); };
 
   els.backupBtn.onclick = function(){
     var payload = {
@@ -1496,7 +1705,8 @@
       items: state.items,
       products: state.products,
       categories: state.categories,
-      categoryByBarcode: state.categoryByBarcode
+      categoryByBarcode: state.categoryByBarcode,
+      categoryColors: state.categoryColors
     };
     var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
@@ -1517,6 +1727,7 @@
     els.settingsCategoryList.innerHTML = pendingCategoriesList.map(function(e){
       return '' +
         '<div class="settings-cat-row" data-key="' + e.key + '">' +
+          '<input type="color" class="settings-category-color" data-key="' + e.key + '" value="' + escapeHtml(e.color) + '" title="Category colour">' +
           '<input type="text" class="settings-category-input" data-key="' + e.key + '" value="' + escapeHtml(e.value) + '">' +
           '<button class="settings-cat-del" data-key="' + e.key + '" title="Remove category">✕</button>' +
         '</div>';
@@ -1529,6 +1740,12 @@
         inp.classList.remove('empty-warn');
       });
     });
+    Array.prototype.forEach.call(els.settingsCategoryList.querySelectorAll('.settings-category-color'), function(inp){
+      inp.addEventListener('input', function(){
+        var entry = pendingCategoriesList.find(function(e){ return e.key === inp.getAttribute('data-key'); });
+        if (entry) entry.color = inp.value;
+      });
+    });
     Array.prototype.forEach.call(els.settingsCategoryList.querySelectorAll('.settings-cat-del'), function(btn){
       btn.onclick = function(){
         var key = btn.getAttribute('data-key');
@@ -1538,7 +1755,9 @@
     });
   }
   function openSettingsModal(){
-    pendingCategoriesList = state.categories.map(function(c){ return { key: makeId(), original: c, value: c }; });
+    pendingCategoriesList = state.categories.map(function(c, idx){
+      return { key: makeId(), original: c, value: c, color: categoryColor(c) || pickNewCategoryColor(idx) };
+    });
     els.settingsNewCategoryInput.value = '';
     renderSettingsCategoryList();
     els.settingsModalBack.classList.add('show');
@@ -1547,7 +1766,7 @@
     pendingCategoriesList = null;
     els.settingsModalBack.classList.remove('show');
   }
-  els.settingsBtn.onclick = openSettingsModal;
+  els.openCategoriesBtn.onclick = openSettingsModal;
   els.settingsModalClose.onclick = closeSettingsModal;
   els.settingsModalCancelBtn.onclick = closeSettingsModal;
   els.settingsModalBack.addEventListener('click', function(e){
@@ -1556,7 +1775,7 @@
   function addSettingsCategory(){
     var val = els.settingsNewCategoryInput.value.trim();
     if (!val) return;
-    pendingCategoriesList.push({ key: makeId(), original: null, value: val });
+    pendingCategoriesList.push({ key: makeId(), original: null, value: val, color: pickNewCategoryColor(pendingCategoriesList.length) });
     els.settingsNewCategoryInput.value = '';
     renderSettingsCategoryList();
   }
@@ -1610,12 +1829,60 @@
       else if (removedNames.indexOf(c) > -1) state.categoryByBarcode[bc] = fallback;
     });
 
+    var newCategoryColors = {};
+    pendingCategoriesList.forEach(function(e){ newCategoryColors[e.value] = e.color; });
+
     state.categories = newCategories;
+    state.categoryColors = newCategoryColors;
     saveCategories();
     render();
     closeSettingsModal();
     toast('Categories updated', 'ok');
   };
+
+  // ---------- tabs ----------
+  function setActiveTab(tab){
+    var isSettings = tab === 'settings';
+    els.inventoryView.style.display = isSettings ? 'none' : '';
+    els.settingsView.style.display = isSettings ? '' : 'none';
+    els.tabInventoryBtn.classList.toggle('active', !isSettings);
+    els.tabSettingsBtn.classList.toggle('active', isSettings);
+  }
+  els.tabInventoryBtn.onclick = function(){ setActiveTab('inventory'); };
+  els.tabSettingsBtn.onclick = function(){ setActiveTab('settings'); };
+
+  // ---------- theme ----------
+  var THEME_KEY = 'freezr-theme';
+  function getStoredTheme(){
+    try{ return localStorage.getItem(THEME_KEY) || 'dark'; }catch(e){ return 'dark'; }
+  }
+  function setStoredTheme(t){
+    try{ localStorage.setItem(THEME_KEY, t); }catch(e){}
+  }
+  var currentThemePref = getStoredTheme();
+  var systemDarkMql = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  function applyTheme(pref){
+    var effective = pref === 'system' ? ((systemDarkMql && systemDarkMql.matches) ? 'dark' : 'light') : pref;
+    document.documentElement.setAttribute('data-theme', effective);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', effective === 'light' ? '#eef4f9' : '#0a1220');
+    Array.prototype.forEach.call(els.themeSegmented.querySelectorAll('button'), function(btn){
+      btn.classList.toggle('active', btn.getAttribute('data-theme') === pref);
+    });
+  }
+  Array.prototype.forEach.call(els.themeSegmented.querySelectorAll('button'), function(btn){
+    btn.onclick = function(){
+      currentThemePref = btn.getAttribute('data-theme');
+      setStoredTheme(currentThemePref);
+      applyTheme(currentThemePref);
+    };
+  });
+  if (systemDarkMql){
+    var onSystemThemeChange = function(){ if (currentThemePref === 'system') applyTheme('system'); };
+    if (systemDarkMql.addEventListener) systemDarkMql.addEventListener('change', onSystemThemeChange);
+    else if (systemDarkMql.addListener) systemDarkMql.addListener(onSystemThemeChange);
+  }
+  applyTheme(currentThemePref);
 
   // ---------- init ----------
   setMode('add');
