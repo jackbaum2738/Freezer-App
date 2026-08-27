@@ -174,6 +174,26 @@
   }
   .item-del:active{ color: var(--danger); }
 
+  .item-edit{
+    background: transparent; border: none; color: var(--frost-dim); font-size: 15px;
+    padding: 6px 6px; cursor:pointer; line-height:1;
+  }
+  .item-edit:active{ color: var(--cyan); }
+
+  .qty-badge{
+    display:inline-block; font-family: var(--mono); font-size: 11px; font-weight:800;
+    color: var(--cyan); background: var(--cyan-dim); border-radius: 999px;
+    padding: 1px 7px; margin-left: 6px; vertical-align: middle;
+  }
+
+  .torch-btn{
+    position:absolute; top:10px; right:10px; width:40px; height:40px; border-radius:50%;
+    background: rgba(5,10,19,0.6); border: 1px solid var(--edge); color: var(--frost);
+    font-size: 17px; display:none; align-items:center; justify-content:center;
+    cursor:pointer; z-index: 5;
+  }
+  .torch-btn.on{ background: var(--amber); border-color: var(--amber); color: #3a2a08; }
+
   /* Toast */
   .toast{
     position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(20px);
@@ -181,11 +201,17 @@
     padding: 12px 18px; border-radius: 12px; font-size: 13.5px; font-weight:600;
     opacity:0; transition: opacity .2s, transform .2s; max-width: 88%; text-align:center;
     box-shadow: 0 10px 30px rgba(0,0,0,.4); z-index: 50;
+    display:inline-flex; align-items:center; gap:10px; justify-content:center;
   }
   .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
   .toast.ok{ border-color: var(--cyan-dim); }
   .toast.warn{ border-color: var(--amber-dim); }
   .toast.err{ border-color: #5c2a22; }
+  .toast-undo{
+    background: transparent; border: 1px solid var(--cyan); color: var(--cyan);
+    padding: 4px 10px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor:pointer;
+    white-space: nowrap;
+  }
 
   /* Modal */
   .modal-back{
@@ -254,6 +280,7 @@
       <div id="scannerContainer" style="display:none; position:absolute; inset:0;"></div>
       <div class="scan-overlay" id="scanOverlay" style="display:none"></div>
       <div class="scan-hint" id="scanHint" style="display:none">Hold barcode steady in frame</div>
+      <button class="torch-btn" id="torchBtn" title="Toggle flash">🔦</button>
     </div>
     <button class="btn btn-primary" id="scanToggleBtn">Start scanning</button>
     <button class="btn btn-ghost" id="photoScanBtn">📷 Or scan from a photo</button>
@@ -281,7 +308,7 @@
 <div class="modal-back" id="nameModalBack">
   <div class="modal">
     <div class="modal-head">
-      <h3>Confirm item</h3>
+      <h3 id="modalTitle">Confirm item</h3>
       <button class="modal-x" id="modalClose" aria-label="Cancel">✕</button>
     </div>
     <div class="barcode-tag" id="modalBarcode">Barcode: —</div>
@@ -327,7 +354,7 @@
 <script>
 (function(){
  try{
-  var state = { mode:'add', items:[], products:{}, scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0 };
+  var state = { mode:'add', items:[], products:{}, scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0, torchOn:false };
 
   var els = {
     subline: document.getElementById('subline'),
@@ -335,6 +362,7 @@
     modeRemove: document.getElementById('modeRemoveBtn'),
     scanToggle: document.getElementById('scanToggleBtn'),
     photoScanBtn: document.getElementById('photoScanBtn'),
+    torchBtn: document.getElementById('torchBtn'),
     photoInput: document.getElementById('photoInput'),
     photoScanStatus: document.getElementById('photoScanStatus'),
     scanFrame: document.getElementById('scanFrame'),
@@ -350,6 +378,7 @@
     searchInput: document.getElementById('searchInput'),
     toast: document.getElementById('toast'),
     modalBack: document.getElementById('nameModalBack'),
+    modalTitle: document.getElementById('modalTitle'),
     modalBarcode: document.getElementById('modalBarcode'),
     modalNameInput: document.getElementById('modalNameInput'),
     modalCancel: document.getElementById('modalCancel'),
@@ -363,11 +392,21 @@
     removeModalConfirm: document.getElementById('removeModalConfirm'),
   };
 
-  function toast(msg, kind){
-    els.toast.textContent = msg;
-    els.toast.className = 'toast show ' + (kind || 'ok');
+  function toast(msg, kind, onUndo){
     clearTimeout(toast._t);
-    toast._t = setTimeout(function(){ els.toast.className = 'toast ' + (kind||'ok'); }, 2600);
+    if (onUndo){
+      els.toast.innerHTML = '<span>' + escapeHtml(msg) + '</span><button class="toast-undo" id="toastUndoBtn">Undo</button>';
+      var btn = document.getElementById('toastUndoBtn');
+      if (btn) btn.onclick = function(){
+        clearTimeout(toast._t);
+        els.toast.className = 'toast ' + (kind || 'ok');
+        onUndo();
+      };
+    } else {
+      els.toast.textContent = msg;
+    }
+    els.toast.className = 'toast show ' + (kind || 'ok');
+    toast._t = setTimeout(function(){ els.toast.className = 'toast ' + (kind||'ok'); }, onUndo ? 5500 : 2600);
   }
 
   // ---------- storage (Firebase Firestore, real-time synced across everyone) ----------
@@ -489,6 +528,14 @@
       state.scanning = true;
       state.quaggaReady = true;
       els.scanToggle.textContent = 'Stop scanning';
+
+      state.torchOn = false;
+      els.torchBtn.classList.remove('on');
+      try{
+        var track = Quagga.CameraAccess.getActiveTrack();
+        var caps = track && track.getCapabilities ? track.getCapabilities() : null;
+        els.torchBtn.style.display = (caps && caps.torch) ? 'flex' : 'none';
+      }catch(e){ els.torchBtn.style.display = 'none'; }
     });
 
     Quagga.onDetected(onDetected);
@@ -530,9 +577,26 @@
     els.video.innerHTML = '';
     els.scanOverlay.style.display = 'none';
     els.scanHint.style.display = 'none';
+    els.torchBtn.style.display = 'none';
+    els.torchBtn.classList.remove('on');
+    state.torchOn = false;
     els.scanPlaceholder.style.display = 'flex';
     els.scanToggle.textContent = state.mode === 'add' ? 'Start scanning to add' : 'Start scanning to remove';
   }
+
+  els.torchBtn.onclick = function(){
+    try{
+      var track = Quagga.CameraAccess.getActiveTrack();
+      if (!track || !track.applyConstraints) return;
+      var next = !state.torchOn;
+      track.applyConstraints({ advanced: [{ torch: next }] })
+        .then(function(){
+          state.torchOn = next;
+          els.torchBtn.classList.toggle('on', next);
+        })
+        .catch(function(){ toast('Could not control flash on this device', 'warn'); });
+    }catch(e){ toast('Could not control flash on this device', 'warn'); }
+  };
 
   els.scanToggle.onclick = function(){ state.scanning ? stopScan() : startScan(); };
 
@@ -604,6 +668,18 @@
     render();
   }
 
+  function removeItemWithUndo(item){
+    state.items = state.items.filter(function(i){ return i.id !== item.id; });
+    saveItems();
+    render();
+    toast('Removed: ' + item.name, 'ok', function(){
+      state.items.push(item);
+      saveItems();
+      render();
+      toast('Restored: ' + item.name, 'ok');
+    });
+  }
+
   var pendingRemoveItem = null;
   function removeOneByBarcode(code){
     var matches = state.items.filter(function(i){ return i.barcode === code; });
@@ -636,11 +712,8 @@
   els.removeModalConfirm.onclick = function(){
     if (!pendingRemoveItem) return;
     var item = pendingRemoveItem;
-    state.items = state.items.filter(function(i){ return i.id !== item.id; });
-    saveItems();
-    render();
-    toast('Removed: ' + item.name, 'ok');
     closeRemoveModal();
+    removeItemWithUndo(item);
   };
   els.removeModalBack.addEventListener('click', function(e){
     if (e.target === els.removeModalBack) closeRemoveModal();
@@ -648,23 +721,25 @@
 
   function deleteItem(id){
     var item = state.items.find(function(i){ return i.id === id; });
-    state.items = state.items.filter(function(i){ return i.id !== id; });
-    saveItems();
-    render();
-    if (item) toast('Removed: ' + item.name, 'ok');
+    if (!item) return;
+    removeItemWithUndo(item);
   }
 
   // ---------- naming modal ----------
   var pendingBarcode = null;
-  function openNameModal(barcode){
+  var pendingEditOnly = false;
+  function openNameModal(barcode, opts){
     state.scanPaused = true;
     pendingBarcode = barcode;
+    pendingEditOnly = !!(opts && opts.editOnly);
+    els.modalTitle.textContent = pendingEditOnly ? 'Edit item name' : 'Confirm item';
+    els.modalSave.textContent = pendingEditOnly ? 'Save name' : 'Save & add';
     els.modalBarcode.textContent = 'Barcode: ' + barcode;
     var known = state.products[barcode];
     els.modalNameInput.value = known || '';
     els.modalBack.classList.add('show');
     setTimeout(function(){ els.modalNameInput.focus(); els.modalNameInput.select(); }, 50);
-    if (!known) tryLookup(barcode);
+    if (!known && !pendingEditOnly) tryLookup(barcode);
   }
   function closeModal(){
     state.scanPaused = false;
@@ -672,6 +747,7 @@
     state.candidateCount = 0;
     els.modalBack.classList.remove('show');
     pendingBarcode = null;
+    pendingEditOnly = false;
   }
   els.modalCancel.onclick = closeModal;
   els.modalClose.onclick = closeModal;
@@ -683,8 +759,19 @@
     if (!name || !pendingBarcode) return;
     state.products[pendingBarcode] = name;
     saveProducts();
-    addItem(pendingBarcode, name);
-    toast('Added: ' + name, 'ok');
+    if (pendingEditOnly){
+      var barcode = pendingBarcode;
+      var changed = false;
+      state.items.forEach(function(i){
+        if (i.barcode === barcode && i.name !== name){ i.name = name; changed = true; }
+      });
+      if (changed) saveItems();
+      render();
+      toast('Renamed to: ' + name, 'ok');
+    } else {
+      addItem(pendingBarcode, name);
+      toast('Added: ' + name, 'ok');
+    }
     closeModal();
   };
   els.modalNameInput.addEventListener('keydown', function(e){
@@ -724,38 +811,64 @@
     return d.toLocaleDateString(undefined, { day:'numeric', month:'short', year: 'numeric' });
   }
 
+  function groupItems(items){
+    var map = {};
+    var order = [];
+    items.forEach(function(item){
+      var key = item.barcode + '||' + item.name;
+      if (!map[key]){
+        map[key] = { barcode: item.barcode, name: item.name, count: 0, oldestDate: item.dateAdded, oldestId: item.id };
+        order.push(key);
+      }
+      var g = map[key];
+      g.count++;
+      if (new Date(item.dateAdded) < new Date(g.oldestDate)){
+        g.oldestDate = item.dateAdded;
+        g.oldestId = item.id;
+      }
+    });
+    return order.map(function(k){ return map[k]; }).sort(function(a,b){
+      return new Date(a.oldestDate) - new Date(b.oldestDate);
+    });
+  }
+
   function render(){
     var q = els.searchInput.value.trim().toLowerCase();
-    var sorted = state.items.slice().sort(function(a,b){ return new Date(a.dateAdded) - new Date(b.dateAdded); });
-    var filtered = q ? sorted.filter(function(i){ return i.name.toLowerCase().indexOf(q) > -1 || i.barcode.indexOf(q) > -1; }) : sorted;
+    var filtered = q ? state.items.filter(function(i){ return i.name.toLowerCase().indexOf(q) > -1 || i.barcode.indexOf(q) > -1; }) : state.items;
+    var groups = groupItems(filtered);
 
     els.listCount.textContent = state.items.length + (state.items.length === 1 ? ' item' : ' items');
 
-    if (filtered.length === 0){
+    if (groups.length === 0){
       els.listContainer.innerHTML = '<div class="empty">' + (state.items.length === 0
         ? 'Freezer is empty — scan something to add it.'
         : 'No items match your search.') + '</div>';
       return;
     }
 
-    els.listContainer.innerHTML = filtered.map(function(item){
-      var ac = ageClass(item.dateAdded);
+    els.listContainer.innerHTML = groups.map(function(g){
+      var ac = ageClass(g.oldestDate);
+      var qtyBadge = g.count > 1 ? ' <span class="qty-badge">\u00d7' + g.count + '</span>' : '';
       return '' +
         '<div class="item ' + ac + '">' +
           '<div class="item-main">' +
-            '<div class="item-name">' + escapeHtml(item.name) + '</div>' +
+            '<div class="item-name">' + escapeHtml(g.name) + qtyBadge + '</div>' +
             '<div class="item-meta">' +
-              '<span>' + escapeHtml(item.barcode) + '</span>' +
-              '<span>Added ' + fmtDate(item.dateAdded) + '</span>' +
+              '<span>' + escapeHtml(g.barcode) + '</span>' +
+              '<span>Added ' + fmtDate(g.oldestDate) + '</span>' +
             '</div>' +
           '</div>' +
-          '<span class="chip ' + ac + '">' + daysLabel(item.dateAdded) + '</span>' +
-          '<button class="item-del" data-id="' + item.id + '" title="Remove">✕</button>' +
+          '<span class="chip ' + ac + '">' + daysLabel(g.oldestDate) + '</span>' +
+          '<button class="item-edit" data-barcode="' + escapeHtml(g.barcode) + '" title="Edit name">\u270e</button>' +
+          '<button class="item-del" data-id="' + g.oldestId + '" title="Remove">\u2715</button>' +
         '</div>';
     }).join('');
 
     Array.prototype.forEach.call(els.listContainer.querySelectorAll('.item-del'), function(btn){
       btn.onclick = function(){ deleteItem(btn.getAttribute('data-id')); };
+    });
+    Array.prototype.forEach.call(els.listContainer.querySelectorAll('.item-edit'), function(btn){
+      btn.onclick = function(){ openNameModal(btn.getAttribute('data-barcode'), { editOnly: true }); };
     });
   }
   function escapeHtml(s){
