@@ -302,7 +302,6 @@
     background: var(--panel); border: 1px solid var(--edge); color: var(--frost);
     border-radius: 8px; padding: 8px 10px; font-size: 13.5px; font-family: var(--sans);
   }
-  .qty-row-stack{ flex-direction:column; align-items:stretch; gap:10px; }
   .qty-stepper{ display:flex; align-items:center; gap: 14px; }
   .qty-stepper button{
     width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--edge);
@@ -383,8 +382,18 @@
     cursor:pointer;
   }
   .category-chip-option .chip-dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
-  .category-picker-compact .category-chip-option{ padding:6px 10px; font-size:11.5px; }
-  .category-picker-compact .chip-dot{ width:7px; height:7px; }
+  .chip-dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; display:inline-block; }
+
+  .cat-collapsed-row{ cursor:pointer; }
+  .cat-collapsed-value{ display:flex; align-items:center; gap:8px; }
+  .cat-collapsed-name{ font-size:13.5px; font-weight:700; }
+  .cat-chevron{ color: var(--frost-dim); font-size:15px; margin-left:2px; }
+  .batch-cat-row{
+    display:flex; align-items:center; gap:8px; cursor:pointer;
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 8px; padding: 8px 10px;
+  }
+  .batch-cat-row .cat-collapsed-name{ font-size:12.5px; }
+  .batch-cat-row .cat-chevron{ margin-left:auto; }
 
   .settings-cat-row{
     display:flex; align-items:center; gap: 10px; background: var(--panel-2);
@@ -566,7 +575,7 @@
       </div>
     </div>
 
-    <footer>Freezr &mdash; Version: 3.1.0</footer>
+    <footer>Freezr &mdash; Version: 3.1.1</footer>
   </div>
 </div>
 
@@ -589,7 +598,10 @@
     </div>
     <div class="barcode-tag" id="modalBarcode">Barcode: —</div>
     <input type="text" id="modalNameInput" placeholder="e.g. Chicken thighs (1kg)">
-    <div class="category-picker" id="modalCategoryPicker" style="margin-bottom:14px;"></div>
+    <div class="qty-row cat-collapsed-row" id="modalCategoryRow">
+      <span class="qty-row-label">Category</span>
+      <div class="cat-collapsed-value" id="modalCategoryValue"></div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-cancel" id="modalCancel">Cancel</button>
       <button class="btn btn-primary" id="modalSave">Save & add</button>
@@ -625,9 +637,9 @@
       <input type="text" id="detailNameInput" placeholder="Item name">
     </div>
 
-    <div class="qty-row qty-row-stack">
+    <div class="qty-row cat-collapsed-row" id="detailCategoryRow">
       <span class="qty-row-label">Category</span>
-      <div class="category-picker" id="detailCategoryPicker"></div>
+      <div class="cat-collapsed-value" id="detailCategoryValue"></div>
     </div>
 
     <div class="qty-row">
@@ -697,6 +709,16 @@
       <button class="modal-x" id="colorPickerModalClose" aria-label="Close">✕</button>
     </div>
     <div class="color-swatch-grid" id="colorSwatchGrid"></div>
+  </div>
+</div>
+
+<div class="modal-back" id="categorySheetBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Select a category</h3>
+      <button class="modal-x" id="categorySheetClose" aria-label="Close">✕</button>
+    </div>
+    <div class="category-picker" id="categorySheetGrid"></div>
   </div>
 </div>
 
@@ -786,6 +808,30 @@
     });
   }
 
+  var categorySheetOnSelect = null;
+  function openCategorySheet(current, onSelect){
+    categorySheetOnSelect = onSelect;
+    renderCategoryPicker(els.categorySheetGrid, current, function(c){
+      var cb = categorySheetOnSelect;
+      closeCategorySheet();
+      if (cb) cb(c);
+    });
+    els.categorySheetBack.classList.add('show');
+  }
+  function closeCategorySheet(){
+    categorySheetOnSelect = null;
+    els.categorySheetBack.classList.remove('show');
+  }
+
+  function renderCollapsedCategory(rowEl, valueEl, selected, onSelect){
+    var color = categoryColor(selected);
+    valueEl.innerHTML =
+      '<span class="chip-dot" style="background:' + color + ';"></span>' +
+      '<span class="cat-collapsed-name" style="color:' + color + ';">' + escapeHtml(selected) + '</span>' +
+      '<span class="cat-chevron">›</span>';
+    rowEl.onclick = function(){ openCategorySheet(selected, onSelect); };
+  }
+
   function categoryColor(name){
     return state.categoryColors[name] || FALLBACK_CATEGORY_COLOR;
   }
@@ -837,6 +883,9 @@
     colorPickerModalBack: document.getElementById('colorPickerModalBack'),
     colorSwatchGrid: document.getElementById('colorSwatchGrid'),
     colorPickerModalClose: document.getElementById('colorPickerModalClose'),
+    categorySheetBack: document.getElementById('categorySheetBack'),
+    categorySheetGrid: document.getElementById('categorySheetGrid'),
+    categorySheetClose: document.getElementById('categorySheetClose'),
     batchModeToggle: document.getElementById('batchModeToggle'),
     reviewBatchBtn: document.getElementById('reviewBatchBtn'),
     batchModalBack: document.getElementById('batchModalBack'),
@@ -850,7 +899,8 @@
     modalTitle: document.getElementById('modalTitle'),
     modalBarcode: document.getElementById('modalBarcode'),
     modalNameInput: document.getElementById('modalNameInput'),
-    modalCategoryPicker: document.getElementById('modalCategoryPicker'),
+    modalCategoryRow: document.getElementById('modalCategoryRow'),
+    modalCategoryValue: document.getElementById('modalCategoryValue'),
     modalCancel: document.getElementById('modalCancel'),
     modalClose: document.getElementById('modalClose'),
     modalSave: document.getElementById('modalSave'),
@@ -863,7 +913,8 @@
     detailModalBack: document.getElementById('detailModalBack'),
     detailBarcode: document.getElementById('detailBarcode'),
     detailNameInput: document.getElementById('detailNameInput'),
-    detailCategoryPicker: document.getElementById('detailCategoryPicker'),
+    detailCategoryRow: document.getElementById('detailCategoryRow'),
+    detailCategoryValue: document.getElementById('detailCategoryValue'),
     detailQtyMinus: document.getElementById('detailQtyMinus'),
     detailQtyPlus: document.getElementById('detailQtyPlus'),
     detailQtyValue: document.getElementById('detailQtyValue'),
@@ -1235,7 +1286,7 @@
   var modalSelectedCategory = 'Other';
   function selectModalCategory(c){
     modalSelectedCategory = c;
-    renderCategoryPicker(els.modalCategoryPicker, modalSelectedCategory, function(c2){
+    renderCollapsedCategory(els.modalCategoryRow, els.modalCategoryValue, modalSelectedCategory, function(c2){
       categoryManuallySet = true;
       selectModalCategory(c2);
     });
@@ -1340,20 +1391,20 @@
             '<input type="text" class="batch-name-input" data-temp-id="' + q.tempId + '" placeholder="Item name" value="' + escapeHtml(q.name) + '">' +
             '<button class="batch-row-del" data-temp-id="' + q.tempId + '" title="Remove from batch">\u2715</button>' +
           '</div>' +
-          '<div class="category-picker category-picker-compact" data-temp-id="' + q.tempId + '"></div>' +
+          '<div class="batch-cat-row" data-temp-id="' + q.tempId + '"></div>' +
         '</div>';
     }).join('');
 
-    function bindBatchCategoryPicker(pickerEl, q){
-      renderCategoryPicker(pickerEl, q.category, function(c){
+    function bindBatchCategoryPicker(rowEl, q){
+      renderCollapsedCategory(rowEl, rowEl, q.category, function(c){
         q.category = c;
         q.categoryManual = true;
-        bindBatchCategoryPicker(pickerEl, q);
+        bindBatchCategoryPicker(rowEl, q);
       });
     }
-    Array.prototype.forEach.call(els.batchList.querySelectorAll('.category-picker'), function(pickerEl){
-      var q = state.batchQueue.find(function(x){ return x.tempId === pickerEl.getAttribute('data-temp-id'); });
-      if (q) bindBatchCategoryPicker(pickerEl, q);
+    Array.prototype.forEach.call(els.batchList.querySelectorAll('.batch-cat-row'), function(rowEl){
+      var q = state.batchQueue.find(function(x){ return x.tempId === rowEl.getAttribute('data-temp-id'); });
+      if (q) bindBatchCategoryPicker(rowEl, q);
     });
 
     Array.prototype.forEach.call(els.batchList.querySelectorAll('.batch-name-input'), function(inp){
@@ -1363,8 +1414,8 @@
           q.name = inp.value;
           if (!q.categoryManual){
             q.category = guessCategory(q.name);
-            var pickerEl = els.batchList.querySelector('.category-picker[data-temp-id="' + q.tempId + '"]');
-            if (pickerEl) bindBatchCategoryPicker(pickerEl, q);
+            var rowEl = els.batchList.querySelector('.batch-cat-row[data-temp-id="' + q.tempId + '"]');
+            if (rowEl) bindBatchCategoryPicker(rowEl, q);
           }
         }
         inp.classList.remove('empty-warn');
@@ -1679,7 +1730,7 @@
   };
   function selectDetailCategory(c){
     pendingCategory = c;
-    renderCategoryPicker(els.detailCategoryPicker, pendingCategory, function(c2){
+    renderCollapsedCategory(els.detailCategoryRow, els.detailCategoryValue, pendingCategory, function(c2){
       if (!pendingDetailKey) return;
       selectDetailCategory(c2);
     });
@@ -1845,6 +1896,11 @@
   els.colorPickerModalClose.onclick = closeColorPicker;
   els.colorPickerModalBack.addEventListener('click', function(e){
     if (e.target === els.colorPickerModalBack) closeColorPicker();
+  });
+
+  els.categorySheetClose.onclick = closeCategorySheet;
+  els.categorySheetBack.addEventListener('click', function(e){
+    if (e.target === els.categorySheetBack) closeCategorySheet();
   });
 
   // ---------- category drag-to-reorder ----------
