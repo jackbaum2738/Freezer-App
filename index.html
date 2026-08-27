@@ -153,10 +153,16 @@
   .list-head{ display:flex; align-items:baseline; justify-content:space-between; margin: 22px 0 10px; }
   .list-head h2{ font-size: 15px; margin:0; letter-spacing: -0.01em; }
   .count{ font-family: var(--mono); font-size: 12px; color: var(--frost-dim); }
+  .search-row{ display:flex; gap: 8px; margin-bottom: 10px; }
   .search{
-    width:100%; background: var(--panel); border:1px solid var(--edge); color: var(--frost);
-    border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-bottom: 10px; font-family: var(--sans);
+    flex:1; width:auto; background: var(--panel); border:1px solid var(--edge); color: var(--frost);
+    border-radius: 10px; padding: 10px 12px; font-size: 13px; font-family: var(--sans);
   }
+  .backup-btn{
+    flex-shrink:0; width: 40px; background: var(--panel); border: 1px solid var(--edge);
+    border-radius: 10px; font-size: 15px; cursor:pointer; color: var(--frost);
+  }
+  .backup-btn:active{ background: var(--panel-2); }
   .empty{
     text-align:center; color: var(--frost-dim); padding: 34px 10px; font-size: 13px;
     border: 1px dashed var(--edge); border-radius: 14px;
@@ -270,6 +276,49 @@
   .qty-stepper button:active{ background: var(--cyan-dim); color: var(--cyan); border-color: var(--cyan-dim); }
   #detailQtyValue{ font-family: var(--mono); font-size: 17px; font-weight: 800; min-width: 22px; text-align:center; }
 
+  .toggle-switch{
+    width: 46px; height: 26px; border-radius: 999px; background: var(--panel);
+    border: 1px solid var(--edge); position: relative; cursor: pointer; padding: 0; flex-shrink: 0;
+  }
+  .toggle-switch .toggle-knob{
+    position:absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--frost-dim); transition: left .15s, background .15s;
+  }
+  .toggle-switch.on{ background: var(--amber-dim); border-color: var(--amber); }
+  .toggle-switch.on .toggle-knob{ left: 22px; background: var(--amber); }
+
+  .batch-toggle-row{
+    display:flex; align-items:center; justify-content:space-between; gap: 10px;
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 12px;
+    padding: 10px 14px; margin-bottom: 12px;
+  }
+  .batch-toggle-row .qty-row-label{ font-size: 12.5px; }
+  body.remove-mode .batch-toggle-row{ display: none; }
+
+  .opened-badge{
+    font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: var(--amber);
+    border: 1px solid var(--amber-dim); border-radius: 999px; padding: 2px 8px; white-space:nowrap;
+  }
+
+  .batch-row{
+    display:flex; align-items:center; gap: 10px; background: var(--panel-2);
+    border: 1px solid var(--edge); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px;
+  }
+  .batch-row input[type=text]{
+    flex:1; background: var(--panel); border: 1px solid var(--edge); color: var(--frost);
+    border-radius: 8px; padding: 9px 10px; font-size: 13.5px; font-family: var(--sans);
+  }
+  .batch-row .batch-barcode{
+    font-family: var(--mono); font-size: 10px; color: var(--frost-dim); flex-shrink:0;
+    width: 78px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .batch-row-del{
+    background: transparent; border: none; color: var(--frost-dim); font-size: 16px;
+    cursor:pointer; flex-shrink:0; padding: 4px 2px;
+  }
+  .batch-row-del:active{ color: var(--danger); }
+  .batch-row input.empty-warn{ border-color: var(--danger); }
+
   .detail-meta{ font-size: 13px; color: var(--frost-dim); margin-bottom: 14px; line-height: 1.7; }
   .detail-meta span{ color: var(--frost); font-weight: 700; }
 
@@ -315,6 +364,11 @@
     <button class="mode-btn remove" id="modeRemoveBtn">🍽️ Remove stock</button>
   </div>
 
+  <div class="batch-toggle-row" id="batchToggleRow">
+    <span class="qty-row-label">Batch mode — scan multiple, name after</span>
+    <button class="toggle-switch" id="batchModeToggle" role="switch" aria-checked="false"><span class="toggle-knob"></span></button>
+  </div>
+
   <div class="panel">
     <div class="scan-frame" id="scanFrame">
       <div class="scan-placeholder" id="scanPlaceholder">
@@ -327,6 +381,7 @@
       <button class="torch-btn" id="torchBtn" title="Toggle flash">🔦</button>
     </div>
     <button class="btn btn-primary" id="scanToggleBtn">Scan items</button>
+    <button class="btn btn-primary" id="reviewBatchBtn" style="display:none; background:var(--amber);">Review batch (0)</button>
     <button class="btn btn-ghost" id="photoScanBtn">📷 Or scan from a photo</button>
     <input type="file" accept="image/*" capture="environment" id="photoInput" style="display:none">
     <div id="photoScanStatus" style="display:none; text-align:center; font-size:12.5px; color:var(--frost-dim); margin-top:8px; font-family:var(--mono);">Reading barcode from photo…</div>
@@ -341,10 +396,13 @@
     <h2 id="listTitle">In the freezer</h2>
     <div class="count" id="listCount">0 items</div>
   </div>
-  <input type="text" class="search" id="searchInput" placeholder="Search inventory…">
+  <div class="search-row">
+    <input type="text" class="search" id="searchInput" placeholder="Search inventory…">
+    <button class="backup-btn" id="backupBtn" title="Download a backup of your inventory">⬇️</button>
+  </div>
   <div id="listContainer"></div>
 
-  <footer>Freezr &mdash; Version: 1.1.0</footer>
+  <footer>Freezr &mdash; Version: 1.2.0</footer>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -397,6 +455,11 @@
       </div>
     </div>
 
+    <div class="qty-row">
+      <span class="qty-row-label">Opened</span>
+      <button class="toggle-switch" id="detailOpenedToggle" role="switch" aria-checked="false"><span class="toggle-knob"></span></button>
+    </div>
+
     <div class="detail-meta">
       <div>Added <span id="detailAddedDate">—</span></div>
       <div>In the freezer for <span id="detailDuration">—</span></div>
@@ -407,6 +470,21 @@
       <button class="btn btn-primary" id="detailModalSaveBtn">Save</button>
     </div>
     <button class="btn btn-danger-outline" id="detailDeleteBtn">Remove from freezer</button>
+  </div>
+</div>
+
+<div class="modal-back" id="batchModalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Review batch</h3>
+      <button class="modal-x" id="batchModalClose" aria-label="Close">✕</button>
+    </div>
+    <div class="barcode-tag" id="batchModalSub">0 items scanned — name each one below</div>
+    <div id="batchList" style="max-height:50vh; overflow-y:auto; margin-bottom:14px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" id="batchModalClearBtn">Clear batch</button>
+      <button class="btn btn-primary" id="batchModalAddBtn">Add all items</button>
+    </div>
   </div>
 </div>
 
@@ -429,7 +507,7 @@
 <script>
 (function(){
  try{
-  var state = { mode:'add', items:[], products:{}, scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0, torchOn:false };
+  var state = { mode:'add', items:[], products:{}, scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0, torchOn:false, batchMode:false, batchQueue:[] };
 
   var els = {
     subline: document.getElementById('subline'),
@@ -451,6 +529,15 @@
     listCount: document.getElementById('listCount'),
     listContainer: document.getElementById('listContainer'),
     searchInput: document.getElementById('searchInput'),
+    backupBtn: document.getElementById('backupBtn'),
+    batchModeToggle: document.getElementById('batchModeToggle'),
+    reviewBatchBtn: document.getElementById('reviewBatchBtn'),
+    batchModalBack: document.getElementById('batchModalBack'),
+    batchModalSub: document.getElementById('batchModalSub'),
+    batchList: document.getElementById('batchList'),
+    batchModalClearBtn: document.getElementById('batchModalClearBtn'),
+    batchModalAddBtn: document.getElementById('batchModalAddBtn'),
+    batchModalClose: document.getElementById('batchModalClose'),
     toast: document.getElementById('toast'),
     modalBack: document.getElementById('nameModalBack'),
     modalTitle: document.getElementById('modalTitle'),
@@ -471,6 +558,7 @@
     detailQtyMinus: document.getElementById('detailQtyMinus'),
     detailQtyPlus: document.getElementById('detailQtyPlus'),
     detailQtyValue: document.getElementById('detailQtyValue'),
+    detailOpenedToggle: document.getElementById('detailOpenedToggle'),
     detailAddedDate: document.getElementById('detailAddedDate'),
     detailDuration: document.getElementById('detailDuration'),
     detailModalCancelBtn: document.getElementById('detailModalCancelBtn'),
@@ -750,7 +838,11 @@
   // ---------- core add/remove logic ----------
   function handleScan(code){
     if (state.mode === 'add'){
-      openNameModal(code);
+      if (state.batchMode){
+        addToBatchQueue(code);
+      } else {
+        openNameModal(code);
+      }
     } else {
       removeOneByBarcode(code);
     }
@@ -761,7 +853,8 @@
       id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random(),
       barcode: barcode,
       name: name,
-      dateAdded: new Date().toISOString()
+      dateAdded: new Date().toISOString(),
+      opened: false
     });
     saveItems();
     render();
@@ -877,6 +970,108 @@
     if (e.key === 'Enter'){ els.modalSave.click(); }
   });
 
+  // ---------- batch scan mode ----------
+  els.batchModeToggle.onclick = function(){
+    state.batchMode = !state.batchMode;
+    els.batchModeToggle.classList.toggle('on', state.batchMode);
+    els.batchModeToggle.setAttribute('aria-checked', state.batchMode ? 'true' : 'false');
+  };
+
+  function updateReviewBatchBtn(){
+    var n = state.batchQueue.length;
+    if (n > 0){
+      els.reviewBatchBtn.style.display = 'block';
+      els.reviewBatchBtn.textContent = 'Review batch (' + n + ')';
+    } else {
+      els.reviewBatchBtn.style.display = 'none';
+    }
+  }
+
+  function addToBatchQueue(barcode){
+    var known = state.products[barcode];
+    state.batchQueue.push({ tempId: makeId(), barcode: barcode, name: known || '' });
+    updateReviewBatchBtn();
+    if (navigator.vibrate) navigator.vibrate(60);
+    toast((known ? known : 'Item') + ' added to batch (' + state.batchQueue.length + ')', 'ok');
+  }
+
+  function renderBatchList(){
+    var n = state.batchQueue.length;
+    els.batchModalSub.textContent = n + (n === 1 ? ' item scanned' : ' items scanned') + ' \u2014 name each one below';
+    if (n === 0){
+      els.batchList.innerHTML = '<div class="empty">No items in this batch yet.</div>';
+      return;
+    }
+    els.batchList.innerHTML = state.batchQueue.map(function(q){
+      return '' +
+        '<div class="batch-row" data-temp-id="' + q.tempId + '">' +
+          '<span class="batch-barcode">' + escapeHtml(q.barcode) + '</span>' +
+          '<input type="text" class="batch-name-input" data-temp-id="' + q.tempId + '" placeholder="Item name" value="' + escapeHtml(q.name) + '">' +
+          '<button class="batch-row-del" data-temp-id="' + q.tempId + '" title="Remove from batch">\u2715</button>' +
+        '</div>';
+    }).join('');
+
+    Array.prototype.forEach.call(els.batchList.querySelectorAll('.batch-name-input'), function(inp){
+      inp.addEventListener('input', function(){
+        var q = state.batchQueue.find(function(x){ return x.tempId === inp.getAttribute('data-temp-id'); });
+        if (q) q.name = inp.value;
+        inp.classList.remove('empty-warn');
+      });
+    });
+    Array.prototype.forEach.call(els.batchList.querySelectorAll('.batch-row-del'), function(btn){
+      btn.onclick = function(){
+        var tempId = btn.getAttribute('data-temp-id');
+        state.batchQueue = state.batchQueue.filter(function(x){ return x.tempId !== tempId; });
+        updateReviewBatchBtn();
+        renderBatchList();
+        if (state.batchQueue.length === 0) closeBatchModal();
+      };
+    });
+  }
+
+  function openBatchModal(){
+    renderBatchList();
+    els.batchModalBack.classList.add('show');
+  }
+  function closeBatchModal(){
+    els.batchModalBack.classList.remove('show');
+  }
+  els.reviewBatchBtn.onclick = openBatchModal;
+  els.batchModalClose.onclick = closeBatchModal;
+  els.batchModalBack.addEventListener('click', function(e){
+    if (e.target === els.batchModalBack) closeBatchModal();
+  });
+  els.batchModalClearBtn.onclick = function(){
+    state.batchQueue = [];
+    updateReviewBatchBtn();
+    closeBatchModal();
+    toast('Batch cleared', 'ok');
+  };
+  els.batchModalAddBtn.onclick = function(){
+    if (state.batchQueue.length === 0){ closeBatchModal(); return; }
+    var hasEmpty = false;
+    Array.prototype.forEach.call(els.batchList.querySelectorAll('.batch-name-input'), function(inp){
+      if (!inp.value.trim()){ inp.classList.add('empty-warn'); hasEmpty = true; }
+    });
+    if (hasEmpty){
+      toast('Please name every item before adding', 'warn');
+      return;
+    }
+    var count = state.batchQueue.length;
+    state.batchQueue.forEach(function(q){
+      var name = q.name.trim();
+      state.products[q.barcode] = name;
+      state.items.push({ id: makeId(), barcode: q.barcode, name: name, dateAdded: new Date().toISOString(), opened: false });
+    });
+    state.batchQueue = [];
+    saveItems();
+    saveProducts();
+    render();
+    updateReviewBatchBtn();
+    closeBatchModal();
+    toast('Added ' + count + (count === 1 ? ' item' : ' items'), 'ok');
+  };
+
   // best-effort open product lookup; silently ignored if blocked
   function tryLookup(barcode){
     try{
@@ -933,28 +1128,7 @@
     items.forEach(function(item){
       var key = item.barcode + '||' + item.name;
       if (!map[key]){
-        map[key] = { barcode: item.barcode, name: item.name, count: 0, oldestDate: item.dateAdded, oldestId: item.id };
-        order.push(key);
-      }
-      var g = map[key];
-      g.count++;
-      if (new Date(item.dateAdded) < new Date(g.oldestDate)){
-        g.oldestDate = item.dateAdded;
-        g.oldestId = item.id;
-      }
-    });
-    return order.map(function(k){ return map[k]; }).sort(function(a,b){
-      return new Date(a.oldestDate) - new Date(b.oldestDate);
-    });
-  }
-
-  function groupItems(items){
-    var map = {};
-    var order = [];
-    items.forEach(function(item){
-      var key = item.barcode + '||' + item.name;
-      if (!map[key]){
-        map[key] = { barcode: item.barcode, name: item.name, count: 0, oldestDate: item.dateAdded, oldestId: item.id, ids: [] };
+        map[key] = { barcode: item.barcode, name: item.name, count: 0, oldestDate: item.dateAdded, oldestId: item.id, oldestOpened: !!item.opened, ids: [] };
         order.push(key);
       }
       var g = map[key];
@@ -963,6 +1137,7 @@
       if (new Date(item.dateAdded) < new Date(g.oldestDate)){
         g.oldestDate = item.dateAdded;
         g.oldestId = item.id;
+        g.oldestOpened = !!item.opened;
       }
     });
     return order.map(function(k){ return map[k]; }).sort(function(a,b){
@@ -985,6 +1160,7 @@
       els.listContainer.innerHTML = groups.map(function(g){
         var ac = ageClass(g.oldestDate);
         var qtyBadge = g.count > 1 ? ' <span class="qty-badge">\u00d7' + g.count + '</span>' : '';
+        var openedBadge = g.oldestOpened ? '<span class="opened-badge">Opened</span>' : '';
         return '' +
           '<div class="item ' + ac + '" data-barcode="' + escapeHtml(g.barcode) + '" data-name="' + escapeHtml(g.name) + '">' +
             '<div class="item-main">' +
@@ -994,6 +1170,7 @@
                 '<span>Added ' + fmtDate(g.oldestDate) + '</span>' +
               '</div>' +
             '</div>' +
+            openedBadge +
             '<span class="chip ' + ac + '">' + daysLabel(g.oldestDate) + '</span>' +
             '<button class="item-edit" data-barcode="' + escapeHtml(g.barcode) + '" data-name="' + escapeHtml(g.name) + '" title="View details">\u270e</button>' +
             '<button class="item-del" data-id="' + g.oldestId + '" title="Remove">\u2715</button>' +
@@ -1026,11 +1203,17 @@
   var pendingDetailKey = null;
   var pendingQty = 0;
   var originalQty = 0;
+  var pendingOpened = false;
+  var originalOpened = false;
   function getGroupUnits(barcode, name){
     return state.items.filter(function(i){ return i.barcode === barcode && i.name === name; });
   }
   function makeId(){
     return (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random();
+  }
+  function setOpenedToggleUI(on){
+    els.detailOpenedToggle.classList.toggle('on', on);
+    els.detailOpenedToggle.setAttribute('aria-checked', on ? 'true' : 'false');
   }
   function openDetailModal(barcode, name){
     var units = getGroupUnits(barcode, name);
@@ -1040,23 +1223,26 @@
     pendingDetailKey = { barcode: barcode, name: name };
     originalQty = units.length;
     pendingQty = units.length;
+    originalOpened = !!oldest.opened;
+    pendingOpened = originalOpened;
     els.detailBarcode.textContent = 'Barcode: ' + barcode;
     els.detailNameInput.value = name;
     els.detailQtyValue.textContent = pendingQty;
+    setOpenedToggleUI(pendingOpened);
     els.detailAddedDate.textContent = fmtDate(oldest.dateAdded);
     els.detailDuration.textContent = formatDuration(oldest.dateAdded);
     els.detailModalBack.classList.add('show');
   }
   function closeDetailModal(){
-    // discard any unsaved name/quantity edits — nothing here touches state.items
+    // discard any unsaved name/quantity/opened edits — nothing here touches state.items
     pendingDetailKey = null;
     els.detailModalBack.classList.remove('show');
   }
   function refreshDetailModal(){
     // called from render() when data changes elsewhere (e.g. another household
     // member) while this modal happens to be open. We deliberately do NOT
-    // touch the name field or quantity here, since those are unsaved local
-    // edits — only close if the item was fully removed by someone else.
+    // touch the name/quantity/opened fields here, since those are unsaved
+    // local edits — only close if the item was fully removed by someone else.
     if (!pendingDetailKey) return;
     var units = getGroupUnits(pendingDetailKey.barcode, pendingDetailKey.name);
     if (units.length === 0) closeDetailModal();
@@ -1077,6 +1263,11 @@
     pendingQty--;
     els.detailQtyValue.textContent = pendingQty;
   };
+  els.detailOpenedToggle.onclick = function(){
+    if (!pendingDetailKey) return;
+    pendingOpened = !pendingOpened;
+    setOpenedToggleUI(pendingOpened);
+  };
   els.detailModalSaveBtn.onclick = function(){
     if (!pendingDetailKey) return;
     var newName = els.detailNameInput.value.trim();
@@ -1084,6 +1275,7 @@
     var oldKey = pendingDetailKey;
     var nameChanged = newName !== oldKey.name;
     var qtyDelta = pendingQty - originalQty;
+    var openedChanged = pendingOpened !== originalOpened;
 
     if (nameChanged){
       state.products[oldKey.barcode] = newName;
@@ -1094,23 +1286,30 @@
 
     if (qtyDelta > 0){
       for (var k = 0; k < qtyDelta; k++){
-        state.items.push({ id: makeId(), barcode: oldKey.barcode, name: newName, dateAdded: new Date().toISOString() });
+        state.items.push({ id: makeId(), barcode: oldKey.barcode, name: newName, dateAdded: new Date().toISOString(), opened: false });
       }
     } else if (qtyDelta < 0){
       var toRemove = -qtyDelta;
-      var units = state.items.filter(function(i){ return i.barcode === oldKey.barcode && i.name === newName; });
-      units.sort(function(a,b){ return new Date(a.dateAdded) - new Date(b.dateAdded); });
-      var removeIds = units.slice(0, toRemove).map(function(u){ return u.id; });
+      var unitsToTrim = state.items.filter(function(i){ return i.barcode === oldKey.barcode && i.name === newName; });
+      unitsToTrim.sort(function(a,b){ return new Date(a.dateAdded) - new Date(b.dateAdded); });
+      var removeIds = unitsToTrim.slice(0, toRemove).map(function(u){ return u.id; });
       state.items = state.items.filter(function(i){ return removeIds.indexOf(i.id) === -1; });
     }
 
-    if (nameChanged || qtyDelta !== 0){
+    if (openedChanged){
+      var remaining = state.items.filter(function(i){ return i.barcode === oldKey.barcode && i.name === newName; });
+      remaining.sort(function(a,b){ return new Date(a.dateAdded) - new Date(b.dateAdded); });
+      if (remaining.length > 0) remaining[0].opened = pendingOpened;
+    }
+
+    if (nameChanged || qtyDelta !== 0 || openedChanged){
       saveItems();
       if (nameChanged) saveProducts();
       render();
       var parts = [];
       if (nameChanged) parts.push('renamed to ' + newName);
       if (qtyDelta !== 0) parts.push('quantity ' + (qtyDelta > 0 ? '+' : '') + qtyDelta);
+      if (openedChanged) parts.push(pendingOpened ? 'marked opened' : 'marked sealed');
       toast('Saved \u2014 ' + parts.join(', '), 'ok');
     } else {
       toast('No changes to save', 'ok');
@@ -1136,6 +1335,26 @@
   };
 
   els.searchInput.addEventListener('input', render);
+
+  els.backupBtn.onclick = function(){
+    var payload = {
+      exportedAt: new Date().toISOString(),
+      app: 'Freezr',
+      items: state.items,
+      products: state.products
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var dateStamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = 'freezr-backup-' + dateStamp + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    toast('Backup downloaded', 'ok');
+  };
 
   // ---------- init ----------
   setMode('add');

@@ -4,6 +4,13 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+1.2.0 -- 2026-08-27
+--------------------
+- Added a Backup button (download icon next to search) that exports your full inventory as a JSON file.
+- Added Batch scan mode: a toggle (Add stock screen only) that lets you scan a whole stack of barcodes without stopping to name each one, then review and name them all at once afterward via a "Review batch" screen. Validates every item has a name before committing.
+- Added an Opened/Sealed toggle to the item detail popup, staged the same way as name and quantity (only applies on Save). Shown as a small "Opened" badge on the list when set. Applies to the oldest unit in a grouped item, since that's the one you'd typically reach for first.
+- Cleaned up a harmless duplicate internal function found while working on this batch.
+
 1.1.0 -- 2026-08-27
 --------------------
 - Fixed the item detail popup so quantity changes are staged just like the name field, instead of applying live: tapping +/- no longer touches the shared list immediately.
