@@ -4,6 +4,11 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+3.1.2 -- 2026-08-27
+--------------------
+- Fixed toast messages (e.g. "That category already exists") being hidden behind an open modal — they now always show on top, so validation errors are actually visible instead of silently doing nothing.
+
+
 3.1.1 -- 2026-08-27
 --------------------
 - The category picker (add item, batch review, item detail popup) now shows just the current category as a compact row with a ">" — tap it to pick a different one from a sheet, instead of showing every category's chip on screen at once.
