@@ -344,7 +344,7 @@
   <input type="text" class="search" id="searchInput" placeholder="Search inventory…">
   <div id="listContainer"></div>
 
-  <footer>Freezr &mdash; Version: 1.0.3</footer>
+  <footer>Freezr &mdash; Version: 1.1.0</footer>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1024,31 +1024,42 @@
 
   // ---------- item detail modal ----------
   var pendingDetailKey = null;
+  var pendingQty = 0;
+  var originalQty = 0;
   function getGroupUnits(barcode, name){
     return state.items.filter(function(i){ return i.barcode === barcode && i.name === name; });
   }
+  function makeId(){
+    return (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random();
+  }
   function openDetailModal(barcode, name){
+    var units = getGroupUnits(barcode, name);
+    if (units.length === 0) return;
+    units.sort(function(a,b){ return new Date(a.dateAdded) - new Date(b.dateAdded); });
+    var oldest = units[0];
     pendingDetailKey = { barcode: barcode, name: name };
+    originalQty = units.length;
+    pendingQty = units.length;
+    els.detailBarcode.textContent = 'Barcode: ' + barcode;
+    els.detailNameInput.value = name;
+    els.detailQtyValue.textContent = pendingQty;
+    els.detailAddedDate.textContent = fmtDate(oldest.dateAdded);
+    els.detailDuration.textContent = formatDuration(oldest.dateAdded);
     els.detailModalBack.classList.add('show');
-    refreshDetailModal();
   }
   function closeDetailModal(){
+    // discard any unsaved name/quantity edits — nothing here touches state.items
     pendingDetailKey = null;
     els.detailModalBack.classList.remove('show');
   }
   function refreshDetailModal(){
+    // called from render() when data changes elsewhere (e.g. another household
+    // member) while this modal happens to be open. We deliberately do NOT
+    // touch the name field or quantity here, since those are unsaved local
+    // edits — only close if the item was fully removed by someone else.
     if (!pendingDetailKey) return;
     var units = getGroupUnits(pendingDetailKey.barcode, pendingDetailKey.name);
-    if (units.length === 0){ closeDetailModal(); return; }
-    units.sort(function(a,b){ return new Date(a.dateAdded) - new Date(b.dateAdded); });
-    var oldest = units[0];
-    els.detailBarcode.textContent = 'Barcode: ' + pendingDetailKey.barcode;
-    if (document.activeElement !== els.detailNameInput){
-      els.detailNameInput.value = pendingDetailKey.name;
-    }
-    els.detailQtyValue.textContent = units.length;
-    els.detailAddedDate.textContent = fmtDate(oldest.dateAdded);
-    els.detailDuration.textContent = formatDuration(oldest.dateAdded);
+    if (units.length === 0) closeDetailModal();
   }
   els.detailModalClose.onclick = closeDetailModal;
   els.detailModalCancelBtn.onclick = closeDetailModal;
@@ -1057,34 +1068,54 @@
   });
   els.detailQtyPlus.onclick = function(){
     if (!pendingDetailKey) return;
-    addItem(pendingDetailKey.barcode, pendingDetailKey.name);
+    pendingQty++;
+    els.detailQtyValue.textContent = pendingQty;
   };
   els.detailQtyMinus.onclick = function(){
     if (!pendingDetailKey) return;
-    var units = getGroupUnits(pendingDetailKey.barcode, pendingDetailKey.name);
-    if (units.length === 0) return;
-    units.sort(function(a,b){ return new Date(a.dateAdded) - new Date(b.dateAdded); });
-    removeItemWithUndo(units[0]);
+    if (pendingQty <= 0) return;
+    pendingQty--;
+    els.detailQtyValue.textContent = pendingQty;
   };
   els.detailModalSaveBtn.onclick = function(){
     if (!pendingDetailKey) return;
     var newName = els.detailNameInput.value.trim();
-    if (!newName) return;
+    if (!newName){ toast('Name can\u2019t be empty', 'warn'); return; }
     var oldKey = pendingDetailKey;
-    if (newName !== oldKey.name){
+    var nameChanged = newName !== oldKey.name;
+    var qtyDelta = pendingQty - originalQty;
+
+    if (nameChanged){
       state.products[oldKey.barcode] = newName;
-      saveProducts();
-      var changed = false;
       state.items.forEach(function(i){
-        if (i.barcode === oldKey.barcode && i.name === oldKey.name){ i.name = newName; changed = true; }
+        if (i.barcode === oldKey.barcode && i.name === oldKey.name){ i.name = newName; }
       });
-      if (changed) saveItems();
-      pendingDetailKey = { barcode: oldKey.barcode, name: newName };
+    }
+
+    if (qtyDelta > 0){
+      for (var k = 0; k < qtyDelta; k++){
+        state.items.push({ id: makeId(), barcode: oldKey.barcode, name: newName, dateAdded: new Date().toISOString() });
+      }
+    } else if (qtyDelta < 0){
+      var toRemove = -qtyDelta;
+      var units = state.items.filter(function(i){ return i.barcode === oldKey.barcode && i.name === newName; });
+      units.sort(function(a,b){ return new Date(a.dateAdded) - new Date(b.dateAdded); });
+      var removeIds = units.slice(0, toRemove).map(function(u){ return u.id; });
+      state.items = state.items.filter(function(i){ return removeIds.indexOf(i.id) === -1; });
+    }
+
+    if (nameChanged || qtyDelta !== 0){
+      saveItems();
+      if (nameChanged) saveProducts();
       render();
-      toast('Renamed to: ' + newName, 'ok');
+      var parts = [];
+      if (nameChanged) parts.push('renamed to ' + newName);
+      if (qtyDelta !== 0) parts.push('quantity ' + (qtyDelta > 0 ? '+' : '') + qtyDelta);
+      toast('Saved \u2014 ' + parts.join(', '), 'ok');
     } else {
       toast('No changes to save', 'ok');
     }
+    closeDetailModal();
   };
   els.detailDeleteBtn.onclick = function(){
     if (!pendingDetailKey) return;
