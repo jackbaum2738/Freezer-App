@@ -256,7 +256,7 @@
   }
   .modal-x:active{ color: var(--frost); background: var(--panel-2); }
   .modal .barcode-tag{ font-family: var(--mono); font-size: 12px; color: var(--frost-dim); margin-bottom: 14px; }
-  .modal input[type=text]{
+  .modal input[type=text], .modal select{
     width:100%; background: var(--panel-2); border: 1px solid var(--edge); color: var(--frost);
     border-radius: 10px; padding: 13px 12px; font-size: 15px; margin-bottom: 12px; font-family: var(--sans);
   }
@@ -267,6 +267,11 @@
     padding: 12px 14px; margin-bottom: 14px;
   }
   .qty-row-label{ font-size: 13.5px; color: var(--frost-dim); font-weight:700; }
+  .qty-row select{
+    background: var(--panel); border: 1px solid var(--edge); color: var(--frost);
+    border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: var(--sans);
+    max-width: 60%;
+  }
   .qty-stepper{ display:flex; align-items:center; gap: 14px; }
   .qty-stepper button{
     width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--edge);
@@ -301,9 +306,10 @@
   }
 
   .batch-row{
-    display:flex; align-items:center; gap: 10px; background: var(--panel-2);
+    display:flex; flex-direction:column; gap: 6px; background: var(--panel-2);
     border: 1px solid var(--edge); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px;
   }
+  .batch-row-top{ display:flex; align-items:center; gap: 10px; }
   .batch-row input[type=text]{
     flex:1; background: var(--panel); border: 1px solid var(--edge); color: var(--frost);
     border-radius: 8px; padding: 9px 10px; font-size: 13.5px; font-family: var(--sans);
@@ -317,7 +323,25 @@
     cursor:pointer; flex-shrink:0; padding: 4px 2px;
   }
   .batch-row-del:active{ color: var(--danger); }
-  .batch-row input.empty-warn{ border-color: var(--danger); }
+  .batch-category-select{
+    width:100%; background: var(--panel); border: 1px solid var(--edge); color: var(--frost-dim);
+    border-radius: 8px; padding: 7px 8px; font-size: 12.5px; font-family: var(--sans);
+  }
+  .batch-row input.empty-warn, .settings-cat-row input.empty-warn{ border-color: var(--danger); }
+
+  .settings-cat-row{
+    display:flex; align-items:center; gap: 10px; background: var(--panel-2);
+    border: 1px solid var(--edge); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px;
+  }
+  .settings-cat-row input[type=text]{
+    flex:1; background: var(--panel); border: 1px solid var(--edge); color: var(--frost);
+    border-radius: 8px; padding: 9px 10px; font-size: 13.5px; font-family: var(--sans);
+  }
+  .settings-cat-del{
+    background: transparent; border: none; color: var(--frost-dim); font-size: 16px;
+    cursor:pointer; flex-shrink:0; padding: 4px 2px;
+  }
+  .settings-cat-del:active{ color: var(--danger); }
 
   .detail-meta{ font-size: 13px; color: var(--frost-dim); margin-bottom: 14px; line-height: 1.7; }
   .detail-meta span{ color: var(--frost); font-weight: 700; }
@@ -399,10 +423,11 @@
   <div class="search-row">
     <input type="text" class="search" id="searchInput" placeholder="Search inventory…">
     <button class="backup-btn" id="backupBtn" title="Download a backup of your inventory">⬇️</button>
+    <button class="backup-btn" id="settingsBtn" title="Manage categories">⚙️</button>
   </div>
   <div id="listContainer"></div>
 
-  <footer>Freezr &mdash; Version: 1.2.0</footer>
+  <footer>Freezr &mdash; Version: 2.0.0</footer>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -415,6 +440,7 @@
     </div>
     <div class="barcode-tag" id="modalBarcode">Barcode: —</div>
     <input type="text" id="modalNameInput" placeholder="e.g. Chicken thighs (1kg)">
+    <select id="modalCategorySelect"></select>
     <div class="modal-actions">
       <button class="btn btn-cancel" id="modalCancel">Cancel</button>
       <button class="btn btn-primary" id="modalSave">Save & add</button>
@@ -445,6 +471,11 @@
     </div>
     <div class="barcode-tag" id="detailBarcode">Barcode: —</div>
     <input type="text" id="detailNameInput" placeholder="Item name">
+
+    <div class="qty-row">
+      <span class="qty-row-label">Category</span>
+      <select id="detailCategorySelect"></select>
+    </div>
 
     <div class="qty-row">
       <span class="qty-row-label">Quantity</span>
@@ -488,6 +519,24 @@
   </div>
 </div>
 
+<div class="modal-back" id="settingsModalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Categories</h3>
+      <button class="modal-x" id="settingsModalClose" aria-label="Close">✕</button>
+    </div>
+    <div id="settingsCategoryList" style="max-height:50vh; overflow-y:auto; margin-bottom:14px;"></div>
+    <div class="manual-row" style="margin-top:0; margin-bottom:14px;">
+      <input type="text" id="settingsNewCategoryInput" placeholder="New category name">
+      <button id="settingsAddCategoryBtn">Add</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" id="settingsModalCancelBtn">Close</button>
+      <button class="btn btn-primary" id="settingsModalSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js" crossorigin="anonymous"></script>
@@ -507,7 +556,41 @@
 <script>
 (function(){
  try{
-  var state = { mode:'add', items:[], products:{}, scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0, torchOn:false, batchMode:false, batchQueue:[] };
+  var DEFAULT_CATEGORIES = ['Meat','Poultry','Fish & Seafood','Vegetables','Fruit','Bread & Bakery','Ready Meals & Leftovers','Dairy & Ice Cream','Other'];
+
+  var CATEGORY_KEYWORDS = {
+    'Meat': ['beef','pork','lamb','mince','steak','sausage','bacon','ham','burger','ribs','venison','gammon'],
+    'Poultry': ['chicken','turkey','duck','poultry','nugget','wing','drumstick','thigh','breast fillet'],
+    'Fish & Seafood': ['fish','salmon','cod','tuna','prawn','shrimp','seafood','haddock','mackerel','scampi','crab','lobster','sardine'],
+    'Vegetables': ['pea','carrot','broccoli','sweetcorn','corn','spinach','veg','sprout','cauliflower','pepper','onion','potato','chip','bean'],
+    'Fruit': ['berry','berries','fruit','mango','banana','apple','pineapple','melon'],
+    'Bread & Bakery': ['bread','bagel','roll','baguette','croissant','naan','pastry','bun','pitta'],
+    'Ready Meals & Leftovers': ['ready meal','pizza','lasagne','curry','soup','pie','leftover','casserole','stew'],
+    'Dairy & Ice Cream': ['ice cream','icecream','yogurt','yoghurt','cheese','butter','milk','gelato','sorbet']
+  };
+
+  function guessCategory(name){
+    var n = (name || '').toLowerCase();
+    if (n){
+      for (var i = 0; i < state.categories.length; i++){
+        var cat = state.categories[i];
+        var keywords = CATEGORY_KEYWORDS[cat];
+        if (!keywords) continue;
+        for (var j = 0; j < keywords.length; j++){
+          if (n.indexOf(keywords[j]) > -1) return cat;
+        }
+      }
+    }
+    return state.categories.indexOf('Other') > -1 ? 'Other' : (state.categories[0] || 'Other');
+  }
+
+  function renderCategoryOptions(selectEl, selected){
+    selectEl.innerHTML = state.categories.map(function(c){
+      return '<option value="' + escapeHtml(c) + '"' + (c === selected ? ' selected' : '') + '>' + escapeHtml(c) + '</option>';
+    }).join('');
+  }
+
+  var state = { mode:'add', items:[], products:{}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode:{}, scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0, torchOn:false, batchMode:false, batchQueue:[] };
 
   var els = {
     subline: document.getElementById('subline'),
@@ -530,6 +613,14 @@
     listContainer: document.getElementById('listContainer'),
     searchInput: document.getElementById('searchInput'),
     backupBtn: document.getElementById('backupBtn'),
+    settingsBtn: document.getElementById('settingsBtn'),
+    settingsModalBack: document.getElementById('settingsModalBack'),
+    settingsCategoryList: document.getElementById('settingsCategoryList'),
+    settingsNewCategoryInput: document.getElementById('settingsNewCategoryInput'),
+    settingsAddCategoryBtn: document.getElementById('settingsAddCategoryBtn'),
+    settingsModalCancelBtn: document.getElementById('settingsModalCancelBtn'),
+    settingsModalSaveBtn: document.getElementById('settingsModalSaveBtn'),
+    settingsModalClose: document.getElementById('settingsModalClose'),
     batchModeToggle: document.getElementById('batchModeToggle'),
     reviewBatchBtn: document.getElementById('reviewBatchBtn'),
     batchModalBack: document.getElementById('batchModalBack'),
@@ -543,6 +634,7 @@
     modalTitle: document.getElementById('modalTitle'),
     modalBarcode: document.getElementById('modalBarcode'),
     modalNameInput: document.getElementById('modalNameInput'),
+    modalCategorySelect: document.getElementById('modalCategorySelect'),
     modalCancel: document.getElementById('modalCancel'),
     modalClose: document.getElementById('modalClose'),
     modalSave: document.getElementById('modalSave'),
@@ -555,6 +647,7 @@
     detailModalBack: document.getElementById('detailModalBack'),
     detailBarcode: document.getElementById('detailBarcode'),
     detailNameInput: document.getElementById('detailNameInput'),
+    detailCategorySelect: document.getElementById('detailCategorySelect'),
     detailQtyMinus: document.getElementById('detailQtyMinus'),
     detailQtyPlus: document.getElementById('detailQtyPlus'),
     detailQtyValue: document.getElementById('detailQtyValue'),
@@ -618,9 +711,11 @@
           if (data){
             state.items = data.items || [];
             state.products = data.products || {};
+            state.categories = (data.categories && data.categories.length) ? data.categories : DEFAULT_CATEGORIES.slice();
+            state.categoryByBarcode = data.categoryByBarcode || {};
           } else {
             // first ever run for this project — create the doc
-            docRef.set({ items: [], products: {} });
+            docRef.set({ items: [], products: {}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode: {} });
           }
           render();
         }catch(e){
@@ -640,16 +735,20 @@
     }
   }
 
-  async function saveItems(){
+  async function persistState(opts){
     if (!docRef) return;
-    try{ await docRef.set({ items: state.items, products: state.products }, { merge: true }); setSyncState('synced'); }
-    catch(e){ setSyncState('failed'); toast('Could not sync — check connection', 'err'); }
+    var silent = opts && opts.silent;
+    try{
+      await docRef.set({ items: state.items, products: state.products, categories: state.categories, categoryByBarcode: state.categoryByBarcode }, { merge: true });
+      setSyncState('synced');
+    }catch(e){
+      setSyncState('failed');
+      if (!silent) toast('Could not sync — check connection', 'err');
+    }
   }
-  async function saveProducts(){
-    if (!docRef) return;
-    try{ await docRef.set({ items: state.items, products: state.products }, { merge: true }); setSyncState('synced'); }
-    catch(e){ setSyncState('failed'); /* toast intentionally omitted — non-critical path */ }
-  }
+  function saveItems(){ return persistState(); }
+  function saveProducts(){ return persistState({ silent: true }); }
+  function saveCategories(){ return persistState(); }
 
   // ---------- mode ----------
   function setMode(mode){
@@ -848,11 +947,12 @@
     }
   }
 
-  function addItem(barcode, name){
+  function addItem(barcode, name, category){
     state.items.push({
       id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random(),
       barcode: barcode,
       name: name,
+      category: category || 'Other',
       dateAdded: new Date().toISOString(),
       opened: false
     });
@@ -920,6 +1020,7 @@
   // ---------- naming modal ----------
   var pendingBarcode = null;
   var pendingEditOnly = false;
+  var categoryManuallySet = false;
   function openNameModal(barcode, opts){
     state.scanPaused = true;
     pendingBarcode = barcode;
@@ -929,6 +1030,9 @@
     els.modalBarcode.textContent = 'Barcode: ' + barcode;
     var known = state.products[barcode];
     els.modalNameInput.value = known || '';
+    var knownCategory = state.categoryByBarcode[barcode];
+    categoryManuallySet = !!knownCategory;
+    renderCategoryOptions(els.modalCategorySelect, knownCategory || guessCategory(known || ''));
     els.modalBack.classList.add('show');
     setTimeout(function(){ els.modalNameInput.focus(); els.modalNameInput.select(); }, 50);
     if (!known && !pendingEditOnly) tryLookup(barcode);
@@ -949,19 +1053,22 @@
   els.modalSave.onclick = function(){
     var name = els.modalNameInput.value.trim();
     if (!name || !pendingBarcode) return;
+    var category = els.modalCategorySelect.value || 'Other';
     state.products[pendingBarcode] = name;
+    state.categoryByBarcode[pendingBarcode] = category;
     saveProducts();
     if (pendingEditOnly){
       var barcode = pendingBarcode;
       var changed = false;
       state.items.forEach(function(i){
         if (i.barcode === barcode && i.name !== name){ i.name = name; changed = true; }
+        if (i.barcode === barcode && i.category !== category){ i.category = category; changed = true; }
       });
       if (changed) saveItems();
       render();
       toast('Renamed to: ' + name, 'ok');
     } else {
-      addItem(pendingBarcode, name);
+      addItem(pendingBarcode, name, category);
       toast('Added: ' + name, 'ok');
     }
     closeModal();
@@ -969,6 +1076,10 @@
   els.modalNameInput.addEventListener('keydown', function(e){
     if (e.key === 'Enter'){ els.modalSave.click(); }
   });
+  els.modalNameInput.addEventListener('input', function(){
+    if (!categoryManuallySet) renderCategoryOptions(els.modalCategorySelect, guessCategory(els.modalNameInput.value));
+  });
+  els.modalCategorySelect.addEventListener('change', function(){ categoryManuallySet = true; });
 
   // ---------- batch scan mode ----------
   els.batchModeToggle.onclick = function(){
@@ -989,7 +1100,8 @@
 
   function addToBatchQueue(barcode){
     var known = state.products[barcode];
-    state.batchQueue.push({ tempId: makeId(), barcode: barcode, name: known || '' });
+    var knownCategory = state.categoryByBarcode[barcode];
+    state.batchQueue.push({ tempId: makeId(), barcode: barcode, name: known || '', category: knownCategory || guessCategory(known || ''), categoryManual: !!knownCategory });
     updateReviewBatchBtn();
     if (navigator.vibrate) navigator.vibrate(60);
     toast((known ? known : 'Item') + ' added to batch (' + state.batchQueue.length + ')', 'ok');
@@ -1005,17 +1117,38 @@
     els.batchList.innerHTML = state.batchQueue.map(function(q){
       return '' +
         '<div class="batch-row" data-temp-id="' + q.tempId + '">' +
-          '<span class="batch-barcode">' + escapeHtml(q.barcode) + '</span>' +
-          '<input type="text" class="batch-name-input" data-temp-id="' + q.tempId + '" placeholder="Item name" value="' + escapeHtml(q.name) + '">' +
-          '<button class="batch-row-del" data-temp-id="' + q.tempId + '" title="Remove from batch">\u2715</button>' +
+          '<div class="batch-row-top">' +
+            '<span class="batch-barcode">' + escapeHtml(q.barcode) + '</span>' +
+            '<input type="text" class="batch-name-input" data-temp-id="' + q.tempId + '" placeholder="Item name" value="' + escapeHtml(q.name) + '">' +
+            '<button class="batch-row-del" data-temp-id="' + q.tempId + '" title="Remove from batch">\u2715</button>' +
+          '</div>' +
+          '<select class="batch-category-select" data-temp-id="' + q.tempId + '"></select>' +
         '</div>';
     }).join('');
+
+    Array.prototype.forEach.call(els.batchList.querySelectorAll('.batch-category-select'), function(sel){
+      var q = state.batchQueue.find(function(x){ return x.tempId === sel.getAttribute('data-temp-id'); });
+      if (q) renderCategoryOptions(sel, q.category);
+    });
 
     Array.prototype.forEach.call(els.batchList.querySelectorAll('.batch-name-input'), function(inp){
       inp.addEventListener('input', function(){
         var q = state.batchQueue.find(function(x){ return x.tempId === inp.getAttribute('data-temp-id'); });
-        if (q) q.name = inp.value;
+        if (q){
+          q.name = inp.value;
+          if (!q.categoryManual){
+            q.category = guessCategory(q.name);
+            var sel = els.batchList.querySelector('.batch-category-select[data-temp-id="' + q.tempId + '"]');
+            if (sel) sel.value = q.category;
+          }
+        }
         inp.classList.remove('empty-warn');
+      });
+    });
+    Array.prototype.forEach.call(els.batchList.querySelectorAll('.batch-category-select'), function(sel){
+      sel.addEventListener('change', function(){
+        var q = state.batchQueue.find(function(x){ return x.tempId === sel.getAttribute('data-temp-id'); });
+        if (q){ q.category = sel.value; q.categoryManual = true; }
       });
     });
     Array.prototype.forEach.call(els.batchList.querySelectorAll('.batch-row-del'), function(btn){
@@ -1060,8 +1193,10 @@
     var count = state.batchQueue.length;
     state.batchQueue.forEach(function(q){
       var name = q.name.trim();
+      var category = q.category || 'Other';
       state.products[q.barcode] = name;
-      state.items.push({ id: makeId(), barcode: q.barcode, name: name, dateAdded: new Date().toISOString(), opened: false });
+      state.categoryByBarcode[q.barcode] = category;
+      state.items.push({ id: makeId(), barcode: q.barcode, name: name, category: category, dateAdded: new Date().toISOString(), opened: false });
     });
     state.batchQueue = [];
     saveItems();
@@ -1083,6 +1218,7 @@
           clearTimeout(t);
           if (pendingBarcode === barcode && d && d.status === 1 && d.product && d.product.product_name){
             els.modalNameInput.value = d.product.product_name;
+            if (!categoryManuallySet) renderCategoryOptions(els.modalCategorySelect, guessCategory(d.product.product_name));
           }
         })
         .catch(function(){ /* ignore — manual entry still works */ });
@@ -1128,7 +1264,7 @@
     items.forEach(function(item){
       var key = item.barcode + '||' + item.name;
       if (!map[key]){
-        map[key] = { barcode: item.barcode, name: item.name, count: 0, oldestDate: item.dateAdded, oldestId: item.id, oldestOpened: !!item.opened, ids: [] };
+        map[key] = { barcode: item.barcode, name: item.name, count: 0, oldestDate: item.dateAdded, oldestId: item.id, oldestOpened: !!item.opened, oldestCategory: item.category || 'Other', ids: [] };
         order.push(key);
       }
       var g = map[key];
@@ -1138,6 +1274,7 @@
         g.oldestDate = item.dateAdded;
         g.oldestId = item.id;
         g.oldestOpened = !!item.opened;
+        g.oldestCategory = item.category || 'Other';
       }
     });
     return order.map(function(k){ return map[k]; }).sort(function(a,b){
@@ -1147,7 +1284,7 @@
 
   function render(){
     var q = els.searchInput.value.trim().toLowerCase();
-    var filtered = q ? state.items.filter(function(i){ return i.name.toLowerCase().indexOf(q) > -1 || i.barcode.indexOf(q) > -1; }) : state.items;
+    var filtered = q ? state.items.filter(function(i){ return i.name.toLowerCase().indexOf(q) > -1 || i.barcode.indexOf(q) > -1 || (i.category || '').toLowerCase().indexOf(q) > -1; }) : state.items;
     var groups = groupItems(filtered);
 
     els.listCount.textContent = state.items.length + (state.items.length === 1 ? ' item' : ' items');
@@ -1168,6 +1305,7 @@
               '<div class="item-meta">' +
                 '<span>' + escapeHtml(g.barcode) + '</span>' +
                 '<span>Added ' + fmtDate(g.oldestDate) + '</span>' +
+                '<span>' + escapeHtml(g.oldestCategory) + '</span>' +
               '</div>' +
             '</div>' +
             openedBadge +
@@ -1205,6 +1343,8 @@
   var originalQty = 0;
   var pendingOpened = false;
   var originalOpened = false;
+  var pendingCategory = 'Other';
+  var originalCategory = 'Other';
   function getGroupUnits(barcode, name){
     return state.items.filter(function(i){ return i.barcode === barcode && i.name === name; });
   }
@@ -1225,8 +1365,11 @@
     pendingQty = units.length;
     originalOpened = !!oldest.opened;
     pendingOpened = originalOpened;
+    originalCategory = oldest.category || 'Other';
+    pendingCategory = originalCategory;
     els.detailBarcode.textContent = 'Barcode: ' + barcode;
     els.detailNameInput.value = name;
+    renderCategoryOptions(els.detailCategorySelect, pendingCategory);
     els.detailQtyValue.textContent = pendingQty;
     setOpenedToggleUI(pendingOpened);
     els.detailAddedDate.textContent = fmtDate(oldest.dateAdded);
@@ -1268,6 +1411,10 @@
     pendingOpened = !pendingOpened;
     setOpenedToggleUI(pendingOpened);
   };
+  els.detailCategorySelect.addEventListener('change', function(){
+    if (!pendingDetailKey) return;
+    pendingCategory = els.detailCategorySelect.value;
+  });
   els.detailModalSaveBtn.onclick = function(){
     if (!pendingDetailKey) return;
     var newName = els.detailNameInput.value.trim();
@@ -1276,17 +1423,22 @@
     var nameChanged = newName !== oldKey.name;
     var qtyDelta = pendingQty - originalQty;
     var openedChanged = pendingOpened !== originalOpened;
+    var categoryChanged = pendingCategory !== originalCategory;
 
-    if (nameChanged){
-      state.products[oldKey.barcode] = newName;
+    if (nameChanged || categoryChanged){
+      if (nameChanged) state.products[oldKey.barcode] = newName;
+      if (categoryChanged) state.categoryByBarcode[oldKey.barcode] = pendingCategory;
       state.items.forEach(function(i){
-        if (i.barcode === oldKey.barcode && i.name === oldKey.name){ i.name = newName; }
+        if (i.barcode === oldKey.barcode && i.name === oldKey.name){
+          if (nameChanged) i.name = newName;
+          if (categoryChanged) i.category = pendingCategory;
+        }
       });
     }
 
     if (qtyDelta > 0){
       for (var k = 0; k < qtyDelta; k++){
-        state.items.push({ id: makeId(), barcode: oldKey.barcode, name: newName, dateAdded: new Date().toISOString(), opened: false });
+        state.items.push({ id: makeId(), barcode: oldKey.barcode, name: newName, category: pendingCategory, dateAdded: new Date().toISOString(), opened: false });
       }
     } else if (qtyDelta < 0){
       var toRemove = -qtyDelta;
@@ -1302,12 +1454,13 @@
       if (remaining.length > 0) remaining[0].opened = pendingOpened;
     }
 
-    if (nameChanged || qtyDelta !== 0 || openedChanged){
+    if (nameChanged || qtyDelta !== 0 || openedChanged || categoryChanged){
       saveItems();
-      if (nameChanged) saveProducts();
+      if (nameChanged || categoryChanged) saveProducts();
       render();
       var parts = [];
       if (nameChanged) parts.push('renamed to ' + newName);
+      if (categoryChanged) parts.push('category set to ' + pendingCategory);
       if (qtyDelta !== 0) parts.push('quantity ' + (qtyDelta > 0 ? '+' : '') + qtyDelta);
       if (openedChanged) parts.push(pendingOpened ? 'marked opened' : 'marked sealed');
       toast('Saved \u2014 ' + parts.join(', '), 'ok');
@@ -1341,7 +1494,9 @@
       exportedAt: new Date().toISOString(),
       app: 'Freezr',
       items: state.items,
-      products: state.products
+      products: state.products,
+      categories: state.categories,
+      categoryByBarcode: state.categoryByBarcode
     };
     var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
@@ -1354,6 +1509,112 @@
     document.body.removeChild(a);
     setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
     toast('Backup downloaded', 'ok');
+  };
+
+  // ---------- categories settings modal ----------
+  var pendingCategoriesList = null;
+  function renderSettingsCategoryList(){
+    els.settingsCategoryList.innerHTML = pendingCategoriesList.map(function(e){
+      return '' +
+        '<div class="settings-cat-row" data-key="' + e.key + '">' +
+          '<input type="text" class="settings-category-input" data-key="' + e.key + '" value="' + escapeHtml(e.value) + '">' +
+          '<button class="settings-cat-del" data-key="' + e.key + '" title="Remove category">✕</button>' +
+        '</div>';
+    }).join('');
+
+    Array.prototype.forEach.call(els.settingsCategoryList.querySelectorAll('.settings-category-input'), function(inp){
+      inp.addEventListener('input', function(){
+        var entry = pendingCategoriesList.find(function(e){ return e.key === inp.getAttribute('data-key'); });
+        if (entry) entry.value = inp.value;
+        inp.classList.remove('empty-warn');
+      });
+    });
+    Array.prototype.forEach.call(els.settingsCategoryList.querySelectorAll('.settings-cat-del'), function(btn){
+      btn.onclick = function(){
+        var key = btn.getAttribute('data-key');
+        pendingCategoriesList = pendingCategoriesList.filter(function(e){ return e.key !== key; });
+        renderSettingsCategoryList();
+      };
+    });
+  }
+  function openSettingsModal(){
+    pendingCategoriesList = state.categories.map(function(c){ return { key: makeId(), original: c, value: c }; });
+    els.settingsNewCategoryInput.value = '';
+    renderSettingsCategoryList();
+    els.settingsModalBack.classList.add('show');
+  }
+  function closeSettingsModal(){
+    pendingCategoriesList = null;
+    els.settingsModalBack.classList.remove('show');
+  }
+  els.settingsBtn.onclick = openSettingsModal;
+  els.settingsModalClose.onclick = closeSettingsModal;
+  els.settingsModalCancelBtn.onclick = closeSettingsModal;
+  els.settingsModalBack.addEventListener('click', function(e){
+    if (e.target === els.settingsModalBack) closeSettingsModal();
+  });
+  function addSettingsCategory(){
+    var val = els.settingsNewCategoryInput.value.trim();
+    if (!val) return;
+    pendingCategoriesList.push({ key: makeId(), original: null, value: val });
+    els.settingsNewCategoryInput.value = '';
+    renderSettingsCategoryList();
+  }
+  els.settingsAddCategoryBtn.onclick = addSettingsCategory;
+  els.settingsNewCategoryInput.addEventListener('keydown', function(e){
+    if (e.key === 'Enter'){ addSettingsCategory(); }
+  });
+  els.settingsModalSaveBtn.onclick = function(){
+    if (!pendingCategoriesList) return;
+    pendingCategoriesList.forEach(function(e){ e.value = e.value.trim(); });
+
+    if (pendingCategoriesList.length === 0){
+      toast('Add at least one category', 'warn');
+      return;
+    }
+
+    var hasEmpty = false;
+    var hasDup = false;
+    var seen = {};
+    Array.prototype.forEach.call(els.settingsCategoryList.querySelectorAll('.settings-category-input'), function(inp){
+      var entry = pendingCategoriesList.find(function(e){ return e.key === inp.getAttribute('data-key'); });
+      inp.classList.remove('empty-warn');
+      if (!entry) return;
+      if (!entry.value){ inp.classList.add('empty-warn'); hasEmpty = true; return; }
+      var lower = entry.value.toLowerCase();
+      if (seen[lower]){ inp.classList.add('empty-warn'); hasDup = true; }
+      seen[lower] = true;
+    });
+    if (hasEmpty){ toast('Category names can’t be empty', 'warn'); return; }
+    if (hasDup){ toast('Category names must be unique', 'warn'); return; }
+
+    var renameMap = {};
+    var keptOriginals = {};
+    pendingCategoriesList.forEach(function(e){
+      if (e.original){
+        keptOriginals[e.original] = true;
+        if (e.original !== e.value) renameMap[e.original] = e.value;
+      }
+    });
+    var removedNames = state.categories.filter(function(c){ return !keptOriginals[c]; });
+    var newCategories = pendingCategoriesList.map(function(e){ return e.value; });
+    var fallback = newCategories.indexOf('Other') > -1 ? 'Other' : newCategories[0];
+
+    state.items.forEach(function(i){
+      if (renameMap[i.category]) i.category = renameMap[i.category];
+      else if (removedNames.indexOf(i.category) > -1) i.category = fallback;
+    });
+    Object.keys(state.categoryByBarcode).forEach(function(bc){
+      var c = state.categoryByBarcode[bc];
+      if (renameMap[c]) state.categoryByBarcode[bc] = renameMap[c];
+      else if (removedNames.indexOf(c) > -1) state.categoryByBarcode[bc] = fallback;
+    });
+
+    state.categories = newCategories;
+    saveCategories();
+    render();
+    closeSettingsModal();
+    toast('Categories updated', 'ok');
   };
 
   // ---------- init ----------

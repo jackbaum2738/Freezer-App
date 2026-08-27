@@ -14,14 +14,14 @@ Running list of possible improvements. Nothing here is built yet unless marked �
 - **Export/backup button** — ⬇️ button downloads inventory as a JSON file.
 - **Batch scan mode** — toggle to scan a stack of barcodes uninterrupted, then name/confirm them all in one review screen.
 - **Opened / sealed toggle** — staged toggle in the item detail popup, shown as a badge on the list (applies to the oldest unit in a group).
+- **Categories or shelf tags** — every item has a category, shown on the list and searchable.
+- **AI-generated category tags** — category is auto-suggested from the product name via keyword matching, editable before saving (and learned per barcode, same as the item name).
+- **Editable category list** — a Categories settings page (⚙️ button) to rename, add, or delete categories at any time. Currently open to anyone; not yet locked to an administrator.
 
 ## Known issues (parked for later investigation)
 - **Safari Share button JS error** — tapping the native Share icon on iPhone triggers a generic, detail-free "Script error." banner. Traced as far as possible without real browser devtools — doesn't affect any real functionality. Worth a proper look if we ever get access to real Safari devtools.
 
 ## Organisation
-- **Categories or shelf tags** (e.g. "meat", "veg", "leftovers") — useful once the list gets long, adds filtering.
-- **AI-generated category tags** — auto-suggest a category from a preset list when barcode/product lookup doesn't already provide one.
-- **Editable category list** — manage the list of available categories from a settings page. In future, this could be locked to a specific administrator user.
 - **Weight column** — e.g. distinguishing 500g vs 250g mince. Auto-fill from barcode/product lookup where available, otherwise manually entered.
 - **"Who added it" attribution** — ask each household member's name once per device, tag it on items so you know who put what in.
 
