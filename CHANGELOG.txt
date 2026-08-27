@@ -4,6 +4,17 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+3.1.0 -- 2026-08-27
+--------------------
+- Category colours now come from a 24-swatch preset palette (bright + pastel, picked via a colour grid) instead of a free-form colour picker, so a colour can always be re-selected later.
+- New categories default to a grey preset colour until you pick your own.
+- Categories can no longer be added with a name that already exists.
+- Categories are now drag-to-reorder in Settings (drag the ☰ handle) — the order set there is the order categories appear everywhere else, including the picker when adding/editing an item.
+- Replaced the category dropdown with a friendlier row of coloured, tappable chips when adding, batch-scanning, or editing an item.
+- Renamed the "Inventory" tab to "Freezr" with a snowflake icon.
+- Renamed "Remove from freezer" to "Remove from Freezr" in the item detail popup.
+- The item detail popup's Name field now sits in its own labelled row, matching the Category/Quantity rows.
+
 3.0.0 -- 2026-08-27
 --------------------
 - Added bottom tab navigation: "Inventory" (the existing scan/list screen) and "Settings" (new), so future settings have a proper home.
