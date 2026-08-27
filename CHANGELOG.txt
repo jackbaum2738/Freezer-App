@@ -1,0 +1,14 @@
+FREEZR CHANGELOG
+================
+
+Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
+
+
+1.0.1 -- 2026-08-27
+--------------------
+- Renamed the "Start scanning" button to "Scan items" (in both Add and Remove modes).
+
+1.0.0 -- 2026-08-27
+--------------------
+- Restarted versioning from scratch with a proper major.minor.patch scheme (previous ad-hoc "2.1" label retired).
+- Added this changelog -- every future change gets logged here going forward.

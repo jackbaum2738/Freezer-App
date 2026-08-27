@@ -65,6 +65,7 @@
   .wrap{ max-width: 560px; margin: 0 auto; }
 
   header{ margin-bottom: 16px; }
+  .title-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
   .eyebrow{
     font-family: var(--mono); font-size: 11px; letter-spacing: .18em;
     color: var(--cyan); text-transform: uppercase; margin-bottom: 4px;
@@ -73,6 +74,18 @@
     font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 2px;
   }
   .sub{ color: var(--frost-dim); font-size: 13px; }
+
+  .sync-pill{
+    display:inline-flex; align-items:center; gap: 6px; flex-shrink: 0;
+    padding: 5px 11px 5px 8px; border-radius: 999px; border: 1px solid var(--edge);
+    background: var(--panel); font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .02em; white-space: nowrap; transition: border-color .2s, color .2s;
+  }
+  .sync-dot{ width: 7px; height: 7px; border-radius: 50%; background: var(--frost-dim); flex-shrink:0; }
+  .sync-pill.connecting, .sync-pill.failed{ color: var(--frost-dim); border-color: var(--edge); }
+  .sync-pill.connecting .sync-dot, .sync-pill.failed .sync-dot{ background: var(--frost-dim); }
+  .sync-pill.synced{ color: var(--cyan); border-color: var(--cyan-dim); }
+  .sync-pill.synced .sync-dot{ background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
 
   /* Mode toggle */
   .mode-toggle{
@@ -97,7 +110,9 @@
   .scan-frame{
     position: relative; width: 100%; aspect-ratio: 4/3; border-radius: 12px;
     overflow: hidden; background: #050a13; border: 1px solid var(--edge);
+    display: none;
   }
+  .scan-frame.active{ display: block; }
   .scan-frame video{ width:100%; height:100%; object-fit: cover; display:block; }
   .scan-frame canvas{ display:none; }
   #scannerContainer{ width:100%; height:100%; }
@@ -149,8 +164,9 @@
   .item{
     display:flex; align-items:center; gap: 12px; background: var(--panel);
     border: 1px solid var(--edge); border-radius: 14px; padding: 12px 12px 12px 0;
-    margin-bottom: 8px; position:relative; overflow:hidden;
+    margin-bottom: 8px; position:relative; overflow:hidden; cursor:pointer;
   }
+  .item:active{ background: var(--panel-2); }
   .item::before{
     content:''; width:5px; align-self:stretch; border-radius: 3px 0 0 3px; margin-right: 10px;
     background: var(--frost-fresh, var(--cyan));
@@ -238,6 +254,30 @@
     width:100%; background: var(--panel-2); border: 1px solid var(--edge); color: var(--frost);
     border-radius: 10px; padding: 13px 12px; font-size: 15px; margin-bottom: 12px; font-family: var(--sans);
   }
+
+  .qty-row{
+    display:flex; align-items:center; justify-content:space-between;
+    background: var(--panel-2); border: 1px solid var(--edge); border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 14px;
+  }
+  .qty-row-label{ font-size: 13.5px; color: var(--frost-dim); font-weight:700; }
+  .qty-stepper{ display:flex; align-items:center; gap: 14px; }
+  .qty-stepper button{
+    width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--edge);
+    background: var(--panel); color: var(--frost); font-size: 19px; font-weight: 800;
+    cursor:pointer; line-height:1;
+  }
+  .qty-stepper button:active{ background: var(--cyan-dim); color: var(--cyan); border-color: var(--cyan-dim); }
+  #detailQtyValue{ font-family: var(--mono); font-size: 17px; font-weight: 800; min-width: 22px; text-align:center; }
+
+  .detail-meta{ font-size: 13px; color: var(--frost-dim); margin-bottom: 14px; line-height: 1.7; }
+  .detail-meta span{ color: var(--frost); font-weight: 700; }
+
+  .btn-danger-outline{
+    background: transparent; border: 1px solid var(--danger); color: var(--danger);
+    width:100%; margin-top: 12px;
+  }
+  .btn-danger-outline:active{ background: rgba(240,128,107,0.12); }
   .modal-actions{ display:flex; gap: 10px; }
   .modal-actions .btn{ flex:1; margin:0; }
   .btn-cancel{ background: transparent; color: var(--frost-dim); border: 1px solid var(--edge); }
@@ -257,8 +297,12 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="eyebrow"><span class="conn-dot" id="connDot"></span>Household · Shared inventory</div>
-    <h1>Freezr</h1>
+    <div class="title-row">
+      <h1>Freezr</h1>
+      <div class="sync-pill connecting" id="syncPill">
+        <span class="sync-dot"></span><span id="syncPillText">Connecting</span>
+      </div>
+    </div>
     <div class="sub" id="subline">Loading…</div>
   </header>
 
@@ -282,13 +326,13 @@
       <div class="scan-hint" id="scanHint" style="display:none">Hold barcode steady in frame</div>
       <button class="torch-btn" id="torchBtn" title="Toggle flash">🔦</button>
     </div>
-    <button class="btn btn-primary" id="scanToggleBtn">Start scanning</button>
+    <button class="btn btn-primary" id="scanToggleBtn">Scan items</button>
     <button class="btn btn-ghost" id="photoScanBtn">📷 Or scan from a photo</button>
     <input type="file" accept="image/*" capture="environment" id="photoInput" style="display:none">
     <div id="photoScanStatus" style="display:none; text-align:center; font-size:12.5px; color:var(--frost-dim); margin-top:8px; font-family:var(--mono);">Reading barcode from photo…</div>
 
     <div class="manual-row">
-      <input type="text" id="manualInput" placeholder="Or type / gun-scan barcode number" inputmode="numeric">
+      <input type="text" id="manualInput" placeholder="Manual input" inputmode="numeric">
       <button id="manualBtn">Add</button>
     </div>
   </div>
@@ -300,7 +344,7 @@
   <input type="text" class="search" id="searchInput" placeholder="Search inventory…">
   <div id="listContainer"></div>
 
-  <footer>Synced to this shared board · scans from any household member appear for everyone</footer>
+  <footer>Freezr &mdash; Version: 1.0.1</footer>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -332,6 +376,37 @@
       <button class="btn btn-cancel" id="removeModalCancel">Cancel</button>
       <button class="btn btn-primary" id="removeModalConfirm">Remove item</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-back" id="detailModalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Item details</h3>
+      <button class="modal-x" id="detailModalClose" aria-label="Close">✕</button>
+    </div>
+    <div class="barcode-tag" id="detailBarcode">Barcode: —</div>
+    <input type="text" id="detailNameInput" placeholder="Item name">
+
+    <div class="qty-row">
+      <span class="qty-row-label">Quantity</span>
+      <div class="qty-stepper">
+        <button id="detailQtyMinus" aria-label="Decrease quantity">\u2212</button>
+        <span id="detailQtyValue">1</span>
+        <button id="detailQtyPlus" aria-label="Increase quantity">+</button>
+      </div>
+    </div>
+
+    <div class="detail-meta">
+      <div>Added <span id="detailAddedDate">—</span></div>
+      <div>In the freezer for <span id="detailDuration">—</span></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-cancel" id="detailModalCancelBtn">Close</button>
+      <button class="btn btn-primary" id="detailModalSaveBtn">Save name</button>
+    </div>
+    <button class="btn btn-danger-outline" id="detailDeleteBtn">Remove from freezer</button>
   </div>
 </div>
 
@@ -390,6 +465,18 @@
     removeModalCancel: document.getElementById('removeModalCancel'),
     removeModalClose: document.getElementById('removeModalClose'),
     removeModalConfirm: document.getElementById('removeModalConfirm'),
+    detailModalBack: document.getElementById('detailModalBack'),
+    detailBarcode: document.getElementById('detailBarcode'),
+    detailNameInput: document.getElementById('detailNameInput'),
+    detailQtyMinus: document.getElementById('detailQtyMinus'),
+    detailQtyPlus: document.getElementById('detailQtyPlus'),
+    detailQtyValue: document.getElementById('detailQtyValue'),
+    detailAddedDate: document.getElementById('detailAddedDate'),
+    detailDuration: document.getElementById('detailDuration'),
+    detailModalCancelBtn: document.getElementById('detailModalCancelBtn'),
+    detailModalSaveBtn: document.getElementById('detailModalSaveBtn'),
+    detailModalClose: document.getElementById('detailModalClose'),
+    detailDeleteBtn: document.getElementById('detailDeleteBtn'),
   };
 
   function toast(msg, kind, onUndo){
@@ -413,23 +500,32 @@
   var db = null;
   var docRef = null;
   var configured = firebaseConfig.apiKey && firebaseConfig.apiKey !== 'PASTE_ME';
-  var connDot = document.getElementById('connDot');
+  var syncPill = document.getElementById('syncPill');
+  var syncPillText = document.getElementById('syncPillText');
   var suppressNextSnapshot = false;
+
+  function setSyncState(s){ // 'connecting' | 'synced' | 'failed'
+    if (!syncPill) return;
+    syncPill.className = 'sync-pill ' + s;
+    if (syncPillText) syncPillText.textContent = s === 'synced' ? 'Synced' : (s === 'failed' ? 'Sync failed' : 'Connecting');
+  }
 
   function initStorage(){
     if (!configured){
       document.getElementById('setupBanner').style.display = 'block';
       els.subline.textContent = 'Not connected — add your Firebase config to sync';
+      setSyncState('failed');
       render();
       return;
     }
+    setSyncState('connecting');
     try{
       firebase.initializeApp(firebaseConfig);
       db = firebase.firestore();
       docRef = db.collection('freezer').doc('inventory');
       docRef.onSnapshot(function(snap){
         try{
-          connDot.className = 'conn-dot live';
+          setSyncState('synced');
           var data = snap.data();
           if (data){
             state.items = data.items || [];
@@ -445,25 +541,26 @@
         }
       }, function(err){
         console.error(err);
-        connDot.className = 'conn-dot err';
+        setSyncState('failed');
         showJsErrorBanner('FIRESTORE ERROR: ' + (err && (err.code || err.message) || err));
         toast('Sync error — check Firestore rules/config', 'err');
       });
     }catch(e){
       console.error(e);
+      setSyncState('failed');
       toast('Firebase config looks invalid', 'err');
     }
   }
 
   async function saveItems(){
     if (!docRef) return;
-    try{ await docRef.set({ items: state.items, products: state.products }, { merge: true }); }
-    catch(e){ toast('Could not sync — check connection', 'err'); }
+    try{ await docRef.set({ items: state.items, products: state.products }, { merge: true }); setSyncState('synced'); }
+    catch(e){ setSyncState('failed'); toast('Could not sync — check connection', 'err'); }
   }
   async function saveProducts(){
     if (!docRef) return;
-    try{ await docRef.set({ items: state.items, products: state.products }, { merge: true }); }
-    catch(e){ /* non-fatal */ }
+    try{ await docRef.set({ items: state.items, products: state.products }, { merge: true }); setSyncState('synced'); }
+    catch(e){ setSyncState('failed'); /* toast intentionally omitted — non-critical path */ }
   }
 
   // ---------- mode ----------
@@ -473,7 +570,7 @@
     els.modeAdd.classList.toggle('active', mode === 'add');
     els.modeRemove.classList.toggle('active', mode === 'remove');
     els.listTitle.textContent = mode === 'add' ? 'In the freezer' : 'In the freezer';
-    els.scanToggle.textContent = state.scanning ? 'Stop scanning' : (mode === 'add' ? 'Start scanning to add' : 'Start scanning to remove');
+    els.scanToggle.textContent = state.scanning ? 'Stop scanning' : 'Scan items';
     els.manualBtn.textContent = mode === 'add' ? 'Add' : 'Remove';
     els.subline.textContent = mode === 'add' ? 'Scanning will ask you to confirm the name, then add it with today\u2019s date' : 'Scanning will remove the oldest matching item';
   }
@@ -486,6 +583,7 @@
       toast('Camera scanner failed to load — use manual entry', 'err');
       return;
     }
+    els.scanFrame.classList.add('active');
     els.scanPlaceholder.style.display = 'none';
     els.video.style.display = 'block';
     els.scanOverlay.style.display = 'block';
@@ -581,7 +679,8 @@
     els.torchBtn.classList.remove('on');
     state.torchOn = false;
     els.scanPlaceholder.style.display = 'flex';
-    els.scanToggle.textContent = state.mode === 'add' ? 'Start scanning to add' : 'Start scanning to remove';
+    els.scanFrame.classList.remove('active');
+    els.scanToggle.textContent = 'Scan items';
   }
 
   els.torchBtn.onclick = function(){
@@ -810,6 +909,23 @@
     var d = new Date(iso);
     return d.toLocaleDateString(undefined, { day:'numeric', month:'short', year: 'numeric' });
   }
+  function formatDuration(dateAdded){
+    var days = Math.floor((Date.now() - new Date(dateAdded).getTime()) / 86400000);
+    if (days <= 0) return 'less than a day';
+    if (days < 30) return days + (days === 1 ? ' day' : ' days');
+    if (days < 365){
+      var months = Math.floor(days / 30.44);
+      var remDays = Math.round(days - months * 30.44);
+      var s = months + (months === 1 ? ' month' : ' months');
+      if (remDays > 0) s += ', ' + remDays + (remDays === 1 ? ' day' : ' days');
+      return s;
+    }
+    var years = Math.floor(days / 365.25);
+    var remMonths = Math.round((days - years * 365.25) / 30.44);
+    var s2 = years + (years === 1 ? ' year' : ' years');
+    if (remMonths > 0) s2 += ', ' + remMonths + (remMonths === 1 ? ' month' : ' months');
+    return s2;
+  }
 
   function groupItems(items){
     var map = {};
@@ -832,6 +948,28 @@
     });
   }
 
+  function groupItems(items){
+    var map = {};
+    var order = [];
+    items.forEach(function(item){
+      var key = item.barcode + '||' + item.name;
+      if (!map[key]){
+        map[key] = { barcode: item.barcode, name: item.name, count: 0, oldestDate: item.dateAdded, oldestId: item.id, ids: [] };
+        order.push(key);
+      }
+      var g = map[key];
+      g.count++;
+      g.ids.push(item.id);
+      if (new Date(item.dateAdded) < new Date(g.oldestDate)){
+        g.oldestDate = item.dateAdded;
+        g.oldestId = item.id;
+      }
+    });
+    return order.map(function(k){ return map[k]; }).sort(function(a,b){
+      return new Date(a.oldestDate) - new Date(b.oldestDate);
+    });
+  }
+
   function render(){
     var q = els.searchInput.value.trim().toLowerCase();
     var filtered = q ? state.items.filter(function(i){ return i.name.toLowerCase().indexOf(q) > -1 || i.barcode.indexOf(q) > -1; }) : state.items;
@@ -843,39 +981,128 @@
       els.listContainer.innerHTML = '<div class="empty">' + (state.items.length === 0
         ? 'Freezer is empty — scan something to add it.'
         : 'No items match your search.') + '</div>';
-      return;
+    } else {
+      els.listContainer.innerHTML = groups.map(function(g){
+        var ac = ageClass(g.oldestDate);
+        var qtyBadge = g.count > 1 ? ' <span class="qty-badge">\u00d7' + g.count + '</span>' : '';
+        return '' +
+          '<div class="item ' + ac + '" data-barcode="' + escapeHtml(g.barcode) + '" data-name="' + escapeHtml(g.name) + '">' +
+            '<div class="item-main">' +
+              '<div class="item-name">' + escapeHtml(g.name) + qtyBadge + '</div>' +
+              '<div class="item-meta">' +
+                '<span>' + escapeHtml(g.barcode) + '</span>' +
+                '<span>Added ' + fmtDate(g.oldestDate) + '</span>' +
+              '</div>' +
+            '</div>' +
+            '<span class="chip ' + ac + '">' + daysLabel(g.oldestDate) + '</span>' +
+            '<button class="item-edit" data-barcode="' + escapeHtml(g.barcode) + '" data-name="' + escapeHtml(g.name) + '" title="View details">\u270e</button>' +
+            '<button class="item-del" data-id="' + g.oldestId + '" title="Remove">\u2715</button>' +
+          '</div>';
+      }).join('');
+
+      Array.prototype.forEach.call(els.listContainer.querySelectorAll('.item-del'), function(btn){
+        btn.onclick = function(){ deleteItem(btn.getAttribute('data-id')); };
+      });
+      Array.prototype.forEach.call(els.listContainer.querySelectorAll('.item-edit'), function(btn){
+        btn.onclick = function(){ openDetailModal(btn.getAttribute('data-barcode'), btn.getAttribute('data-name')); };
+      });
+      Array.prototype.forEach.call(els.listContainer.querySelectorAll('.item'), function(rowEl){
+        rowEl.addEventListener('click', function(e){
+          if (e.target.closest('.item-edit') || e.target.closest('.item-del')) return;
+          openDetailModal(rowEl.getAttribute('data-barcode'), rowEl.getAttribute('data-name'));
+        });
+      });
     }
 
-    els.listContainer.innerHTML = groups.map(function(g){
-      var ac = ageClass(g.oldestDate);
-      var qtyBadge = g.count > 1 ? ' <span class="qty-badge">\u00d7' + g.count + '</span>' : '';
-      return '' +
-        '<div class="item ' + ac + '">' +
-          '<div class="item-main">' +
-            '<div class="item-name">' + escapeHtml(g.name) + qtyBadge + '</div>' +
-            '<div class="item-meta">' +
-              '<span>' + escapeHtml(g.barcode) + '</span>' +
-              '<span>Added ' + fmtDate(g.oldestDate) + '</span>' +
-            '</div>' +
-          '</div>' +
-          '<span class="chip ' + ac + '">' + daysLabel(g.oldestDate) + '</span>' +
-          '<button class="item-edit" data-barcode="' + escapeHtml(g.barcode) + '" title="Edit name">\u270e</button>' +
-          '<button class="item-del" data-id="' + g.oldestId + '" title="Remove">\u2715</button>' +
-        '</div>';
-    }).join('');
-
-    Array.prototype.forEach.call(els.listContainer.querySelectorAll('.item-del'), function(btn){
-      btn.onclick = function(){ deleteItem(btn.getAttribute('data-id')); };
-    });
-    Array.prototype.forEach.call(els.listContainer.querySelectorAll('.item-edit'), function(btn){
-      btn.onclick = function(){ openNameModal(btn.getAttribute('data-barcode'), { editOnly: true }); };
-    });
+    if (pendingDetailKey) refreshDetailModal();
   }
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, function(c){
       return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
     });
   }
+
+  // ---------- item detail modal ----------
+  var pendingDetailKey = null;
+  function getGroupUnits(barcode, name){
+    return state.items.filter(function(i){ return i.barcode === barcode && i.name === name; });
+  }
+  function openDetailModal(barcode, name){
+    pendingDetailKey = { barcode: barcode, name: name };
+    els.detailModalBack.classList.add('show');
+    refreshDetailModal();
+  }
+  function closeDetailModal(){
+    pendingDetailKey = null;
+    els.detailModalBack.classList.remove('show');
+  }
+  function refreshDetailModal(){
+    if (!pendingDetailKey) return;
+    var units = getGroupUnits(pendingDetailKey.barcode, pendingDetailKey.name);
+    if (units.length === 0){ closeDetailModal(); return; }
+    units.sort(function(a,b){ return new Date(a.dateAdded) - new Date(b.dateAdded); });
+    var oldest = units[0];
+    els.detailBarcode.textContent = 'Barcode: ' + pendingDetailKey.barcode;
+    if (document.activeElement !== els.detailNameInput){
+      els.detailNameInput.value = pendingDetailKey.name;
+    }
+    els.detailQtyValue.textContent = units.length;
+    els.detailAddedDate.textContent = fmtDate(oldest.dateAdded);
+    els.detailDuration.textContent = formatDuration(oldest.dateAdded);
+  }
+  els.detailModalClose.onclick = closeDetailModal;
+  els.detailModalCancelBtn.onclick = closeDetailModal;
+  els.detailModalBack.addEventListener('click', function(e){
+    if (e.target === els.detailModalBack) closeDetailModal();
+  });
+  els.detailQtyPlus.onclick = function(){
+    if (!pendingDetailKey) return;
+    addItem(pendingDetailKey.barcode, pendingDetailKey.name);
+  };
+  els.detailQtyMinus.onclick = function(){
+    if (!pendingDetailKey) return;
+    var units = getGroupUnits(pendingDetailKey.barcode, pendingDetailKey.name);
+    if (units.length === 0) return;
+    units.sort(function(a,b){ return new Date(a.dateAdded) - new Date(b.dateAdded); });
+    removeItemWithUndo(units[0]);
+  };
+  els.detailModalSaveBtn.onclick = function(){
+    if (!pendingDetailKey) return;
+    var newName = els.detailNameInput.value.trim();
+    if (!newName) return;
+    var oldKey = pendingDetailKey;
+    if (newName !== oldKey.name){
+      state.products[oldKey.barcode] = newName;
+      saveProducts();
+      var changed = false;
+      state.items.forEach(function(i){
+        if (i.barcode === oldKey.barcode && i.name === oldKey.name){ i.name = newName; changed = true; }
+      });
+      if (changed) saveItems();
+      pendingDetailKey = { barcode: oldKey.barcode, name: newName };
+      render();
+      toast('Renamed to: ' + newName, 'ok');
+    } else {
+      toast('No changes to save', 'ok');
+    }
+  };
+  els.detailDeleteBtn.onclick = function(){
+    if (!pendingDetailKey) return;
+    var barcode = pendingDetailKey.barcode, name = pendingDetailKey.name;
+    var units = getGroupUnits(barcode, name);
+    if (units.length === 0) return;
+    closeDetailModal();
+    state.items = state.items.filter(function(i){ return !(i.barcode === barcode && i.name === name); });
+    saveItems();
+    render();
+    var label = units.length > 1 ? (name + ' (\u00d7' + units.length + ')') : name;
+    toast('Deleted: ' + label, 'ok', function(){
+      state.items = state.items.concat(units);
+      saveItems();
+      render();
+      toast('Restored: ' + label, 'ok');
+    });
+  };
 
   els.searchInput.addEventListener('input', render);
 
