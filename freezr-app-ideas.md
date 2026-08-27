@@ -28,7 +28,11 @@ Running list of possible improvements. Nothing here is built yet unless marked �
 
 ## Organisation
 - **Weight column** — e.g. distinguishing 500g vs 250g mince. Auto-fill from barcode/product lookup where available, otherwise manually entered.
-- **"Who added it" attribution** — ask each household member's name once per device, tag it on items so you know who put what in.
+- **"Who added it" attribution** — tag items with who added/removed them, so you know who put what in. Plan (next up):
+  - In lieu of a full onboarding tour (see Bigger features), just ask for their name on first app open.
+  - Store per-device (like the theme preference), not synced as household data.
+  - Add a "display name" field on the Settings page to edit it later.
+  - Editing the name should ideally re-label existing items logged under the old name to the new one — if that turns out to be too much processing, it's fine to only apply going forward (new items only).
 
 ## Bigger features
 - **Historical log** — a record of items that used to be in the freezer but were removed (separate from the live inventory view), so you can look back at what's been used.
@@ -36,12 +40,13 @@ Running list of possible improvements. Nothing here is built yet unless marked �
 - **Multiple freezers** — manage more than one freezer (e.g. garage chest freezer + kitchen freezer) via a settings page where you can add/delete/name freezers, and items get assigned to one. In future, this could be locked to a specific administrator user, same as categories above.
 - **Receipt scanning (mass import)** — scan a shopping receipt, extract the list of product names from it, then choose which ones to add to the freezer in one go.
 - **Package as a real app (Play Store / App Store)** — wrap the existing web app natively via Trusted Web Activity (Android, lightweight) and/or Capacitor (iOS, needs Apple Developer account + review). Would likely also fix the camera focus/torch quirks we've hit, since native camera APIs are far more capable than what a browser can do. Not urgent — the current PWA architecture carries over directly whenever this gets tackled, so no need to prepare for it now.
+- **First-time onboarding tour** — a short walkthrough shown the first time someone installs/opens the app, explaining how it works. Would include entering their name (see "Who added it" attribution above) as one step.
 
 ## Ideas from Claude
 - ~~Use-by / expiry tracking~~ — **not wanted for now** (frozen food doesn't really need this tracked); may reconsider in future.
 - **User roles / permissions** — a general system underpinning the "locked to an administrator" idea mentioned above for both freezers and categories.
 - **Custom labels for unlabeled homemade items** — generate a printable barcode/label for freezer bags with no barcode of their own (e.g. homemade soup, batch-cooked meals).
-- **"What's about to go off" / low-stock nudge** — a lightweight notification or highlighted section for items that have been frozen a long time.
+- **"What's about to go off" / low-stock nudge** — a lightweight notification or highlighted section for items that have been frozen a long time. Low priority — not next up.
 
 ---
 *Add to this list any time — just tell Claude "add X to the idea list" and ask it to update this file.*
