@@ -4,6 +4,13 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+5.0.0 -- 2026-08-28
+--------------------
+- Added a Historical log: every unit that leaves the freezer (scan-to-remove, "Remove from Freezr", or stepping quantity down in the item popup) is now logged separately from the live inventory, with a snapshot of its name/category/weight/freezer, when it was removed, how long it had been frozen, and who removed it.
+- New 🕘 button next to the existing category-browse and backup buttons opens the History view -- same search box and Category/Freezer filter pills as the main list.
+- Each history row has a re-add (↺) button that restocks its full quantity back into the freezer in one tap, and a remove (✕) button that deletes just that log entry (soft-delete with Undo, same pattern as everywhere else).
+- Undoing an original removal (from its own toast) un-logs it from history too, so a mis-scan never shows up there.
+
 4.1.0 -- 2026-08-28
 --------------------
 - Added Category and Freezer filter pills above the inventory list -- tap either to pick from a sheet (with an "All" option) and combine both with each other and with search. The Freezer pill only shows once a second freezer exists. The existing "Browse by category" tile view is unchanged.
