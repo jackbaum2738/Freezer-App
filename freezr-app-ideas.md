@@ -22,17 +22,13 @@ Running list of possible improvements. Nothing here is built yet unless marked �
 - **Dark/light mode** — appearance setting (Settings tab) for Dark, Light, or Match device. Defaults to dark, stored per-device.
 - **Browse by category** — a tile view (▦ button) showing item counts per category, tap through to a filtered list, with a Back button.
 - **Tidier item rows** — removed the barcode number and the small ✕ delete button from list rows (barcode still shown in the item detail popup; delete still available there too).
+- **"Who added it" attribution** — a lightweight name prompt on first open (skippable), stored per-device like the theme preference. Shown as "Added by" in the item detail popup only (not on list rows, not filterable/searchable). Editable anytime via a "Your name" field in Settings; changing it relabels items previously logged under the old name.
 
 ## Known issues (parked for later investigation)
 - **Safari Share button JS error** — tapping the native Share icon on iPhone triggers a generic, detail-free "Script error." banner. Traced as far as possible without real browser devtools — doesn't affect any real functionality. Worth a proper look if we ever get access to real Safari devtools.
 
 ## Organisation
 - **Weight column** — e.g. distinguishing 500g vs 250g mince. Auto-fill from barcode/product lookup where available, otherwise manually entered.
-- **"Who added it" attribution** — tag items with who added/removed them, so you know who put what in. Plan (next up):
-  - In lieu of a full onboarding tour (see Bigger features), just ask for their name on first app open.
-  - Store per-device (like the theme preference), not synced as household data.
-  - Add a "display name" field on the Settings page to edit it later.
-  - Editing the name should ideally re-label existing items logged under the old name to the new one — if that turns out to be too much processing, it's fine to only apply going forward (new items only).
 
 ## Bigger features
 - **Historical log** — a record of items that used to be in the freezer but were removed (separate from the live inventory view), so you can look back at what's been used.
