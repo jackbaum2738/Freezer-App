@@ -4,6 +4,13 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+3.4.0 -- 2026-08-28
+--------------------
+- Added a Weight field (a number + a unit dropdown: g / kg / ml / l / oz / lb) to the add-item and item detail screens.
+- The unit dropdown also offers "Small container" / "Large container" for homemade items with no real measurement -- picking either hides the number field, since there's nothing to type.
+- Weight is learned per barcode, the same as name and category: set it once and future scans of that barcode default to it. Best-effort prefill from OpenFoodFacts' product data on a brand-new barcode, when available.
+- Weight is optional and edited the same staged way as the item detail popup's other fields (only applied on Save).
+
 3.3.0 -- 2026-08-28
 --------------------
 - Added "who added it" attribution: on first open, Freezr asks for your name and tags every item you add with it. Stored per-device (like the theme setting), not synced as household data.
