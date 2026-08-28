@@ -311,6 +311,21 @@
   .qty-stepper button:active{ background: var(--cyan-dim); color: var(--cyan); border-color: var(--cyan-dim); }
   #detailQtyValue{ font-family: var(--mono); font-size: 17px; font-weight: 800; min-width: 22px; text-align:center; }
 
+  .weight-row{ align-items:center; }
+  .weight-controls{ display:flex; align-items:center; gap:8px; flex:1; margin-left:14px; justify-content:flex-end; }
+  .weight-amount{
+    width:78px; min-width:0; background: var(--panel); border: 1px solid var(--edge); color: var(--frost);
+    border-radius:8px; padding:8px 10px; font-size:13.5px; font-family: var(--sans); text-align:right;
+  }
+  .weight-amount:focus, .weight-unit:focus{ outline: 2px solid var(--cyan); outline-offset: -1px; }
+  .weight-unit{
+    background: var(--panel); border: 1px solid var(--edge); color: var(--frost);
+    border-radius:8px; padding:8px 10px; font-size:13px; font-family: var(--sans); font-weight:600;
+    max-width:150px;
+  }
+  .weight-controls.container-mode .weight-amount{ display:none; }
+  .weight-controls.container-mode .weight-unit{ max-width:none; flex:1; }
+
   .toggle-switch{
     width: 46px; height: 26px; border-radius: 999px; background: var(--panel);
     border: 1px solid var(--edge); position: relative; cursor: pointer; padding: 0; flex-shrink: 0;
@@ -584,7 +599,7 @@
       </div>
     </div>
 
-    <footer>Freezr &mdash; Version: 3.3.0</footer>
+    <footer>Freezr &mdash; Version: 3.4.0</footer>
   </div>
 </div>
 
@@ -606,10 +621,27 @@
       <button class="modal-x" id="modalClose" aria-label="Cancel">✕</button>
     </div>
     <div class="barcode-tag" id="modalBarcode">Barcode: —</div>
-    <input type="text" id="modalNameInput" placeholder="e.g. Chicken thighs (1kg)">
+    <input type="text" id="modalNameInput" placeholder="e.g. Chicken thighs">
     <div class="qty-row cat-collapsed-row" id="modalCategoryRow">
       <span class="qty-row-label">Category</span>
       <div class="cat-collapsed-value" id="modalCategoryValue"></div>
+    </div>
+    <div class="qty-row weight-row">
+      <span class="qty-row-label">Weight</span>
+      <div class="weight-controls" id="modalWeightControls">
+        <input class="weight-amount" id="modalWeightAmount" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 500">
+        <select class="weight-unit" id="modalWeightUnit">
+          <option value="g">g</option>
+          <option value="kg">kg</option>
+          <option value="ml">ml</option>
+          <option value="l">l</option>
+          <option value="oz">oz</option>
+          <option value="lb">lb</option>
+          <option disabled>──────────</option>
+          <option value="small">Small container</option>
+          <option value="large">Large container</option>
+        </select>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-cancel" id="modalCancel">Cancel</button>
@@ -649,6 +681,24 @@
     <div class="qty-row cat-collapsed-row" id="detailCategoryRow">
       <span class="qty-row-label">Category</span>
       <div class="cat-collapsed-value" id="detailCategoryValue"></div>
+    </div>
+
+    <div class="qty-row weight-row">
+      <span class="qty-row-label">Weight</span>
+      <div class="weight-controls" id="detailWeightControls">
+        <input class="weight-amount" id="detailWeightAmount" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 500">
+        <select class="weight-unit" id="detailWeightUnit">
+          <option value="g">g</option>
+          <option value="kg">kg</option>
+          <option value="ml">ml</option>
+          <option value="l">l</option>
+          <option value="oz">oz</option>
+          <option value="lb">lb</option>
+          <option disabled>──────────</option>
+          <option value="small">Small container</option>
+          <option value="large">Large container</option>
+        </select>
+      </div>
     </div>
 
     <div class="qty-row">
@@ -891,8 +941,49 @@
     return changed;
   }
 
+  // ---------- weight (amount + unit; remembered per barcode, same as name/category) ----------
+  var WEIGHT_CONTAINER_UNITS = ['small', 'large'];
+  function getWeightFromControls(amountEl, unitEl){
+    var unit = unitEl.value;
+    if (WEIGHT_CONTAINER_UNITS.indexOf(unit) > -1) return { amount: null, unit: unit };
+    var raw = amountEl.value.trim();
+    if (!raw) return null;
+    var amt = parseFloat(raw);
+    if (isNaN(amt)) return null;
+    return { amount: amt, unit: unit };
+  }
+  function setWeightControls(controlsEl, amountEl, unitEl, weight){
+    var isContainer = !!weight && WEIGHT_CONTAINER_UNITS.indexOf(weight.unit) > -1;
+    unitEl.value = (weight && weight.unit) ? weight.unit : 'g';
+    amountEl.value = (weight && !isContainer && weight.amount != null) ? weight.amount : '';
+    controlsEl.classList.toggle('container-mode', isContainer);
+  }
+  function weightsEqual(a, b){
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    return a.unit === b.unit && a.amount === b.amount;
+  }
+  function wireWeightControls(controlsEl, amountEl, unitEl, onManualChange){
+    unitEl.addEventListener('change', function(){
+      var isContainer = WEIGHT_CONTAINER_UNITS.indexOf(unitEl.value) > -1;
+      controlsEl.classList.toggle('container-mode', isContainer);
+      if (isContainer) amountEl.value = '';
+      if (onManualChange) onManualChange();
+    });
+    amountEl.addEventListener('input', function(){ if (onManualChange) onManualChange(); });
+  }
+  // best-effort parse of OpenFoodFacts' free-text "quantity" field (e.g. "500 g", "1 kg", "400ml")
+  function parseWeightGuess(text){
+    if (!text) return null;
+    var m = String(text).match(/([\d.,]+)\s*(kg|g|ml|l|oz|lb)\b/i);
+    if (!m) return null;
+    var amt = parseFloat(m[1].replace(',', '.'));
+    if (isNaN(amt)) return null;
+    return { amount: amt, unit: m[2].toLowerCase() };
+  }
+
   var state = {
-    mode:'add', items:[], products:{}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode:{},
+    mode:'add', items:[], products:{}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode:{}, weightByBarcode:{},
     categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS),
     listView: 'items', activeCategory: null,
     scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0, torchOn:false, batchMode:false, batchQueue:[]
@@ -956,6 +1047,9 @@
     modalNameInput: document.getElementById('modalNameInput'),
     modalCategoryRow: document.getElementById('modalCategoryRow'),
     modalCategoryValue: document.getElementById('modalCategoryValue'),
+    modalWeightControls: document.getElementById('modalWeightControls'),
+    modalWeightAmount: document.getElementById('modalWeightAmount'),
+    modalWeightUnit: document.getElementById('modalWeightUnit'),
     modalCancel: document.getElementById('modalCancel'),
     modalClose: document.getElementById('modalClose'),
     modalSave: document.getElementById('modalSave'),
@@ -970,6 +1064,9 @@
     detailNameInput: document.getElementById('detailNameInput'),
     detailCategoryRow: document.getElementById('detailCategoryRow'),
     detailCategoryValue: document.getElementById('detailCategoryValue'),
+    detailWeightControls: document.getElementById('detailWeightControls'),
+    detailWeightAmount: document.getElementById('detailWeightAmount'),
+    detailWeightUnit: document.getElementById('detailWeightUnit'),
     detailQtyMinus: document.getElementById('detailQtyMinus'),
     detailQtyPlus: document.getElementById('detailQtyPlus'),
     detailQtyValue: document.getElementById('detailQtyValue'),
@@ -1041,11 +1138,12 @@
             state.products = data.products || {};
             state.categories = (data.categories && data.categories.length) ? data.categories : DEFAULT_CATEGORIES.slice();
             state.categoryByBarcode = data.categoryByBarcode || {};
+            state.weightByBarcode = data.weightByBarcode || {};
             state.categoryColors = (data.categoryColors && Object.keys(data.categoryColors).length) ? data.categoryColors : Object.assign({}, DEFAULT_CATEGORY_COLORS);
             if (normalizeCategoryColors()) saveCategories();
           } else {
             // first ever run for this project — create the doc
-            docRef.set({ items: [], products: {}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode: {}, categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS) });
+            docRef.set({ items: [], products: {}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode: {}, weightByBarcode: {}, categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS) });
           }
           render();
         }catch(e){
@@ -1069,7 +1167,7 @@
     if (!docRef) return;
     var silent = opts && opts.silent;
     try{
-      await docRef.set({ items: state.items, products: state.products, categories: state.categories, categoryByBarcode: state.categoryByBarcode, categoryColors: state.categoryColors }, { merge: true });
+      await docRef.set({ items: state.items, products: state.products, categories: state.categories, categoryByBarcode: state.categoryByBarcode, weightByBarcode: state.weightByBarcode, categoryColors: state.categoryColors }, { merge: true });
       setSyncState('synced');
     }catch(e){
       setSyncState('failed');
@@ -1277,12 +1375,13 @@
     }
   }
 
-  function addItem(barcode, name, category){
+  function addItem(barcode, name, category, weight){
     state.items.push({
       id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random(),
       barcode: barcode,
       name: name,
       category: category || 'Other',
+      weight: weight || null,
       dateAdded: new Date().toISOString(),
       opened: false,
       addedBy: currentDisplayName || ''
@@ -1346,7 +1445,9 @@
   var pendingBarcode = null;
   var pendingEditOnly = false;
   var categoryManuallySet = false;
+  var weightManuallySet = false;
   var modalSelectedCategory = 'Other';
+  wireWeightControls(els.modalWeightControls, els.modalWeightAmount, els.modalWeightUnit, function(){ weightManuallySet = true; });
   function selectModalCategory(c){
     modalSelectedCategory = c;
     renderCollapsedCategory(els.modalCategoryRow, els.modalCategoryValue, modalSelectedCategory, function(c2){
@@ -1366,6 +1467,9 @@
     var knownCategory = state.categoryByBarcode[barcode];
     categoryManuallySet = !!knownCategory;
     selectModalCategory(knownCategory || guessCategory(known || ''));
+    var knownWeight = state.weightByBarcode[barcode] || null;
+    weightManuallySet = !!knownWeight;
+    setWeightControls(els.modalWeightControls, els.modalWeightAmount, els.modalWeightUnit, knownWeight);
     els.modalBack.classList.add('show');
     setTimeout(function(){ els.modalNameInput.focus(); els.modalNameInput.select(); }, 50);
     if (!known && !pendingEditOnly) tryLookup(barcode);
@@ -1387,8 +1491,11 @@
     var name = els.modalNameInput.value.trim();
     if (!name || !pendingBarcode) return;
     var category = modalSelectedCategory || 'Other';
+    var weight = getWeightFromControls(els.modalWeightAmount, els.modalWeightUnit);
     state.products[pendingBarcode] = name;
     state.categoryByBarcode[pendingBarcode] = category;
+    if (weight) state.weightByBarcode[pendingBarcode] = weight;
+    else delete state.weightByBarcode[pendingBarcode];
     saveProducts();
     if (pendingEditOnly){
       var barcode = pendingBarcode;
@@ -1396,12 +1503,13 @@
       state.items.forEach(function(i){
         if (i.barcode === barcode && i.name !== name){ i.name = name; changed = true; }
         if (i.barcode === barcode && i.category !== category){ i.category = category; changed = true; }
+        if (i.barcode === barcode && !weightsEqual(i.weight || null, weight)){ i.weight = weight; changed = true; }
       });
       if (changed) saveItems();
       render();
       toast('Renamed to: ' + name, 'ok');
     } else {
-      addItem(pendingBarcode, name, category);
+      addItem(pendingBarcode, name, category, weight);
       toast('Added: ' + name, 'ok');
     }
     closeModal();
@@ -1529,7 +1637,7 @@
       var category = q.category || 'Other';
       state.products[q.barcode] = name;
       state.categoryByBarcode[q.barcode] = category;
-      state.items.push({ id: makeId(), barcode: q.barcode, name: name, category: category, dateAdded: new Date().toISOString(), opened: false, addedBy: currentDisplayName || '' });
+      state.items.push({ id: makeId(), barcode: q.barcode, name: name, category: category, weight: state.weightByBarcode[q.barcode] || null, dateAdded: new Date().toISOString(), opened: false, addedBy: currentDisplayName || '' });
     });
     state.batchQueue = [];
     saveItems();
@@ -1552,6 +1660,10 @@
           if (pendingBarcode === barcode && d && d.status === 1 && d.product && d.product.product_name){
             els.modalNameInput.value = d.product.product_name;
             if (!categoryManuallySet) selectModalCategory(guessCategory(d.product.product_name));
+            if (!weightManuallySet){
+              var guess = parseWeightGuess(d.product.quantity);
+              if (guess) setWeightControls(els.modalWeightControls, els.modalWeightAmount, els.modalWeightUnit, guess);
+            }
           }
         })
         .catch(function(){ /* ignore — manual entry still works */ });
@@ -1725,6 +1837,14 @@
   var originalOpened = false;
   var pendingCategory = 'Other';
   var originalCategory = 'Other';
+  var originalWeight = null;
+  wireWeightControls(els.detailWeightControls, els.detailWeightAmount, els.detailWeightUnit, null);
+  function formatWeightLabel(w){
+    if (!w) return 'not set';
+    if (w.unit === 'small') return 'small container';
+    if (w.unit === 'large') return 'large container';
+    return w.amount + ' ' + w.unit;
+  }
   function getGroupUnits(barcode, name){
     return state.items.filter(function(i){ return i.barcode === barcode && i.name === name; });
   }
@@ -1747,9 +1867,11 @@
     pendingOpened = originalOpened;
     originalCategory = oldest.category || 'Other';
     pendingCategory = originalCategory;
+    originalWeight = oldest.weight || null;
     els.detailBarcode.textContent = 'Barcode: ' + barcode;
     els.detailNameInput.value = name;
     selectDetailCategory(pendingCategory);
+    setWeightControls(els.detailWeightControls, els.detailWeightAmount, els.detailWeightUnit, originalWeight);
     els.detailQtyValue.textContent = pendingQty;
     setOpenedToggleUI(pendingOpened);
     els.detailAddedDate.textContent = fmtDate(oldest.dateAdded);
@@ -1808,21 +1930,28 @@
     var qtyDelta = pendingQty - originalQty;
     var openedChanged = pendingOpened !== originalOpened;
     var categoryChanged = pendingCategory !== originalCategory;
+    var newWeight = getWeightFromControls(els.detailWeightAmount, els.detailWeightUnit);
+    var weightChanged = !weightsEqual(newWeight, originalWeight);
 
-    if (nameChanged || categoryChanged){
+    if (nameChanged || categoryChanged || weightChanged){
       if (nameChanged) state.products[oldKey.barcode] = newName;
       if (categoryChanged) state.categoryByBarcode[oldKey.barcode] = pendingCategory;
+      if (weightChanged){
+        if (newWeight) state.weightByBarcode[oldKey.barcode] = newWeight;
+        else delete state.weightByBarcode[oldKey.barcode];
+      }
       state.items.forEach(function(i){
         if (i.barcode === oldKey.barcode && i.name === oldKey.name){
           if (nameChanged) i.name = newName;
           if (categoryChanged) i.category = pendingCategory;
+          if (weightChanged) i.weight = newWeight;
         }
       });
     }
 
     if (qtyDelta > 0){
       for (var k = 0; k < qtyDelta; k++){
-        state.items.push({ id: makeId(), barcode: oldKey.barcode, name: newName, category: pendingCategory, dateAdded: new Date().toISOString(), opened: false, addedBy: currentDisplayName || '' });
+        state.items.push({ id: makeId(), barcode: oldKey.barcode, name: newName, category: pendingCategory, weight: newWeight, dateAdded: new Date().toISOString(), opened: false, addedBy: currentDisplayName || '' });
       }
     } else if (qtyDelta < 0){
       var toRemove = -qtyDelta;
@@ -1838,13 +1967,14 @@
       if (remaining.length > 0) remaining[0].opened = pendingOpened;
     }
 
-    if (nameChanged || qtyDelta !== 0 || openedChanged || categoryChanged){
+    if (nameChanged || qtyDelta !== 0 || openedChanged || categoryChanged || weightChanged){
       saveItems();
-      if (nameChanged || categoryChanged) saveProducts();
+      if (nameChanged || categoryChanged || weightChanged) saveProducts();
       render();
       var parts = [];
       if (nameChanged) parts.push('renamed to ' + newName);
       if (categoryChanged) parts.push('category set to ' + pendingCategory);
+      if (weightChanged) parts.push('weight set to ' + formatWeightLabel(newWeight));
       if (qtyDelta !== 0) parts.push('quantity ' + (qtyDelta > 0 ? '+' : '') + qtyDelta);
       if (openedChanged) parts.push(pendingOpened ? 'marked opened' : 'marked sealed');
       toast('Saved \u2014 ' + parts.join(', '), 'ok');
@@ -1883,6 +2013,7 @@
       products: state.products,
       categories: state.categories,
       categoryByBarcode: state.categoryByBarcode,
+      weightByBarcode: state.weightByBarcode,
       categoryColors: state.categoryColors
     };
     var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
