@@ -314,17 +314,36 @@
   .weight-row{ align-items:center; }
   .weight-controls{ display:flex; align-items:center; gap:8px; flex:1; margin-left:14px; justify-content:flex-end; }
   .weight-amount{
-    width:78px; min-width:0; background: var(--panel); border: 1px solid var(--edge); color: var(--frost);
-    border-radius:8px; padding:8px 10px; font-size:13.5px; font-family: var(--sans); text-align:right;
-  }
-  .weight-amount:focus, .weight-unit:focus{ outline: 2px solid var(--cyan); outline-offset: -1px; }
-  .weight-unit{
+    width:78px; height:34px; box-sizing:border-box; min-width:0;
     background: var(--panel); border: 1px solid var(--edge); color: var(--frost);
-    border-radius:8px; padding:8px 10px; font-size:13px; font-family: var(--sans); font-weight:600;
-    max-width:150px;
+    border-radius:8px; padding:0 10px; font-size:13.5px; font-family: var(--sans); text-align:right;
   }
+  .weight-amount:focus{ outline: 2px solid var(--cyan); outline-offset: -1px; }
   .weight-controls.container-mode .weight-amount{ display:none; }
-  .weight-controls.container-mode .weight-unit{ max-width:none; flex:1; }
+
+  .unit-collapsed{
+    display:flex; align-items:center; gap:6px; height:34px; box-sizing:border-box;
+    background: var(--panel); border: 1px solid var(--edge); border-radius:8px;
+    padding:0 10px; cursor:pointer; flex-shrink:0;
+  }
+  .unit-collapsed-name{ font-size:13px; font-weight:700; color: var(--frost); }
+  .unit-collapsed.container-active .unit-collapsed-name{ color: var(--cyan); }
+  .unit-chevron{ color: var(--frost-dim); font-size:13px; }
+  .weight-controls.container-mode .unit-collapsed{ flex:1; justify-content:center; }
+
+  .sheet-group-label{
+    font-family: var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
+    color: var(--frost-dim); margin:14px 0 8px;
+  }
+  .sheet-group-label:first-of-type{ margin-top:0; }
+  .unit-picker{ display:flex; flex-wrap:wrap; gap:8px; }
+  .unit-chip{
+    display:inline-flex; align-items:center; padding:9px 14px; border-radius:999px;
+    border: 1.5px solid var(--edge); font-family: var(--sans); font-size:13px; font-weight:600;
+    cursor:pointer; background: var(--panel-2); color: var(--frost);
+  }
+  .unit-chip.selected{ border-color: var(--cyan); color: var(--cyan); background: var(--cyan-dim); }
+  .unit-chip.container{ flex-basis: calc(50% - 4px); justify-content:center; }
 
   .toggle-switch{
     width: 46px; height: 26px; border-radius: 999px; background: var(--panel);
@@ -599,7 +618,7 @@
       </div>
     </div>
 
-    <footer>Freezr &mdash; Version: 3.4.0</footer>
+    <footer>Freezr &mdash; Version: 3.4.1</footer>
   </div>
 </div>
 
@@ -630,17 +649,7 @@
       <span class="qty-row-label">Weight</span>
       <div class="weight-controls" id="modalWeightControls">
         <input class="weight-amount" id="modalWeightAmount" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 500">
-        <select class="weight-unit" id="modalWeightUnit">
-          <option value="g">g</option>
-          <option value="kg">kg</option>
-          <option value="ml">ml</option>
-          <option value="l">l</option>
-          <option value="oz">oz</option>
-          <option value="lb">lb</option>
-          <option disabled>──────────</option>
-          <option value="small">Small container</option>
-          <option value="large">Large container</option>
-        </select>
+        <div class="unit-collapsed" id="modalWeightUnitRow"></div>
       </div>
     </div>
     <div class="modal-actions">
@@ -687,17 +696,7 @@
       <span class="qty-row-label">Weight</span>
       <div class="weight-controls" id="detailWeightControls">
         <input class="weight-amount" id="detailWeightAmount" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 500">
-        <select class="weight-unit" id="detailWeightUnit">
-          <option value="g">g</option>
-          <option value="kg">kg</option>
-          <option value="ml">ml</option>
-          <option value="l">l</option>
-          <option value="oz">oz</option>
-          <option value="lb">lb</option>
-          <option disabled>──────────</option>
-          <option value="small">Small container</option>
-          <option value="large">Large container</option>
-        </select>
+        <div class="unit-collapsed" id="detailWeightUnitRow"></div>
       </div>
     </div>
 
@@ -779,6 +778,16 @@
       <button class="modal-x" id="categorySheetClose" aria-label="Close">✕</button>
     </div>
     <div class="category-picker" id="categorySheetGrid"></div>
+  </div>
+</div>
+
+<div class="modal-back" id="unitSheetBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Select a unit</h3>
+      <button class="modal-x" id="unitSheetClose" aria-label="Close">✕</button>
+    </div>
+    <div id="unitSheetGrid"></div>
   </div>
 </div>
 
@@ -942,35 +951,14 @@
   }
 
   // ---------- weight (amount + unit; remembered per barcode, same as name/category) ----------
+  var WEIGHT_UNITS = ['g', 'kg', 'ml', 'l', 'oz', 'lb'];
   var WEIGHT_CONTAINER_UNITS = ['small', 'large'];
-  function getWeightFromControls(amountEl, unitEl){
-    var unit = unitEl.value;
-    if (WEIGHT_CONTAINER_UNITS.indexOf(unit) > -1) return { amount: null, unit: unit };
-    var raw = amountEl.value.trim();
-    if (!raw) return null;
-    var amt = parseFloat(raw);
-    if (isNaN(amt)) return null;
-    return { amount: amt, unit: unit };
-  }
-  function setWeightControls(controlsEl, amountEl, unitEl, weight){
-    var isContainer = !!weight && WEIGHT_CONTAINER_UNITS.indexOf(weight.unit) > -1;
-    unitEl.value = (weight && weight.unit) ? weight.unit : 'g';
-    amountEl.value = (weight && !isContainer && weight.amount != null) ? weight.amount : '';
-    controlsEl.classList.toggle('container-mode', isContainer);
-  }
+  var UNIT_SHEET_LABELS = { g:'g', kg:'kg', ml:'ml', l:'l', oz:'oz', lb:'lb', small:'Small container', large:'Large container' };
+  var UNIT_COLLAPSED_LABELS = { g:'g', kg:'kg', ml:'ml', l:'l', oz:'oz', lb:'lb', small:'Small', large:'Large' };
   function weightsEqual(a, b){
     if (!a && !b) return true;
     if (!a || !b) return false;
     return a.unit === b.unit && a.amount === b.amount;
-  }
-  function wireWeightControls(controlsEl, amountEl, unitEl, onManualChange){
-    unitEl.addEventListener('change', function(){
-      var isContainer = WEIGHT_CONTAINER_UNITS.indexOf(unitEl.value) > -1;
-      controlsEl.classList.toggle('container-mode', isContainer);
-      if (isContainer) amountEl.value = '';
-      if (onManualChange) onManualChange();
-    });
-    amountEl.addEventListener('input', function(){ if (onManualChange) onManualChange(); });
   }
   // best-effort parse of OpenFoodFacts' free-text "quantity" field (e.g. "500 g", "1 kg", "400ml")
   function parseWeightGuess(text){
@@ -980,6 +968,44 @@
     var amt = parseFloat(m[1].replace(',', '.'));
     if (isNaN(amt)) return null;
     return { amount: amt, unit: m[2].toLowerCase() };
+  }
+
+  function renderUnitPicker(container, selected, onSelect){
+    var groups = [
+      { label: 'Weight / volume', units: WEIGHT_UNITS },
+      { label: 'Container size', units: WEIGHT_CONTAINER_UNITS }
+    ];
+    container.innerHTML = groups.map(function(g){
+      return '<div class="sheet-group-label">' + g.label + '</div><div class="unit-picker">' +
+        g.units.map(function(u){
+          var isSel = u === selected;
+          var containerCls = WEIGHT_CONTAINER_UNITS.indexOf(u) > -1 ? ' container' : '';
+          return '<button type="button" class="unit-chip' + containerCls + (isSel ? ' selected' : '') + '" data-unit="' + u + '">' + UNIT_SHEET_LABELS[u] + '</button>';
+        }).join('') + '</div>';
+    }).join('');
+    Array.prototype.forEach.call(container.querySelectorAll('.unit-chip'), function(btn){
+      btn.onclick = function(){ onSelect(btn.getAttribute('data-unit')); };
+    });
+  }
+
+  var unitSheetOnSelect = null;
+  function openUnitSheet(current, onSelect){
+    unitSheetOnSelect = onSelect;
+    renderUnitPicker(els.unitSheetGrid, current, function(u){
+      var cb = unitSheetOnSelect;
+      closeUnitSheet();
+      if (cb) cb(u);
+    });
+    els.unitSheetBack.classList.add('show');
+  }
+  function closeUnitSheet(){
+    unitSheetOnSelect = null;
+    els.unitSheetBack.classList.remove('show');
+  }
+  function renderCollapsedUnit(el, unit, onSelect){
+    el.classList.toggle('container-active', WEIGHT_CONTAINER_UNITS.indexOf(unit) > -1);
+    el.innerHTML = '<span class="unit-collapsed-name">' + UNIT_COLLAPSED_LABELS[unit] + '</span><span class="unit-chevron">›</span>';
+    el.onclick = function(){ openUnitSheet(unit, onSelect); };
   }
 
   var state = {
@@ -1032,6 +1058,9 @@
     categorySheetBack: document.getElementById('categorySheetBack'),
     categorySheetGrid: document.getElementById('categorySheetGrid'),
     categorySheetClose: document.getElementById('categorySheetClose'),
+    unitSheetBack: document.getElementById('unitSheetBack'),
+    unitSheetGrid: document.getElementById('unitSheetGrid'),
+    unitSheetClose: document.getElementById('unitSheetClose'),
     batchModeToggle: document.getElementById('batchModeToggle'),
     reviewBatchBtn: document.getElementById('reviewBatchBtn'),
     batchModalBack: document.getElementById('batchModalBack'),
@@ -1049,7 +1078,7 @@
     modalCategoryValue: document.getElementById('modalCategoryValue'),
     modalWeightControls: document.getElementById('modalWeightControls'),
     modalWeightAmount: document.getElementById('modalWeightAmount'),
-    modalWeightUnit: document.getElementById('modalWeightUnit'),
+    modalWeightUnitRow: document.getElementById('modalWeightUnitRow'),
     modalCancel: document.getElementById('modalCancel'),
     modalClose: document.getElementById('modalClose'),
     modalSave: document.getElementById('modalSave'),
@@ -1066,7 +1095,7 @@
     detailCategoryValue: document.getElementById('detailCategoryValue'),
     detailWeightControls: document.getElementById('detailWeightControls'),
     detailWeightAmount: document.getElementById('detailWeightAmount'),
-    detailWeightUnit: document.getElementById('detailWeightUnit'),
+    detailWeightUnitRow: document.getElementById('detailWeightUnitRow'),
     detailQtyMinus: document.getElementById('detailQtyMinus'),
     detailQtyPlus: document.getElementById('detailQtyPlus'),
     detailQtyValue: document.getElementById('detailQtyValue'),
@@ -1447,13 +1476,38 @@
   var categoryManuallySet = false;
   var weightManuallySet = false;
   var modalSelectedCategory = 'Other';
-  wireWeightControls(els.modalWeightControls, els.modalWeightAmount, els.modalWeightUnit, function(){ weightManuallySet = true; });
+  var modalSelectedUnit = 'g';
+  els.modalWeightAmount.addEventListener('input', function(){ weightManuallySet = true; });
   function selectModalCategory(c){
     modalSelectedCategory = c;
     renderCollapsedCategory(els.modalCategoryRow, els.modalCategoryValue, modalSelectedCategory, function(c2){
       categoryManuallySet = true;
       selectModalCategory(c2);
     });
+  }
+  function selectModalUnit(u){
+    modalSelectedUnit = u;
+    var isContainer = WEIGHT_CONTAINER_UNITS.indexOf(u) > -1;
+    els.modalWeightControls.classList.toggle('container-mode', isContainer);
+    if (isContainer) els.modalWeightAmount.value = '';
+    renderCollapsedUnit(els.modalWeightUnitRow, u, function(u2){
+      weightManuallySet = true;
+      selectModalUnit(u2);
+    });
+  }
+  function applyModalWeight(weight){
+    var unit = (weight && weight.unit) ? weight.unit : 'g';
+    selectModalUnit(unit);
+    var isContainer = WEIGHT_CONTAINER_UNITS.indexOf(unit) > -1;
+    els.modalWeightAmount.value = (weight && !isContainer && weight.amount != null) ? weight.amount : '';
+  }
+  function readModalWeight(){
+    if (WEIGHT_CONTAINER_UNITS.indexOf(modalSelectedUnit) > -1) return { amount: null, unit: modalSelectedUnit };
+    var raw = els.modalWeightAmount.value.trim();
+    if (!raw) return null;
+    var amt = parseFloat(raw);
+    if (isNaN(amt)) return null;
+    return { amount: amt, unit: modalSelectedUnit };
   }
   function openNameModal(barcode, opts){
     state.scanPaused = true;
@@ -1469,7 +1523,7 @@
     selectModalCategory(knownCategory || guessCategory(known || ''));
     var knownWeight = state.weightByBarcode[barcode] || null;
     weightManuallySet = !!knownWeight;
-    setWeightControls(els.modalWeightControls, els.modalWeightAmount, els.modalWeightUnit, knownWeight);
+    applyModalWeight(knownWeight);
     els.modalBack.classList.add('show');
     setTimeout(function(){ els.modalNameInput.focus(); els.modalNameInput.select(); }, 50);
     if (!known && !pendingEditOnly) tryLookup(barcode);
@@ -1491,7 +1545,7 @@
     var name = els.modalNameInput.value.trim();
     if (!name || !pendingBarcode) return;
     var category = modalSelectedCategory || 'Other';
-    var weight = getWeightFromControls(els.modalWeightAmount, els.modalWeightUnit);
+    var weight = readModalWeight();
     state.products[pendingBarcode] = name;
     state.categoryByBarcode[pendingBarcode] = category;
     if (weight) state.weightByBarcode[pendingBarcode] = weight;
@@ -1662,7 +1716,7 @@
             if (!categoryManuallySet) selectModalCategory(guessCategory(d.product.product_name));
             if (!weightManuallySet){
               var guess = parseWeightGuess(d.product.quantity);
-              if (guess) setWeightControls(els.modalWeightControls, els.modalWeightAmount, els.modalWeightUnit, guess);
+              if (guess) applyModalWeight(guess);
             }
           }
         })
@@ -1838,12 +1892,36 @@
   var pendingCategory = 'Other';
   var originalCategory = 'Other';
   var originalWeight = null;
-  wireWeightControls(els.detailWeightControls, els.detailWeightAmount, els.detailWeightUnit, null);
+  var pendingUnit = 'g';
   function formatWeightLabel(w){
     if (!w) return 'not set';
     if (w.unit === 'small') return 'small container';
     if (w.unit === 'large') return 'large container';
     return w.amount + ' ' + w.unit;
+  }
+  function selectDetailUnit(u){
+    pendingUnit = u;
+    var isContainer = WEIGHT_CONTAINER_UNITS.indexOf(u) > -1;
+    els.detailWeightControls.classList.toggle('container-mode', isContainer);
+    if (isContainer) els.detailWeightAmount.value = '';
+    renderCollapsedUnit(els.detailWeightUnitRow, u, function(u2){
+      if (!pendingDetailKey) return;
+      selectDetailUnit(u2);
+    });
+  }
+  function applyDetailWeight(weight){
+    var unit = (weight && weight.unit) ? weight.unit : 'g';
+    selectDetailUnit(unit);
+    var isContainer = WEIGHT_CONTAINER_UNITS.indexOf(unit) > -1;
+    els.detailWeightAmount.value = (weight && !isContainer && weight.amount != null) ? weight.amount : '';
+  }
+  function readDetailWeight(){
+    if (WEIGHT_CONTAINER_UNITS.indexOf(pendingUnit) > -1) return { amount: null, unit: pendingUnit };
+    var raw = els.detailWeightAmount.value.trim();
+    if (!raw) return null;
+    var amt = parseFloat(raw);
+    if (isNaN(amt)) return null;
+    return { amount: amt, unit: pendingUnit };
   }
   function getGroupUnits(barcode, name){
     return state.items.filter(function(i){ return i.barcode === barcode && i.name === name; });
@@ -1871,7 +1949,7 @@
     els.detailBarcode.textContent = 'Barcode: ' + barcode;
     els.detailNameInput.value = name;
     selectDetailCategory(pendingCategory);
-    setWeightControls(els.detailWeightControls, els.detailWeightAmount, els.detailWeightUnit, originalWeight);
+    applyDetailWeight(originalWeight);
     els.detailQtyValue.textContent = pendingQty;
     setOpenedToggleUI(pendingOpened);
     els.detailAddedDate.textContent = fmtDate(oldest.dateAdded);
@@ -1930,7 +2008,7 @@
     var qtyDelta = pendingQty - originalQty;
     var openedChanged = pendingOpened !== originalOpened;
     var categoryChanged = pendingCategory !== originalCategory;
-    var newWeight = getWeightFromControls(els.detailWeightAmount, els.detailWeightUnit);
+    var newWeight = readDetailWeight();
     var weightChanged = !weightsEqual(newWeight, originalWeight);
 
     if (nameChanged || categoryChanged || weightChanged){
@@ -2096,6 +2174,11 @@
   els.categorySheetClose.onclick = closeCategorySheet;
   els.categorySheetBack.addEventListener('click', function(e){
     if (e.target === els.categorySheetBack) closeCategorySheet();
+  });
+
+  els.unitSheetClose.onclick = closeUnitSheet;
+  els.unitSheetBack.addEventListener('click', function(e){
+    if (e.target === els.unitSheetBack) closeUnitSheet();
   });
 
   // ---------- category drag-to-reorder ----------
