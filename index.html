@@ -188,6 +188,14 @@
   .list-head{ display:flex; align-items:baseline; justify-content:space-between; margin: 22px 0 10px; }
   .list-head h2{ font-size: 15px; margin:0; letter-spacing: -0.01em; }
   .count{ font-family: var(--mono); font-size: 12px; color: var(--frost-dim); }
+  .filter-row{ display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+  .filter-pill{
+    display:flex; align-items:center; gap:6px; cursor:pointer;
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 999px;
+    padding: 6px 12px; font-size: 12.5px;
+  }
+  .filter-pill:active{ background: var(--panel-2); }
+  .filter-pill-label{ color: var(--frost-dim); font-weight:700; }
   .search-row{ display:flex; gap: 8px; margin-bottom: 10px; }
   .search{
     flex:1; width:auto; background: var(--panel); border:1px solid var(--edge); color: var(--frost);
@@ -587,6 +595,16 @@
     </div>
     <div class="count" id="listCount">0 items</div>
   </div>
+  <div class="filter-row" id="filterRow">
+    <div class="filter-pill" id="categoryFilterPill">
+      <span class="filter-pill-label">Category</span>
+      <div class="cat-collapsed-value" id="categoryFilterValue"></div>
+    </div>
+    <div class="filter-pill" id="freezerFilterPill" style="display:none;">
+      <span class="filter-pill-label">Freezer</span>
+      <div class="freezer-collapsed" id="freezerFilterValue"></div>
+    </div>
+  </div>
   <div class="search-row" id="searchRow">
     <input type="text" class="search" id="searchInput" placeholder="Search inventory…">
     <button class="backup-btn" id="categoryViewBtn" title="Browse by category">▦</button>
@@ -633,7 +651,7 @@
       </div>
     </div>
 
-    <footer>Freezr &mdash; Version: 4.0.0</footer>
+    <footer>Freezr &mdash; Version: 4.1.0</footer>
   </div>
 </div>
 
@@ -1104,7 +1122,7 @@
   var state = {
     mode:'add', items:[], products:{}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode:{}, weightByBarcode:{}, freezers: DEFAULT_FREEZERS.slice(),
     categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS),
-    listView: 'items', activeCategory: null,
+    listView: 'items', activeCategory: null, filterCategory: null, filterFreezer: null,
     scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0, torchOn:false, batchMode:false, batchQueue:[]
   };
 
@@ -1128,6 +1146,11 @@
     listCount: document.getElementById('listCount'),
     listBackBtn: document.getElementById('listBackBtn'),
     listContainer: document.getElementById('listContainer'),
+    filterRow: document.getElementById('filterRow'),
+    categoryFilterPill: document.getElementById('categoryFilterPill'),
+    categoryFilterValue: document.getElementById('categoryFilterValue'),
+    freezerFilterPill: document.getElementById('freezerFilterPill'),
+    freezerFilterValue: document.getElementById('freezerFilterValue'),
     searchRow: document.getElementById('searchRow'),
     searchInput: document.getElementById('searchInput'),
     categoryViewBtn: document.getElementById('categoryViewBtn'),
@@ -1943,10 +1966,65 @@
     });
   }
 
+  // ---------- filter pills (Category / Freezer) above the flat list ----------
+  function updateFilterPills(){
+    var catColor = state.filterCategory ? categoryColor(state.filterCategory) : null;
+    els.categoryFilterValue.innerHTML =
+      '<span class="chip-dot" style="background:' + (catColor || 'var(--frost-dim)') + ';"></span>' +
+      '<span class="cat-collapsed-name" style="' + (catColor ? 'color:' + catColor + ';' : '') + '">' + escapeHtml(state.filterCategory || 'All') + '</span>' +
+      '<span class="cat-chevron">›</span>';
+    if (state.freezers.length > 1){
+      els.freezerFilterPill.style.display = '';
+      els.freezerFilterValue.innerHTML =
+        '<span class="freezer-name">' + escapeHtml(state.filterFreezer || 'All') + '</span><span class="cat-chevron">›</span>';
+    } else {
+      els.freezerFilterPill.style.display = 'none';
+      state.filterFreezer = null;
+    }
+  }
+  function openCategoryFilterSheet(){
+    renderCategoryPicker(els.categorySheetGrid, state.filterCategory, function(c){
+      state.filterCategory = c;
+      closeCategorySheet();
+      render();
+    });
+    var allChipStyle = state.filterCategory
+      ? 'border-color: var(--edge); background: var(--panel); color: var(--frost-dim);'
+      : 'border-color: var(--frost-dim); background: var(--panel-2); color: var(--frost);';
+    var allChip = '<button type="button" class="category-chip-option" data-category="" style="' + allChipStyle + '">' +
+      '<span class="chip-dot" style="background:var(--frost-dim);"></span>All categories</button>';
+    els.categorySheetGrid.insertAdjacentHTML('afterbegin', allChip);
+    els.categorySheetGrid.querySelector('.category-chip-option[data-category=""]').onclick = function(){
+      state.filterCategory = null;
+      closeCategorySheet();
+      render();
+    };
+    els.categorySheetBack.classList.add('show');
+  }
+  function openFreezerFilterSheet(){
+    renderFreezerPicker(els.freezerSheetGrid, state.filterFreezer, function(f){
+      state.filterFreezer = f;
+      closeFreezerSheet();
+      render();
+    });
+    var allChip = '<button type="button" class="unit-chip' + (state.filterFreezer ? '' : ' selected') + '" data-freezer="">All freezers</button>';
+    els.freezerSheetGrid.insertAdjacentHTML('afterbegin', allChip);
+    els.freezerSheetGrid.querySelector('.unit-chip[data-freezer=""]').onclick = function(){
+      state.filterFreezer = null;
+      closeFreezerSheet();
+      render();
+    };
+    els.freezerSheetBack.classList.add('show');
+  }
+  els.categoryFilterPill.onclick = openCategoryFilterSheet;
+  els.freezerFilterPill.onclick = openFreezerFilterSheet;
+
   function render(){
     els.listBackBtn.style.display = (state.listView === 'items') ? 'none' : '';
     els.categoryViewBtn.style.display = (state.listView === 'items') ? '' : 'none';
     els.searchRow.style.display = (state.listView === 'categoryTiles') ? 'none' : 'flex';
+    els.filterRow.style.display = (state.listView === 'items') ? 'flex' : 'none';
+    if (state.listView === 'items') updateFilterPills();
 
     if (state.listView === 'categoryTiles'){
       els.listTitle.textContent = 'Categories';
@@ -1961,6 +2039,17 @@
     var base = (state.listView === 'categoryItems')
       ? state.items.filter(function(i){ return (i.category || 'Other') === state.activeCategory; })
       : state.items;
+    var filtersActive = false;
+    if (state.listView === 'items'){
+      if (state.filterCategory){
+        base = base.filter(function(i){ return (i.category || 'Other') === state.filterCategory; });
+        filtersActive = true;
+      }
+      if (state.filterFreezer){
+        base = base.filter(function(i){ return i.freezer === state.filterFreezer; });
+        filtersActive = true;
+      }
+    }
     var q = els.searchInput.value.trim().toLowerCase();
     var filtered = q ? base.filter(function(i){ return i.name.toLowerCase().indexOf(q) > -1 || i.barcode.indexOf(q) > -1 || (i.category || '').toLowerCase().indexOf(q) > -1; }) : base;
     var groups = groupItems(filtered);
@@ -1971,6 +2060,8 @@
       var emptyMsg;
       if (base.length === 0 && state.listView === 'categoryItems') emptyMsg = 'No items in this category.';
       else if (state.items.length === 0) emptyMsg = 'Freezer is empty \u2014 scan something to add it.';
+      else if (q) emptyMsg = 'No items match your search.';
+      else if (filtersActive) emptyMsg = 'No items match the selected filters.';
       else emptyMsg = 'No items match your search.';
       els.listContainer.innerHTML = '<div class="empty">' + emptyMsg + '</div>';
     } else {
