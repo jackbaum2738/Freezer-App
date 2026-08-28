@@ -226,6 +226,7 @@
   .item-main{ flex:1; min-width:0; }
   .item-name{ font-weight: 700; font-size: 14.5px; margin-bottom: 3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .item-meta{ display:flex; gap: 10px; flex-wrap:wrap; font-family: var(--mono); font-size: 11px; color: var(--frost-dim); }
+  .item-meta-2{ font-size: 11px; color: var(--frost-dim); margin-top: 3px; }
   .chip{
     font-family: var(--mono); font-size: 10.5px; padding: 3px 7px; border-radius: 999px;
     border: 1px solid var(--edge); white-space:nowrap;
@@ -239,6 +240,14 @@
     padding: 6px 6px; cursor:pointer; line-height:1;
   }
   .item-edit:active{ color: var(--cyan); }
+
+  .hist-actions{ display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
+  .hist-btn{
+    width:32px; height:32px; border-radius:9px; border: 1px solid var(--edge); background: var(--panel-2);
+    color: var(--frost-dim); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .hist-btn.readd:active{ background: var(--cyan-dim); color: var(--cyan); border-color: var(--cyan-dim); }
+  .hist-btn.remove:active{ background: var(--danger-dim); color: var(--danger); border-color: var(--danger-dim); }
 
   .qty-badge{
     display:inline-block; font-family: var(--mono); font-size: 11px; font-weight:800;
@@ -608,6 +617,7 @@
   <div class="search-row" id="searchRow">
     <input type="text" class="search" id="searchInput" placeholder="Search inventory…">
     <button class="backup-btn" id="categoryViewBtn" title="Browse by category">▦</button>
+    <button class="backup-btn" id="historyViewBtn" title="View history">🕘</button>
     <button class="backup-btn" id="backupBtn" title="Download a backup of your inventory">⬇️</button>
   </div>
   <div id="listContainer"></div>
@@ -651,7 +661,7 @@
       </div>
     </div>
 
-    <footer>Freezr &mdash; Version: 4.1.0</footer>
+    <footer>Freezr &mdash; Version: 5.0.0</footer>
   </div>
 </div>
 
@@ -1120,7 +1130,7 @@
   }
 
   var state = {
-    mode:'add', items:[], products:{}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode:{}, weightByBarcode:{}, freezers: DEFAULT_FREEZERS.slice(),
+    mode:'add', items:[], products:{}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode:{}, weightByBarcode:{}, freezers: DEFAULT_FREEZERS.slice(), history: [],
     categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS),
     listView: 'items', activeCategory: null, filterCategory: null, filterFreezer: null,
     scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0, torchOn:false, batchMode:false, batchQueue:[]
@@ -1154,6 +1164,7 @@
     searchRow: document.getElementById('searchRow'),
     searchInput: document.getElementById('searchInput'),
     categoryViewBtn: document.getElementById('categoryViewBtn'),
+    historyViewBtn: document.getElementById('historyViewBtn'),
     backupBtn: document.getElementById('backupBtn'),
     openCategoriesBtn: document.getElementById('openCategoriesBtn'),
     openFreezersBtn: document.getElementById('openFreezersBtn'),
@@ -1302,12 +1313,13 @@
             state.categoryByBarcode = data.categoryByBarcode || {};
             state.weightByBarcode = data.weightByBarcode || {};
             state.freezers = (data.freezers && data.freezers.length) ? data.freezers : DEFAULT_FREEZERS.slice();
+            state.history = data.history || [];
             state.categoryColors = (data.categoryColors && Object.keys(data.categoryColors).length) ? data.categoryColors : Object.assign({}, DEFAULT_CATEGORY_COLORS);
             if (normalizeCategoryColors()) saveCategories();
             updateFreezersRowSub();
           } else {
             // first ever run for this project — create the doc
-            docRef.set({ items: [], products: {}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode: {}, weightByBarcode: {}, freezers: DEFAULT_FREEZERS.slice(), categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS) });
+            docRef.set({ items: [], products: {}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode: {}, weightByBarcode: {}, freezers: DEFAULT_FREEZERS.slice(), history: [], categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS) });
             updateFreezersRowSub();
           }
           render();
@@ -1332,7 +1344,7 @@
     if (!docRef) return;
     var silent = opts && opts.silent;
     try{
-      await docRef.set({ items: state.items, products: state.products, categories: state.categories, categoryByBarcode: state.categoryByBarcode, weightByBarcode: state.weightByBarcode, freezers: state.freezers, categoryColors: state.categoryColors }, { merge: true });
+      await docRef.set({ items: state.items, products: state.products, categories: state.categories, categoryByBarcode: state.categoryByBarcode, weightByBarcode: state.weightByBarcode, freezers: state.freezers, history: state.history, categoryColors: state.categoryColors }, { merge: true });
       setSyncState('synced');
     }catch(e){
       setSyncState('failed');
@@ -1343,6 +1355,7 @@
   function saveProducts(){ return persistState({ silent: true }); }
   function saveCategories(){ return persistState(); }
   function saveFreezers(){ return persistState(); }
+  function saveHistory(){ return persistState(); }
 
   // ---------- mode ----------
   function setMode(mode){
@@ -1557,11 +1570,39 @@
     render();
   }
 
+  // ---------- historical log (removed units, kept separate from the live inventory) ----------
+  function logRemoval(units){
+    var now = new Date().toISOString();
+    var entries = units.map(function(u){
+      return {
+        id: makeId(),
+        barcode: u.barcode,
+        name: u.name,
+        category: u.category || 'Other',
+        weight: u.weight || null,
+        freezer: u.freezer || null,
+        dateAdded: u.dateAdded,
+        dateRemoved: now,
+        removedBy: currentDisplayName || ''
+      };
+    });
+    state.history = state.history.concat(entries);
+    saveHistory();
+    return entries;
+  }
+  function unlogRemoval(entries){
+    var ids = entries.map(function(e){ return e.id; });
+    state.history = state.history.filter(function(e){ return ids.indexOf(e.id) === -1; });
+    saveHistory();
+  }
+
   function removeItemWithUndo(item){
     state.items = state.items.filter(function(i){ return i.id !== item.id; });
     saveItems();
+    var historyEntries = logRemoval([item]);
     render();
     toast('Removed: ' + item.name, 'ok', function(){
+      unlogRemoval(historyEntries);
       state.items.push(item);
       saveItems();
       render();
@@ -1893,8 +1934,8 @@
     var d = new Date(iso);
     return d.toLocaleDateString(undefined, { day:'numeric', month:'short', year: 'numeric' });
   }
-  function formatDuration(dateAdded){
-    var days = Math.floor((Date.now() - new Date(dateAdded).getTime()) / 86400000);
+  function formatDurationBetween(startIso, endIso){
+    var days = Math.floor((new Date(endIso).getTime() - new Date(startIso).getTime()) / 86400000);
     if (days <= 0) return 'less than a day';
     if (days < 30) return days + (days === 1 ? ' day' : ' days');
     if (days < 365){
@@ -1909,6 +1950,9 @@
     var s2 = years + (years === 1 ? ' year' : ' years');
     if (remMonths > 0) s2 += ', ' + remMonths + (remMonths === 1 ? ' month' : ' months');
     return s2;
+  }
+  function formatDuration(dateAdded){
+    return formatDurationBetween(dateAdded, new Date().toISOString());
   }
 
   function groupItems(items){
@@ -1963,6 +2007,121 @@
     }).join('') + '</div>';
     Array.prototype.forEach.call(els.listContainer.querySelectorAll('.category-tile'), function(btn){
       btn.onclick = function(){ setListView('categoryItems', btn.getAttribute('data-category')); };
+    });
+  }
+
+  // ---------- history view ----------
+  function groupHistory(entries){
+    var map = {};
+    var order = [];
+    entries.forEach(function(h){
+      var key = h.barcode + '||' + h.name + '||' + h.dateRemoved;
+      if (!map[key]){
+        map[key] = {
+          key: key, barcode: h.barcode, name: h.name, category: h.category, weight: h.weight,
+          freezer: h.freezer, dateRemoved: h.dateRemoved, removedBy: h.removedBy, dateAdded: h.dateAdded, ids: []
+        };
+        order.push(key);
+      }
+      var g = map[key];
+      g.ids.push(h.id);
+      if (new Date(h.dateAdded) < new Date(g.dateAdded)) g.dateAdded = h.dateAdded;
+    });
+    return order.map(function(k){ return map[k]; }).sort(function(a,b){
+      return new Date(b.dateRemoved) - new Date(a.dateRemoved);
+    });
+  }
+
+  var historyGroupsByKey = {};
+  function renderHistoryList(){
+    var base = state.history.slice();
+    var filtersActive = false;
+    if (state.filterCategory){
+      base = base.filter(function(h){ return (h.category || 'Other') === state.filterCategory; });
+      filtersActive = true;
+    }
+    if (state.filterFreezer){
+      base = base.filter(function(h){ return h.freezer === state.filterFreezer; });
+      filtersActive = true;
+    }
+    var q = els.searchInput.value.trim().toLowerCase();
+    var filtered = q ? base.filter(function(h){ return h.name.toLowerCase().indexOf(q) > -1 || h.barcode.indexOf(q) > -1 || (h.category || '').toLowerCase().indexOf(q) > -1; }) : base;
+    var groups = groupHistory(filtered);
+    historyGroupsByKey = {};
+    groups.forEach(function(g){ historyGroupsByKey[g.key] = g; });
+
+    els.listCount.textContent = base.length + (base.length === 1 ? ' removed' : ' removed');
+
+    if (groups.length === 0){
+      var emptyMsg;
+      if (state.history.length === 0) emptyMsg = 'Nothing removed yet.';
+      else if (q) emptyMsg = 'No items match your search.';
+      else if (filtersActive) emptyMsg = 'No items match the selected filters.';
+      else emptyMsg = 'No items match your search.';
+      els.listContainer.innerHTML = '<div class="empty">' + emptyMsg + '</div>';
+      return;
+    }
+
+    els.listContainer.innerHTML = groups.map(function(g){
+      var qtyBadge = g.ids.length > 1 ? ' <span class="qty-badge">×' + g.ids.length + '</span>' : '';
+      var catColor = categoryColor(g.category);
+      var metaParts = ['<span class="cat-pill" style="color:' + catColor + '; border-color:' + catColor + '66; background:' + catColor + '22;">' + escapeHtml(g.category) + '</span>'];
+      if (g.weight) metaParts.push('<span>' + escapeHtml(formatWeightLabel(g.weight)) + '</span>');
+      if (g.freezer) metaParts.push('<span>' + escapeHtml(g.freezer) + '</span>');
+      return '' +
+        '<div class="item">' +
+          '<div class="item-main">' +
+            '<div class="item-name">' + escapeHtml(g.name) + qtyBadge + '</div>' +
+            '<div class="item-meta">' + metaParts.join('') + '</div>' +
+            '<div class="item-meta-2">Frozen ' + formatDurationBetween(g.dateAdded, g.dateRemoved) + ' · removed ' + fmtDate(g.dateRemoved) + (g.removedBy ? ' by ' + escapeHtml(g.removedBy) : '') + '</div>' +
+          '</div>' +
+          '<div class="hist-actions">' +
+            '<button class="hist-btn readd" data-key="' + g.key + '" title="Re-add to freezer">↺</button>' +
+            '<button class="hist-btn remove" data-key="' + g.key + '" title="Remove from history">✕</button>' +
+          '</div>' +
+        '</div>';
+    }).join('');
+
+    Array.prototype.forEach.call(els.listContainer.querySelectorAll('.hist-btn.readd'), function(btn){
+      btn.onclick = function(){ readdFromHistory(btn.getAttribute('data-key')); };
+    });
+    Array.prototype.forEach.call(els.listContainer.querySelectorAll('.hist-btn.remove'), function(btn){
+      btn.onclick = function(){ removeFromHistory(btn.getAttribute('data-key')); };
+    });
+  }
+
+  function readdFromHistory(key){
+    var g = historyGroupsByKey[key];
+    if (!g) return;
+    var category = state.categories.indexOf(g.category) > -1 ? g.category : (state.categories.indexOf('Other') > -1 ? 'Other' : state.categories[0]);
+    var freezer = g.freezer;
+    if (state.freezers.length <= 1) freezer = state.freezers[0] || 'Freezer';
+    else if (freezer && state.freezers.indexOf(freezer) === -1) freezer = null;
+    var count = g.ids.length;
+    for (var k = 0; k < count; k++){
+      state.items.push({
+        id: makeId(), barcode: g.barcode, name: g.name, category: category, weight: g.weight || null,
+        freezer: freezer, dateAdded: new Date().toISOString(), opened: false, addedBy: currentDisplayName || ''
+      });
+    }
+    saveItems();
+    render();
+    toast('Added ' + g.name + (count > 1 ? ' ×' + count : '') + ' back to the freezer', 'ok');
+  }
+
+  function removeFromHistory(key){
+    var g = historyGroupsByKey[key];
+    if (!g) return;
+    var removedEntries = state.history.filter(function(h){ return g.ids.indexOf(h.id) > -1; });
+    state.history = state.history.filter(function(h){ return g.ids.indexOf(h.id) === -1; });
+    saveHistory();
+    render();
+    var label = g.name + (g.ids.length > 1 ? ' (×' + g.ids.length + ')' : '');
+    toast('Removed from history: ' + label, 'ok', function(){
+      state.history = state.history.concat(removedEntries);
+      saveHistory();
+      render();
+      toast('Restored to history: ' + label, 'ok');
     });
   }
 
@@ -2022,14 +2181,22 @@
   function render(){
     els.listBackBtn.style.display = (state.listView === 'items') ? 'none' : '';
     els.categoryViewBtn.style.display = (state.listView === 'items') ? '' : 'none';
+    els.historyViewBtn.style.display = (state.listView === 'items') ? '' : 'none';
     els.searchRow.style.display = (state.listView === 'categoryTiles') ? 'none' : 'flex';
-    els.filterRow.style.display = (state.listView === 'items') ? 'flex' : 'none';
-    if (state.listView === 'items') updateFilterPills();
+    els.filterRow.style.display = (state.listView === 'items' || state.listView === 'history') ? 'flex' : 'none';
+    if (state.listView === 'items' || state.listView === 'history') updateFilterPills();
 
     if (state.listView === 'categoryTiles'){
       els.listTitle.textContent = 'Categories';
       els.listCount.textContent = state.items.length + (state.items.length === 1 ? ' item' : ' items');
       renderCategoryTiles();
+      if (pendingDetailKey) refreshDetailModal();
+      return;
+    }
+
+    if (state.listView === 'history'){
+      els.listTitle.textContent = 'History';
+      renderHistoryList();
       if (pendingDetailKey) refreshDetailModal();
       return;
     }
@@ -2270,8 +2437,10 @@
       var toRemove = -qtyDelta;
       var unitsToTrim = state.items.filter(function(i){ return i.barcode === oldKey.barcode && i.name === newName; });
       unitsToTrim.sort(function(a,b){ return new Date(a.dateAdded) - new Date(b.dateAdded); });
-      var removeIds = unitsToTrim.slice(0, toRemove).map(function(u){ return u.id; });
+      var removedUnits = unitsToTrim.slice(0, toRemove);
+      var removeIds = removedUnits.map(function(u){ return u.id; });
       state.items = state.items.filter(function(i){ return removeIds.indexOf(i.id) === -1; });
+      logRemoval(removedUnits);
     }
 
     if (openedChanged){
@@ -2305,9 +2474,11 @@
     closeDetailModal();
     state.items = state.items.filter(function(i){ return !(i.barcode === barcode && i.name === name); });
     saveItems();
+    var historyEntries = logRemoval(units);
     render();
     var label = units.length > 1 ? (name + ' (\u00d7' + units.length + ')') : name;
     toast('Deleted: ' + label, 'ok', function(){
+      unlogRemoval(historyEntries);
       state.items = state.items.concat(units);
       saveItems();
       render();
@@ -2317,6 +2488,7 @@
 
   els.searchInput.addEventListener('input', render);
   els.categoryViewBtn.onclick = function(){ setListView('categoryTiles'); };
+  els.historyViewBtn.onclick = function(){ setListView('history'); };
   els.listBackBtn.onclick = function(){ setListView('items'); };
 
   els.backupBtn.onclick = function(){
@@ -2329,6 +2501,7 @@
       categoryByBarcode: state.categoryByBarcode,
       weightByBarcode: state.weightByBarcode,
       freezers: state.freezers,
+      history: state.history,
       categoryColors: state.categoryColors
     };
     var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
