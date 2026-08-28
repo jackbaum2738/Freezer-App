@@ -736,13 +736,11 @@
   <div class="modal">
     <div class="modal-head">
       <h3>Who's this?</h3>
-      <button class="modal-x" id="nameEntryModalClose" aria-label="Skip">✕</button>
     </div>
-    <div class="barcode-tag">So items show who added them. You can set this later in Settings too.</div>
+    <div class="barcode-tag">So items show who added them. You can change this later in Settings.</div>
     <input type="text" id="nameEntryInput" placeholder="Your name" autocomplete="off">
     <div class="modal-actions">
-      <button class="btn btn-cancel" id="nameEntrySkipBtn">Not now</button>
-      <button class="btn btn-primary" id="nameEntrySaveBtn">Save</button>
+      <button class="btn btn-primary" id="nameEntrySaveBtn">Continue</button>
     </div>
   </div>
 </div>
@@ -987,9 +985,7 @@
     displayNameSaveBtn: document.getElementById('displayNameSaveBtn'),
     nameEntryModalBack: document.getElementById('nameEntryModalBack'),
     nameEntryInput: document.getElementById('nameEntryInput'),
-    nameEntrySkipBtn: document.getElementById('nameEntrySkipBtn'),
     nameEntrySaveBtn: document.getElementById('nameEntrySaveBtn'),
-    nameEntryModalClose: document.getElementById('nameEntryModalClose'),
   };
 
   function toast(msg, kind, onUndo){
@@ -2174,18 +2170,12 @@
     setNamePrompted();
     els.nameEntryModalBack.classList.remove('show');
   }
-  els.nameEntryModalClose.onclick = closeNameEntryModal;
-  els.nameEntrySkipBtn.onclick = closeNameEntryModal;
-  els.nameEntryModalBack.addEventListener('click', function(e){
-    if (e.target === els.nameEntryModalBack) closeNameEntryModal();
-  });
   els.nameEntrySaveBtn.onclick = function(){
     var n = els.nameEntryInput.value.trim();
-    if (n){
-      currentDisplayName = n;
-      setStoredDisplayName(n);
-      els.displayNameInput.value = n;
-    }
+    if (!n){ toast('Please enter your name', 'warn'); return; }
+    currentDisplayName = n;
+    setStoredDisplayName(n);
+    els.displayNameInput.value = n;
     closeNameEntryModal();
   };
   els.nameEntryInput.addEventListener('keydown', function(e){
