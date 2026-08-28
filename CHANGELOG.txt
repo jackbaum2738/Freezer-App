@@ -4,6 +4,12 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+3.3.0 -- 2026-08-28
+--------------------
+- Added "who added it" attribution: on first open, Freezr asks for your name and tags every item you add with it. Stored per-device (like the theme setting), not synced as household data.
+- Shown as "Added by" in the item detail popup only -- not on the main list rows, and it's not used to search or filter.
+- Editable anytime via a new "Your name" field in Settings. Changing it relabels items previously added under your old name.
+
 3.2.0 -- 2026-08-27
 --------------------
 - Reordered the category colour picker into 6 columns (one per hue: red, orange, yellow, green, blue, purple), each running bright to pastel top-to-bottom, plus a bottom row of neutrals (blacks/greys/whites/brown) for categories with no real hue.

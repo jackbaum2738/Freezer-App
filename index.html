@@ -567,6 +567,15 @@
     </div>
 
     <div class="settings-block">
+      <div class="settings-row-title">Your name</div>
+      <div class="settings-row-sub" style="margin-bottom:10px;">Shown as "Added by" on items you add. Stored on this device only.</div>
+      <div class="manual-row" style="margin-top:0;">
+        <input type="text" id="displayNameInput" placeholder="Your name">
+        <button id="displayNameSaveBtn">Save</button>
+      </div>
+    </div>
+
+    <div class="settings-block">
       <div class="settings-row-title">Appearance</div>
       <div class="segmented" id="themeSegmented">
         <button data-theme="dark">Dark</button>
@@ -575,7 +584,7 @@
       </div>
     </div>
 
-    <footer>Freezr &mdash; Version: 3.2.0</footer>
+    <footer>Freezr &mdash; Version: 3.3.0</footer>
   </div>
 </div>
 
@@ -659,6 +668,7 @@
     <div class="detail-meta">
       <div>Added <span id="detailAddedDate">—</span></div>
       <div>In the freezer for <span id="detailDuration">—</span></div>
+      <div>Added by <span id="detailAddedBy">—</span></div>
     </div>
 
     <div class="modal-actions">
@@ -719,6 +729,19 @@
       <button class="modal-x" id="categorySheetClose" aria-label="Close">✕</button>
     </div>
     <div class="category-picker" id="categorySheetGrid"></div>
+  </div>
+</div>
+
+<div class="modal-back" id="nameEntryModalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Who's this?</h3>
+    </div>
+    <div class="barcode-tag">So items show who added them. You can change this later in Settings.</div>
+    <input type="text" id="nameEntryInput" placeholder="Your name" autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="nameEntrySaveBtn">Continue</button>
+    </div>
   </div>
 </div>
 
@@ -957,6 +980,12 @@
     detailModalSaveBtn: document.getElementById('detailModalSaveBtn'),
     detailModalClose: document.getElementById('detailModalClose'),
     detailDeleteBtn: document.getElementById('detailDeleteBtn'),
+    detailAddedBy: document.getElementById('detailAddedBy'),
+    displayNameInput: document.getElementById('displayNameInput'),
+    displayNameSaveBtn: document.getElementById('displayNameSaveBtn'),
+    nameEntryModalBack: document.getElementById('nameEntryModalBack'),
+    nameEntryInput: document.getElementById('nameEntryInput'),
+    nameEntrySaveBtn: document.getElementById('nameEntrySaveBtn'),
   };
 
   function toast(msg, kind, onUndo){
@@ -1255,7 +1284,8 @@
       name: name,
       category: category || 'Other',
       dateAdded: new Date().toISOString(),
-      opened: false
+      opened: false,
+      addedBy: currentDisplayName || ''
     });
     saveItems();
     render();
@@ -1499,7 +1529,7 @@
       var category = q.category || 'Other';
       state.products[q.barcode] = name;
       state.categoryByBarcode[q.barcode] = category;
-      state.items.push({ id: makeId(), barcode: q.barcode, name: name, category: category, dateAdded: new Date().toISOString(), opened: false });
+      state.items.push({ id: makeId(), barcode: q.barcode, name: name, category: category, dateAdded: new Date().toISOString(), opened: false, addedBy: currentDisplayName || '' });
     });
     state.batchQueue = [];
     saveItems();
@@ -1724,6 +1754,7 @@
     setOpenedToggleUI(pendingOpened);
     els.detailAddedDate.textContent = fmtDate(oldest.dateAdded);
     els.detailDuration.textContent = formatDuration(oldest.dateAdded);
+    els.detailAddedBy.textContent = oldest.addedBy || '—';
     els.detailModalBack.classList.add('show');
   }
   function closeDetailModal(){
@@ -1791,7 +1822,7 @@
 
     if (qtyDelta > 0){
       for (var k = 0; k < qtyDelta; k++){
-        state.items.push({ id: makeId(), barcode: oldKey.barcode, name: newName, category: pendingCategory, dateAdded: new Date().toISOString(), opened: false });
+        state.items.push({ id: makeId(), barcode: oldKey.barcode, name: newName, category: pendingCategory, dateAdded: new Date().toISOString(), opened: false, addedBy: currentDisplayName || '' });
       }
     } else if (qtyDelta < 0){
       var toRemove = -qtyDelta;
@@ -2117,9 +2148,64 @@
   }
   applyTheme(currentThemePref);
 
+  // ---------- display name (per-device attribution, not synced — same pattern as theme) ----------
+  var DISPLAY_NAME_KEY = 'freezr-username';
+  var NAME_PROMPTED_KEY = 'freezr-username-prompted';
+  function getStoredDisplayName(){
+    try{ return localStorage.getItem(DISPLAY_NAME_KEY) || ''; }catch(e){ return ''; }
+  }
+  function setStoredDisplayName(n){
+    try{ localStorage.setItem(DISPLAY_NAME_KEY, n); }catch(e){}
+  }
+  function getNamePrompted(){
+    try{ return localStorage.getItem(NAME_PROMPTED_KEY) === '1'; }catch(e){ return false; }
+  }
+  function setNamePrompted(){
+    try{ localStorage.setItem(NAME_PROMPTED_KEY, '1'); }catch(e){}
+  }
+  var currentDisplayName = getStoredDisplayName();
+  els.displayNameInput.value = currentDisplayName;
+
+  function closeNameEntryModal(){
+    setNamePrompted();
+    els.nameEntryModalBack.classList.remove('show');
+  }
+  els.nameEntrySaveBtn.onclick = function(){
+    var n = els.nameEntryInput.value.trim();
+    if (!n){ toast('Please enter your name', 'warn'); return; }
+    currentDisplayName = n;
+    setStoredDisplayName(n);
+    els.displayNameInput.value = n;
+    closeNameEntryModal();
+  };
+  els.nameEntryInput.addEventListener('keydown', function(e){
+    if (e.key === 'Enter'){ els.nameEntrySaveBtn.click(); }
+  });
+
+  els.displayNameSaveBtn.onclick = function(){
+    var n = els.displayNameInput.value.trim();
+    var oldName = currentDisplayName;
+    currentDisplayName = n;
+    setStoredDisplayName(n);
+    setNamePrompted();
+    els.displayNameInput.value = n;
+    if (oldName && n && oldName !== n){
+      var changed = false;
+      state.items.forEach(function(i){
+        if (i.addedBy === oldName){ i.addedBy = n; changed = true; }
+      });
+      if (changed){ saveItems(); render(); }
+    }
+    toast(n ? 'Name saved' : 'Name cleared', 'ok');
+  };
+
   // ---------- init ----------
   setMode('add');
   initStorage();
+  if (!getNamePrompted() && !currentDisplayName){
+    els.nameEntryModalBack.classList.add('show');
+    setTimeout(function(){ els.nameEntryInput.focus(); }, 50);
+  }
  }catch(e){
    console.error(e);
    showJsErrorBanner('CAUGHT (init): ' + e.message + ' \u2014 ' + (e.stack||'').split('\n').slice(0,3).join(' | '));
