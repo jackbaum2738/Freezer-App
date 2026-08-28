@@ -4,6 +4,15 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+4.0.0 -- 2026-08-28
+--------------------
+- Added support for multiple freezers. The app still ships with just one ("Freezer") by default and nothing changes until a second one is added.
+- New "Freezers" page in Settings (below Categories) to add, rename, or remove freezers. Freezer names must be unique, and there must always be at least one.
+- Once a second freezer exists, a Freezer field appears on the add-item screen (right after Category) as a tappable pill that opens a picker sheet -- same pattern as Category and the Weight unit. With only one freezer, the field is hidden entirely on Add, since there's nothing to choose.
+- The item detail popup always shows the Freezer field: as a plain fixed pill (no picker) with one freezer, or the same tappable pill + sheet once there's more than one.
+- The freezer picked most recently in a scanning session is what the next scan defaults to (unlike category, which is learned per barcode) -- you're usually loading one physical freezer at a time, not one per product.
+- Deleting a freezer that still has items clears their Freezer field to "not set" (still editable) -- unless the deletion leaves exactly one freezer remaining, in which case those items move there automatically.
+
 3.4.1 -- 2026-08-28
 --------------------
 - Fixed the Weight field's number input and unit control rendering at different heights (now both a fixed 34px, matching the quantity stepper elsewhere in the app).

@@ -24,6 +24,7 @@ Running list of possible improvements. Nothing here is built yet unless marked �
 - **Tidier item rows** — removed the barcode number and the small ✕ delete button from list rows (barcode still shown in the item detail popup; delete still available there too).
 - **"Who added it" attribution** — a required name prompt on first open (can't be dismissed without entering a name), stored per-device like the theme preference. Shown as "Added by" in the item detail popup only (not on list rows, not filterable/searchable). Editable anytime via a "Your name" field in Settings; changing it relabels items previously logged under the old name.
 - **Weight field** — a number + unit dropdown (g/kg/ml/l/oz/lb) on the add-item and item detail screens, learned per barcode like name/category, with a best-effort default from OpenFoodFacts on a new barcode. The unit dropdown also offers "Small container"/"Large container" for homemade items with no real measurement, which hides the number field.
+- **Multiple freezers** — a "Freezers" page in Settings to add/rename/remove freezers (unique names, always at least one). Ships with just one by default and nothing changes until a second is added; once it is, a Freezer field (tappable pill + picker sheet) appears on the add-item screen and always shows in the item detail popup (fixed pill with one freezer, pill + picker with more). Deleting a freezer clears its items' Freezer field to "not set" unless it's the second-to-last, in which case they move to the one remaining freezer.
 
 ## Known issues (parked for later investigation)
 - **Safari Share button JS error** — tapping the native Share icon on iPhone triggers a generic, detail-free "Script error." banner. Traced as far as possible without real browser devtools — doesn't affect any real functionality. Worth a proper look if we ever get access to real Safari devtools.
@@ -31,14 +32,13 @@ Running list of possible improvements. Nothing here is built yet unless marked �
 ## Bigger features
 - **Historical log** — a record of items that used to be in the freezer but were removed (separate from the live inventory view), so you can look back at what's been used.
 - **Shopping list tab** — a third bottom tab (alongside Freezr and Settings) for a shopping list. When removing an item from the freezer, offer the option to add it to the shopping list.
-- **Multiple freezers** — manage more than one freezer (e.g. garage chest freezer + kitchen freezer) via a settings page where you can add/delete/name freezers, and items get assigned to one. In future, this could be locked to a specific administrator user, same as categories above.
 - **Receipt scanning (mass import)** — scan a shopping receipt, extract the list of product names from it, then choose which ones to add to the freezer in one go.
 - **Package as a real app (Play Store / App Store)** — wrap the existing web app natively via Trusted Web Activity (Android, lightweight) and/or Capacitor (iOS, needs Apple Developer account + review). Would likely also fix the camera focus/torch quirks we've hit, since native camera APIs are far more capable than what a browser can do. Not urgent — the current PWA architecture carries over directly whenever this gets tackled, so no need to prepare for it now.
 - **First-time onboarding tour** — a short walkthrough shown the first time someone installs/opens the app, explaining how it works. Would include entering their name (see "Who added it" attribution above) as one step.
 
 ## Ideas from Claude
 - ~~Use-by / expiry tracking~~ — **not wanted for now** (frozen food doesn't really need this tracked); may reconsider in future.
-- **User roles / permissions** — a general system underpinning the "locked to an administrator" idea mentioned above for both freezers and categories.
+- **User roles / permissions** — a general system for locking things like categories or freezer management to a specific administrator user (currently open to anyone).
 - **Custom labels for unlabeled homemade items** — generate a printable barcode/label for freezer bags with no barcode of their own (e.g. homemade soup, batch-cooked meals).
 - **"What's about to go off" / low-stock nudge** — a lightweight notification or highlighted section for items that have been frozen a long time. Low priority — not next up.
 

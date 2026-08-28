@@ -422,6 +422,11 @@
   .cat-collapsed-value{ display:flex; align-items:center; gap:8px; }
   .cat-collapsed-name{ font-size:13.5px; font-weight:700; }
   .cat-chevron{ color: var(--frost-dim); font-size:15px; margin-left:2px; }
+
+  .freezer-collapsed{ display:flex; align-items:center; gap:8px; cursor:pointer; }
+  .freezer-collapsed.fixed{ cursor:default; }
+  .freezer-name{ font-size:13.5px; font-weight:700; color: var(--frost); }
+  .freezer-name.unset{ color: var(--frost-dim); font-weight:600; font-style:italic; }
   .batch-cat-row{
     display:flex; align-items:center; gap:8px; cursor:pointer;
     background: var(--panel); border: 1px solid var(--edge); border-radius: 8px; padding: 8px 10px;
@@ -446,6 +451,8 @@
     cursor:pointer; flex-shrink:0; padding: 4px 2px;
   }
   .settings-cat-del:active{ color: var(--danger); }
+  .settings-cat-del.disabled{ color: var(--edge); cursor:not-allowed; }
+  .settings-cat-del.disabled:active{ color: var(--edge); }
   .drag-handle{
     cursor: grab; color: var(--frost-dim); font-size: 16px; padding: 4px 6px; flex-shrink:0;
     touch-action: none; line-height:1;
@@ -600,6 +607,14 @@
       <span class="settings-row-chevron">&rsaquo;</span>
     </div>
 
+    <div class="settings-row" id="openFreezersBtn">
+      <div>
+        <div class="settings-row-title">Freezers</div>
+        <div class="settings-row-sub" id="freezersRowSub">1 freezer — add more to track separate locations</div>
+      </div>
+      <span class="settings-row-chevron">&rsaquo;</span>
+    </div>
+
     <div class="settings-block">
       <div class="settings-row-title">Your name</div>
       <div class="settings-row-sub" style="margin-bottom:10px;">Shown as "Added by" on items you add. Stored on this device only.</div>
@@ -618,7 +633,7 @@
       </div>
     </div>
 
-    <footer>Freezr &mdash; Version: 3.4.1</footer>
+    <footer>Freezr &mdash; Version: 4.0.0</footer>
   </div>
 </div>
 
@@ -644,6 +659,10 @@
     <div class="qty-row cat-collapsed-row" id="modalCategoryRow">
       <span class="qty-row-label">Category</span>
       <div class="cat-collapsed-value" id="modalCategoryValue"></div>
+    </div>
+    <div class="qty-row" id="modalFreezerRow" style="display:none;">
+      <span class="qty-row-label">Freezer</span>
+      <div class="freezer-collapsed" id="modalFreezerCollapsed"></div>
     </div>
     <div class="qty-row weight-row">
       <span class="qty-row-label">Weight</span>
@@ -690,6 +709,11 @@
     <div class="qty-row cat-collapsed-row" id="detailCategoryRow">
       <span class="qty-row-label">Category</span>
       <div class="cat-collapsed-value" id="detailCategoryValue"></div>
+    </div>
+
+    <div class="qty-row" id="detailFreezerRow">
+      <span class="qty-row-label">Freezer</span>
+      <div class="freezer-collapsed" id="detailFreezerCollapsed"></div>
     </div>
 
     <div class="qty-row weight-row">
@@ -761,6 +785,24 @@
   </div>
 </div>
 
+<div class="modal-back" id="freezersModalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Freezers</h3>
+      <button class="modal-x" id="freezersModalClose" aria-label="Close">✕</button>
+    </div>
+    <div id="settingsFreezerList" style="max-height:50vh; overflow-y:auto; margin-bottom:14px;"></div>
+    <div class="manual-row" style="margin-top:0; margin-bottom:14px;">
+      <input type="text" id="settingsNewFreezerInput" placeholder="New freezer name">
+      <button id="settingsAddFreezerBtn">Add</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" id="freezersModalCancelBtn">Close</button>
+      <button class="btn btn-primary" id="freezersModalSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-back" id="colorPickerModalBack">
   <div class="modal">
     <div class="modal-head">
@@ -788,6 +830,16 @@
       <button class="modal-x" id="unitSheetClose" aria-label="Close">✕</button>
     </div>
     <div id="unitSheetGrid"></div>
+  </div>
+</div>
+
+<div class="modal-back" id="freezerSheetBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Select a freezer</h3>
+      <button class="modal-x" id="freezerSheetClose" aria-label="Close">✕</button>
+    </div>
+    <div class="category-picker" id="freezerSheetGrid"></div>
   </div>
 </div>
 
@@ -1008,8 +1060,49 @@
     el.onclick = function(){ openUnitSheet(unit, onSelect); };
   }
 
+  // ---------- freezers (locations; only shown/editable once a second one exists) ----------
+  var DEFAULT_FREEZERS = ['Freezer'];
+  function renderFreezerPicker(container, selected, onSelect){
+    container.innerHTML = state.freezers.map(function(f){
+      var isSel = f === selected;
+      return '<button type="button" class="unit-chip' + (isSel ? ' selected' : '') + '" data-freezer="' + escapeHtml(f) + '">' + escapeHtml(f) + '</button>';
+    }).join('');
+    Array.prototype.forEach.call(container.querySelectorAll('.unit-chip'), function(btn){
+      btn.onclick = function(){ onSelect(btn.getAttribute('data-freezer')); };
+    });
+  }
+  var freezerSheetOnSelect = null;
+  function openFreezerSheet(current, onSelect){
+    freezerSheetOnSelect = onSelect;
+    renderFreezerPicker(els.freezerSheetGrid, current, function(f){
+      var cb = freezerSheetOnSelect;
+      closeFreezerSheet();
+      if (cb) cb(f);
+    });
+    els.freezerSheetBack.classList.add('show');
+  }
+  function closeFreezerSheet(){
+    freezerSheetOnSelect = null;
+    els.freezerSheetBack.classList.remove('show');
+  }
+  function renderCollapsedFreezer(el, freezerName, onSelect){
+    var interactive = state.freezers.length > 1;
+    var displayName = interactive ? freezerName : (state.freezers[0] || 'Freezer');
+    if (!displayName){
+      el.innerHTML = '<span class="freezer-name unset">Not set</span><span class="cat-chevron">›</span>';
+    } else {
+      el.innerHTML = '<span class="freezer-name">' + escapeHtml(displayName) + '</span>' + (interactive ? '<span class="cat-chevron">›</span>' : '');
+    }
+    el.classList.toggle('fixed', !interactive);
+    el.onclick = interactive ? function(){ openFreezerSheet(freezerName, onSelect); } : null;
+  }
+  function updateFreezersRowSub(){
+    var n = state.freezers.length;
+    els.freezersRowSub.textContent = n <= 1 ? '1 freezer — add more to track separate locations' : (n + ' freezers');
+  }
+
   var state = {
-    mode:'add', items:[], products:{}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode:{}, weightByBarcode:{},
+    mode:'add', items:[], products:{}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode:{}, weightByBarcode:{}, freezers: DEFAULT_FREEZERS.slice(),
     categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS),
     listView: 'items', activeCategory: null,
     scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0, torchOn:false, batchMode:false, batchQueue:[]
@@ -1040,6 +1133,8 @@
     categoryViewBtn: document.getElementById('categoryViewBtn'),
     backupBtn: document.getElementById('backupBtn'),
     openCategoriesBtn: document.getElementById('openCategoriesBtn'),
+    openFreezersBtn: document.getElementById('openFreezersBtn'),
+    freezersRowSub: document.getElementById('freezersRowSub'),
     inventoryView: document.getElementById('inventoryView'),
     settingsView: document.getElementById('settingsView'),
     tabInventoryBtn: document.getElementById('tabInventoryBtn'),
@@ -1052,6 +1147,13 @@
     settingsModalCancelBtn: document.getElementById('settingsModalCancelBtn'),
     settingsModalSaveBtn: document.getElementById('settingsModalSaveBtn'),
     settingsModalClose: document.getElementById('settingsModalClose'),
+    freezersModalBack: document.getElementById('freezersModalBack'),
+    settingsFreezerList: document.getElementById('settingsFreezerList'),
+    settingsNewFreezerInput: document.getElementById('settingsNewFreezerInput'),
+    settingsAddFreezerBtn: document.getElementById('settingsAddFreezerBtn'),
+    freezersModalCancelBtn: document.getElementById('freezersModalCancelBtn'),
+    freezersModalSaveBtn: document.getElementById('freezersModalSaveBtn'),
+    freezersModalClose: document.getElementById('freezersModalClose'),
     colorPickerModalBack: document.getElementById('colorPickerModalBack'),
     colorSwatchGrid: document.getElementById('colorSwatchGrid'),
     colorPickerModalClose: document.getElementById('colorPickerModalClose'),
@@ -1061,6 +1163,9 @@
     unitSheetBack: document.getElementById('unitSheetBack'),
     unitSheetGrid: document.getElementById('unitSheetGrid'),
     unitSheetClose: document.getElementById('unitSheetClose'),
+    freezerSheetBack: document.getElementById('freezerSheetBack'),
+    freezerSheetGrid: document.getElementById('freezerSheetGrid'),
+    freezerSheetClose: document.getElementById('freezerSheetClose'),
     batchModeToggle: document.getElementById('batchModeToggle'),
     reviewBatchBtn: document.getElementById('reviewBatchBtn'),
     batchModalBack: document.getElementById('batchModalBack'),
@@ -1076,6 +1181,8 @@
     modalNameInput: document.getElementById('modalNameInput'),
     modalCategoryRow: document.getElementById('modalCategoryRow'),
     modalCategoryValue: document.getElementById('modalCategoryValue'),
+    modalFreezerRow: document.getElementById('modalFreezerRow'),
+    modalFreezerCollapsed: document.getElementById('modalFreezerCollapsed'),
     modalWeightControls: document.getElementById('modalWeightControls'),
     modalWeightAmount: document.getElementById('modalWeightAmount'),
     modalWeightUnitRow: document.getElementById('modalWeightUnitRow'),
@@ -1093,6 +1200,8 @@
     detailNameInput: document.getElementById('detailNameInput'),
     detailCategoryRow: document.getElementById('detailCategoryRow'),
     detailCategoryValue: document.getElementById('detailCategoryValue'),
+    detailFreezerRow: document.getElementById('detailFreezerRow'),
+    detailFreezerCollapsed: document.getElementById('detailFreezerCollapsed'),
     detailWeightControls: document.getElementById('detailWeightControls'),
     detailWeightAmount: document.getElementById('detailWeightAmount'),
     detailWeightUnitRow: document.getElementById('detailWeightUnitRow'),
@@ -1150,6 +1259,7 @@
       document.getElementById('setupBanner').style.display = 'block';
       els.subline.textContent = 'Not connected — add your Firebase config to sync';
       setSyncState('failed');
+      updateFreezersRowSub();
       render();
       return;
     }
@@ -1168,11 +1278,14 @@
             state.categories = (data.categories && data.categories.length) ? data.categories : DEFAULT_CATEGORIES.slice();
             state.categoryByBarcode = data.categoryByBarcode || {};
             state.weightByBarcode = data.weightByBarcode || {};
+            state.freezers = (data.freezers && data.freezers.length) ? data.freezers : DEFAULT_FREEZERS.slice();
             state.categoryColors = (data.categoryColors && Object.keys(data.categoryColors).length) ? data.categoryColors : Object.assign({}, DEFAULT_CATEGORY_COLORS);
             if (normalizeCategoryColors()) saveCategories();
+            updateFreezersRowSub();
           } else {
             // first ever run for this project — create the doc
-            docRef.set({ items: [], products: {}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode: {}, weightByBarcode: {}, categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS) });
+            docRef.set({ items: [], products: {}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode: {}, weightByBarcode: {}, freezers: DEFAULT_FREEZERS.slice(), categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS) });
+            updateFreezersRowSub();
           }
           render();
         }catch(e){
@@ -1196,7 +1309,7 @@
     if (!docRef) return;
     var silent = opts && opts.silent;
     try{
-      await docRef.set({ items: state.items, products: state.products, categories: state.categories, categoryByBarcode: state.categoryByBarcode, weightByBarcode: state.weightByBarcode, categoryColors: state.categoryColors }, { merge: true });
+      await docRef.set({ items: state.items, products: state.products, categories: state.categories, categoryByBarcode: state.categoryByBarcode, weightByBarcode: state.weightByBarcode, freezers: state.freezers, categoryColors: state.categoryColors }, { merge: true });
       setSyncState('synced');
     }catch(e){
       setSyncState('failed');
@@ -1206,6 +1319,7 @@
   function saveItems(){ return persistState(); }
   function saveProducts(){ return persistState({ silent: true }); }
   function saveCategories(){ return persistState(); }
+  function saveFreezers(){ return persistState(); }
 
   // ---------- mode ----------
   function setMode(mode){
@@ -1404,13 +1518,14 @@
     }
   }
 
-  function addItem(barcode, name, category, weight){
+  function addItem(barcode, name, category, weight, freezer){
     state.items.push({
       id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random(),
       barcode: barcode,
       name: name,
       category: category || 'Other',
       weight: weight || null,
+      freezer: freezer || null,
       dateAdded: new Date().toISOString(),
       opened: false,
       addedBy: currentDisplayName || ''
@@ -1477,6 +1592,8 @@
   var weightManuallySet = false;
   var modalSelectedCategory = 'Other';
   var modalSelectedUnit = 'g';
+  var modalSelectedFreezer = null;
+  var lastUsedFreezer = null;
   els.modalWeightAmount.addEventListener('input', function(){ weightManuallySet = true; });
   function selectModalCategory(c){
     modalSelectedCategory = c;
@@ -1484,6 +1601,10 @@
       categoryManuallySet = true;
       selectModalCategory(c2);
     });
+  }
+  function selectModalFreezer(f){
+    modalSelectedFreezer = f;
+    renderCollapsedFreezer(els.modalFreezerCollapsed, f, selectModalFreezer);
   }
   function selectModalUnit(u){
     modalSelectedUnit = u;
@@ -1524,6 +1645,13 @@
     var knownWeight = state.weightByBarcode[barcode] || null;
     weightManuallySet = !!knownWeight;
     applyModalWeight(knownWeight);
+    if (state.freezers.length > 1){
+      els.modalFreezerRow.style.display = '';
+      selectModalFreezer(lastUsedFreezer && state.freezers.indexOf(lastUsedFreezer) > -1 ? lastUsedFreezer : state.freezers[0]);
+    } else {
+      els.modalFreezerRow.style.display = 'none';
+      modalSelectedFreezer = state.freezers[0] || 'Freezer';
+    }
     els.modalBack.classList.add('show');
     setTimeout(function(){ els.modalNameInput.focus(); els.modalNameInput.select(); }, 50);
     if (!known && !pendingEditOnly) tryLookup(barcode);
@@ -1546,6 +1674,7 @@
     if (!name || !pendingBarcode) return;
     var category = modalSelectedCategory || 'Other';
     var weight = readModalWeight();
+    var freezer = state.freezers.length > 1 ? modalSelectedFreezer : (state.freezers[0] || 'Freezer');
     state.products[pendingBarcode] = name;
     state.categoryByBarcode[pendingBarcode] = category;
     if (weight) state.weightByBarcode[pendingBarcode] = weight;
@@ -1563,7 +1692,8 @@
       render();
       toast('Renamed to: ' + name, 'ok');
     } else {
-      addItem(pendingBarcode, name, category, weight);
+      lastUsedFreezer = freezer;
+      addItem(pendingBarcode, name, category, weight, freezer);
       toast('Added: ' + name, 'ok');
     }
     closeModal();
@@ -1686,12 +1816,13 @@
       return;
     }
     var count = state.batchQueue.length;
+    var batchFreezer = state.freezers.length > 1 ? (lastUsedFreezer && state.freezers.indexOf(lastUsedFreezer) > -1 ? lastUsedFreezer : state.freezers[0]) : (state.freezers[0] || 'Freezer');
     state.batchQueue.forEach(function(q){
       var name = q.name.trim();
       var category = q.category || 'Other';
       state.products[q.barcode] = name;
       state.categoryByBarcode[q.barcode] = category;
-      state.items.push({ id: makeId(), barcode: q.barcode, name: name, category: category, weight: state.weightByBarcode[q.barcode] || null, dateAdded: new Date().toISOString(), opened: false, addedBy: currentDisplayName || '' });
+      state.items.push({ id: makeId(), barcode: q.barcode, name: name, category: category, weight: state.weightByBarcode[q.barcode] || null, freezer: batchFreezer, dateAdded: new Date().toISOString(), opened: false, addedBy: currentDisplayName || '' });
     });
     state.batchQueue = [];
     saveItems();
@@ -1893,6 +2024,15 @@
   var originalCategory = 'Other';
   var originalWeight = null;
   var pendingUnit = 'g';
+  var pendingFreezer = null;
+  var originalFreezer = null;
+  function selectDetailFreezer(f){
+    pendingFreezer = f;
+    renderCollapsedFreezer(els.detailFreezerCollapsed, f, function(f2){
+      if (!pendingDetailKey) return;
+      selectDetailFreezer(f2);
+    });
+  }
   function formatWeightLabel(w){
     if (!w) return 'not set';
     if (w.unit === 'small') return 'small container';
@@ -1946,10 +2086,12 @@
     originalCategory = oldest.category || 'Other';
     pendingCategory = originalCategory;
     originalWeight = oldest.weight || null;
+    originalFreezer = oldest.freezer || null;
     els.detailBarcode.textContent = 'Barcode: ' + barcode;
     els.detailNameInput.value = name;
     selectDetailCategory(pendingCategory);
     applyDetailWeight(originalWeight);
+    selectDetailFreezer(originalFreezer);
     els.detailQtyValue.textContent = pendingQty;
     setOpenedToggleUI(pendingOpened);
     els.detailAddedDate.textContent = fmtDate(oldest.dateAdded);
@@ -2010,8 +2152,9 @@
     var categoryChanged = pendingCategory !== originalCategory;
     var newWeight = readDetailWeight();
     var weightChanged = !weightsEqual(newWeight, originalWeight);
+    var freezerChanged = pendingFreezer !== originalFreezer;
 
-    if (nameChanged || categoryChanged || weightChanged){
+    if (nameChanged || categoryChanged || weightChanged || freezerChanged){
       if (nameChanged) state.products[oldKey.barcode] = newName;
       if (categoryChanged) state.categoryByBarcode[oldKey.barcode] = pendingCategory;
       if (weightChanged){
@@ -2023,13 +2166,14 @@
           if (nameChanged) i.name = newName;
           if (categoryChanged) i.category = pendingCategory;
           if (weightChanged) i.weight = newWeight;
+          if (freezerChanged) i.freezer = pendingFreezer;
         }
       });
     }
 
     if (qtyDelta > 0){
       for (var k = 0; k < qtyDelta; k++){
-        state.items.push({ id: makeId(), barcode: oldKey.barcode, name: newName, category: pendingCategory, weight: newWeight, dateAdded: new Date().toISOString(), opened: false, addedBy: currentDisplayName || '' });
+        state.items.push({ id: makeId(), barcode: oldKey.barcode, name: newName, category: pendingCategory, weight: newWeight, freezer: pendingFreezer, dateAdded: new Date().toISOString(), opened: false, addedBy: currentDisplayName || '' });
       }
     } else if (qtyDelta < 0){
       var toRemove = -qtyDelta;
@@ -2045,7 +2189,7 @@
       if (remaining.length > 0) remaining[0].opened = pendingOpened;
     }
 
-    if (nameChanged || qtyDelta !== 0 || openedChanged || categoryChanged || weightChanged){
+    if (nameChanged || qtyDelta !== 0 || openedChanged || categoryChanged || weightChanged || freezerChanged){
       saveItems();
       if (nameChanged || categoryChanged || weightChanged) saveProducts();
       render();
@@ -2053,6 +2197,7 @@
       if (nameChanged) parts.push('renamed to ' + newName);
       if (categoryChanged) parts.push('category set to ' + pendingCategory);
       if (weightChanged) parts.push('weight set to ' + formatWeightLabel(newWeight));
+      if (freezerChanged) parts.push('freezer set to ' + (pendingFreezer || 'not set'));
       if (qtyDelta !== 0) parts.push('quantity ' + (qtyDelta > 0 ? '+' : '') + qtyDelta);
       if (openedChanged) parts.push(pendingOpened ? 'marked opened' : 'marked sealed');
       toast('Saved \u2014 ' + parts.join(', '), 'ok');
@@ -2092,6 +2237,7 @@
       categories: state.categories,
       categoryByBarcode: state.categoryByBarcode,
       weightByBarcode: state.weightByBarcode,
+      freezers: state.freezers,
       categoryColors: state.categoryColors
     };
     var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -2179,6 +2325,11 @@
   els.unitSheetClose.onclick = closeUnitSheet;
   els.unitSheetBack.addEventListener('click', function(e){
     if (e.target === els.unitSheetBack) closeUnitSheet();
+  });
+
+  els.freezerSheetClose.onclick = closeFreezerSheet;
+  els.freezerSheetBack.addEventListener('click', function(e){
+    if (e.target === els.freezerSheetBack) closeFreezerSheet();
   });
 
   // ---------- category drag-to-reorder ----------
@@ -2316,6 +2467,119 @@
     render();
     closeSettingsModal();
     toast('Categories updated', 'ok');
+  };
+
+  // ---------- freezers settings ----------
+  var pendingFreezersList = null;
+  function renderSettingsFreezerList(){
+    var onlyOneLeft = pendingFreezersList.length <= 1;
+    els.settingsFreezerList.innerHTML = pendingFreezersList.map(function(e){
+      return '' +
+        '<div class="settings-cat-row" data-key="' + e.key + '">' +
+          '<input type="text" class="settings-freezer-input" data-key="' + e.key + '" value="' + escapeHtml(e.value) + '">' +
+          '<button class="settings-cat-del' + (onlyOneLeft ? ' disabled' : '') + '" data-key="' + e.key + '" title="' + (onlyOneLeft ? 'At least one freezer is required' : 'Remove freezer') + '">✕</button>' +
+        '</div>';
+    }).join('');
+    Array.prototype.forEach.call(els.settingsFreezerList.querySelectorAll('.settings-freezer-input'), function(inp){
+      inp.addEventListener('input', function(){
+        var entry = pendingFreezersList.find(function(e){ return e.key === inp.getAttribute('data-key'); });
+        if (entry) entry.value = inp.value;
+        inp.classList.remove('empty-warn');
+      });
+    });
+    Array.prototype.forEach.call(els.settingsFreezerList.querySelectorAll('.settings-cat-del'), function(btn){
+      btn.onclick = function(){
+        if (pendingFreezersList.length <= 1) return;
+        var key = btn.getAttribute('data-key');
+        pendingFreezersList = pendingFreezersList.filter(function(e){ return e.key !== key; });
+        renderSettingsFreezerList();
+      };
+    });
+  }
+  function openFreezersModal(){
+    pendingFreezersList = state.freezers.map(function(f){ return { key: makeId(), original: f, value: f }; });
+    els.settingsNewFreezerInput.value = '';
+    renderSettingsFreezerList();
+    els.freezersModalBack.classList.add('show');
+  }
+  function closeFreezersModal(){
+    pendingFreezersList = null;
+    els.freezersModalBack.classList.remove('show');
+  }
+  els.openFreezersBtn.onclick = openFreezersModal;
+  els.freezersModalClose.onclick = closeFreezersModal;
+  els.freezersModalCancelBtn.onclick = closeFreezersModal;
+  els.freezersModalBack.addEventListener('click', function(e){
+    if (e.target === els.freezersModalBack) closeFreezersModal();
+  });
+  function addSettingsFreezer(){
+    var val = els.settingsNewFreezerInput.value.trim();
+    if (!val) return;
+    var lower = val.toLowerCase();
+    var isDup = pendingFreezersList.some(function(e){ return e.value.trim().toLowerCase() === lower; });
+    if (isDup){ toast('That freezer name already exists', 'warn'); return; }
+    pendingFreezersList.push({ key: makeId(), original: null, value: val });
+    els.settingsNewFreezerInput.value = '';
+    renderSettingsFreezerList();
+  }
+  els.settingsAddFreezerBtn.onclick = addSettingsFreezer;
+  els.settingsNewFreezerInput.addEventListener('keydown', function(e){
+    if (e.key === 'Enter'){ addSettingsFreezer(); }
+  });
+  els.freezersModalSaveBtn.onclick = function(){
+    if (!pendingFreezersList) return;
+    pendingFreezersList.forEach(function(e){ e.value = e.value.trim(); });
+
+    if (pendingFreezersList.length === 0){
+      toast('Add at least one freezer', 'warn');
+      return;
+    }
+
+    var hasEmpty = false;
+    var hasDup = false;
+    var seen = {};
+    Array.prototype.forEach.call(els.settingsFreezerList.querySelectorAll('.settings-freezer-input'), function(inp){
+      var entry = pendingFreezersList.find(function(e){ return e.key === inp.getAttribute('data-key'); });
+      inp.classList.remove('empty-warn');
+      if (!entry) return;
+      if (!entry.value){ inp.classList.add('empty-warn'); hasEmpty = true; return; }
+      var lower = entry.value.toLowerCase();
+      if (seen[lower]){ inp.classList.add('empty-warn'); hasDup = true; }
+      seen[lower] = true;
+    });
+    if (hasEmpty){ toast('Freezer names can’t be empty', 'warn'); return; }
+    if (hasDup){ toast('Freezer names must be unique', 'warn'); return; }
+
+    var renameMap = {};
+    var keptOriginals = {};
+    pendingFreezersList.forEach(function(e){
+      if (e.original){
+        keptOriginals[e.original] = true;
+        if (e.original !== e.value) renameMap[e.original] = e.value;
+      }
+    });
+    var removedNames = state.freezers.filter(function(f){ return !keptOriginals[f]; });
+    var newFreezers = pendingFreezersList.map(function(e){ return e.value; });
+    // Items on a removed freezer are cleared to "not set" -- unless deleting it leaves exactly
+    // one freezer remaining, in which case they move there (nothing else it could be).
+    var soleSurvivor = newFreezers.length === 1 ? newFreezers[0] : null;
+
+    state.items.forEach(function(i){
+      if (renameMap[i.freezer]) i.freezer = renameMap[i.freezer];
+      else if (removedNames.indexOf(i.freezer) > -1) i.freezer = soleSurvivor;
+    });
+    if (lastUsedFreezer){
+      if (renameMap[lastUsedFreezer]) lastUsedFreezer = renameMap[lastUsedFreezer];
+      else if (removedNames.indexOf(lastUsedFreezer) > -1) lastUsedFreezer = soleSurvivor;
+    }
+
+    state.freezers = newFreezers;
+    saveItems();
+    saveFreezers();
+    updateFreezersRowSub();
+    render();
+    closeFreezersModal();
+    toast('Freezers updated', 'ok');
   };
 
   // ---------- tabs ----------
