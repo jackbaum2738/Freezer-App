@@ -513,6 +513,43 @@
   }
   .settings-block .settings-row-title{ margin-bottom:10px; }
 
+  .freezr-code-row{
+    display:flex; align-items:center; justify-content:space-between;
+    background: var(--panel-2); border: 1px solid var(--edge); border-radius: 10px;
+    padding: 12px 14px; margin-bottom:12px;
+  }
+  .freezr-code-row .code-label{ font-size:10.5px; color: var(--frost-dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px; }
+  .freezr-code-row .code-value{ font-family: var(--mono); font-size: 16px; font-weight:700; letter-spacing:.03em; color: var(--cyan); }
+  .btn-share{ display:flex; align-items:center; justify-content:center; gap:8px; }
+
+  .modal-back-btn{
+    background: transparent; border: none; color: var(--cyan); font-size: 14px; font-weight:700;
+    padding: 4px 2px; cursor:pointer;
+  }
+  .choice-card{
+    display:flex; align-items:center; gap:12px; text-align:left; width:100%;
+    background: var(--panel-2); border: 1px solid var(--edge); border-radius: 14px;
+    padding: 16px; margin-bottom: 12px; cursor:pointer; font-family: var(--sans);
+  }
+  .choice-card:active{ background: var(--edge); }
+  .choice-card .choice-icon{
+    width:40px; height:40px; border-radius:10px; background: var(--cyan-dim); color: var(--cyan);
+    display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0;
+  }
+  .choice-card .choice-title{ font-weight:700; font-size:14.5px; color: var(--frost); margin-bottom:2px; }
+  .choice-card .choice-sub{ font-size:12px; color: var(--frost-dim); line-height:1.4; }
+
+  .code-reveal{
+    background: var(--panel-2); border: 1px dashed var(--cyan-dim); border-radius: 14px;
+    padding: 22px 16px; text-align:center; margin-bottom:16px;
+  }
+  .code-reveal .code-reveal-label{ font-size:11px; color: var(--frost-dim); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
+  .code-reveal .code-reveal-value{ font-family: var(--mono); font-size: 26px; font-weight:800; color: var(--cyan); letter-spacing:.03em; }
+
+  .field-error{ font-size:12.5px; color: var(--danger); margin: -2px 0 12px; display:none; }
+  .field-error.show{ display:block; }
+  .modal input[type=text].err{ border-color: var(--danger); }
+
   .segmented{
     display:flex; gap:6px; background: var(--panel-2);
     border: 1px solid var(--edge); border-radius: 12px; padding: 4px;
@@ -627,6 +664,16 @@
     <div class="list-head">
       <h2>Settings</h2>
     </div>
+    <div class="settings-block">
+      <div class="settings-row-title">Freezr</div>
+      <div class="freezr-code-row">
+        <div>
+          <div class="code-label">Your code</div>
+          <div class="code-value" id="freezrCodeValue">—</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-share" id="shareFreezrBtn"><span>📤</span> Share invite</button>
+    </div>
     <div class="settings-row" id="openCategoriesBtn">
       <div>
         <div class="settings-row-title">Categories</div>
@@ -661,7 +708,7 @@
       </div>
     </div>
 
-    <footer>Freezr &mdash; Version: 5.0.0</footer>
+    <footer>Freezr &mdash; Version: 6.0.0</footer>
   </div>
 </div>
 
@@ -871,6 +918,60 @@
   </div>
 </div>
 
+<div class="modal-back" id="freezrChoiceModalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Welcome to Freezr</h3>
+    </div>
+    <div class="barcode-tag">Join an existing Freezr, or create a new one. You can find your code later in Settings.</div>
+    <button class="choice-card" id="freezrGoJoinBtn">
+      <div class="choice-icon">🔑</div>
+      <div>
+        <div class="choice-title">Join a Freezr</div>
+        <div class="choice-sub">I have a code from someone already using one</div>
+      </div>
+    </button>
+    <button class="choice-card" id="freezrGoCreateBtn">
+      <div class="choice-icon">✨</div>
+      <div>
+        <div class="choice-title">Create a Freezr</div>
+        <div class="choice-sub">Set up a new shared freezer and get a code to invite others</div>
+      </div>
+    </button>
+  </div>
+</div>
+
+<div class="modal-back" id="freezrJoinModalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <button class="modal-back-btn" id="freezrJoinBackBtn">&lsaquo; Back</button>
+    </div>
+    <h3 style="margin-top:6px;">Join a Freezr</h3>
+    <div class="barcode-tag">Ask someone already in the Freezr for their code — it's shown in their Settings tab.</div>
+    <input type="text" id="freezrJoinInput" placeholder="e.g. FROSTY-OTTER" autocomplete="off">
+    <div class="field-error" id="freezrJoinError">Freezr not found — check the code and try again.</div>
+    <div class="modal-actions" style="margin-top:6px;">
+      <button class="btn btn-primary" id="freezrJoinSubmitBtn">Join Freezr</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-back" id="freezrCreatedModalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Freezr created</h3>
+    </div>
+    <div class="barcode-tag">Share this code so others can join the same Freezr.</div>
+    <div class="code-reveal">
+      <div class="code-reveal-label">Your Freezr code</div>
+      <div class="code-reveal-value" id="freezrCreatedCode">&nbsp;</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="freezrCreatedContinueBtn">Continue</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-back" id="nameEntryModalBack">
   <div class="modal">
     <div class="modal-head">
@@ -903,12 +1004,12 @@
 <script>
 (function(){
  try{
-  var DEFAULT_CATEGORIES = ['Meat','Poultry','Fish & Seafood','Vegetables','Fruit','Bread & Bakery','Ready Meals & Leftovers','Dairy & Ice Cream','Other'];
+  var DEFAULT_CATEGORIES = ['Meat','Poultry','Fish & Seafood','Vegetables','Fruit','Bakery','Ready Meals & Leftovers','Dairy & Ice Cream','Other'];
 
   // 24 preset swatches (bright + pastel), picked from exclusively — this is the only way to
   // choose a category colour, so every stored colour is guaranteed to be one of these.
   // 6 hue columns (Red, Orange, Yellow, Green, Blue, Purple), each bright -> medium -> pastel,
-  // plus a row of neutrals for categories with no real hue (e.g. Bread & Bakery, Other).
+  // plus a row of neutrals for categories with no real hue (e.g. Bakery, Other).
   var CATEGORY_COLOR_PALETTE = [
     '#e53935','#fb8c00','#fdd835','#43a047','#1e88e5','#8e24aa',
     '#ef5350','#ffa726','#ffee58','#66bb6a','#42a5f5','#ab47bc',
@@ -924,7 +1025,7 @@
     'Fish & Seafood': '#1e88e5',
     'Vegetables': '#43a047',
     'Fruit': '#ce93d8',
-    'Bread & Bakery': '#a1887f',
+    'Bakery': '#a1887f',
     'Ready Meals & Leftovers': '#8e24aa',
     'Dairy & Ice Cream': '#fdd835',
     'Other': '#9e9e9e'
@@ -936,7 +1037,7 @@
     'Fish & Seafood': ['fish','salmon','cod','tuna','prawn','shrimp','seafood','haddock','mackerel','scampi','crab','lobster','sardine'],
     'Vegetables': ['pea','carrot','broccoli','sweetcorn','corn','spinach','veg','sprout','cauliflower','pepper','onion','potato','chip','bean'],
     'Fruit': ['berry','berries','fruit','mango','banana','apple','pineapple','melon'],
-    'Bread & Bakery': ['bread','bagel','roll','baguette','croissant','naan','pastry','bun','pitta'],
+    'Bakery': ['bread','bagel','roll','baguette','croissant','naan','pastry','bun','pitta'],
     'Ready Meals & Leftovers': ['ready meal','pizza','lasagne','curry','soup','pie','leftover','casserole','stew'],
     'Dairy & Ice Cream': ['ice cream','icecream','yogurt','yoghurt','cheese','butter','milk','gelato','sorbet']
   };
@@ -1255,6 +1356,19 @@
     nameEntryModalBack: document.getElementById('nameEntryModalBack'),
     nameEntryInput: document.getElementById('nameEntryInput'),
     nameEntrySaveBtn: document.getElementById('nameEntrySaveBtn'),
+    freezrCodeValue: document.getElementById('freezrCodeValue'),
+    shareFreezrBtn: document.getElementById('shareFreezrBtn'),
+    freezrChoiceModalBack: document.getElementById('freezrChoiceModalBack'),
+    freezrGoJoinBtn: document.getElementById('freezrGoJoinBtn'),
+    freezrGoCreateBtn: document.getElementById('freezrGoCreateBtn'),
+    freezrJoinModalBack: document.getElementById('freezrJoinModalBack'),
+    freezrJoinBackBtn: document.getElementById('freezrJoinBackBtn'),
+    freezrJoinInput: document.getElementById('freezrJoinInput'),
+    freezrJoinError: document.getElementById('freezrJoinError'),
+    freezrJoinSubmitBtn: document.getElementById('freezrJoinSubmitBtn'),
+    freezrCreatedModalBack: document.getElementById('freezrCreatedModalBack'),
+    freezrCreatedCode: document.getElementById('freezrCreatedCode'),
+    freezrCreatedContinueBtn: document.getElementById('freezrCreatedContinueBtn'),
   };
 
   function toast(msg, kind, onUndo){
@@ -1288,6 +1402,46 @@
     if (syncPillText) syncPillText.textContent = s === 'synced' ? 'Synced' : (s === 'failed' ? 'Sync failed' : 'Connecting');
   }
 
+  function freshFreezrDoc(){
+    return { items: [], products: {}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode: {}, weightByBarcode: {}, freezers: DEFAULT_FREEZERS.slice(), history: [], categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS) };
+  }
+
+  function connectToFreezr(code){
+    setSyncState('connecting');
+    docRef = db.collection('freezrs').doc(code);
+    docRef.onSnapshot(function(snap){
+      try{
+        setSyncState('synced');
+        var data = snap.data();
+        if (data){
+          state.items = data.items || [];
+          state.products = data.products || {};
+          state.categories = (data.categories && data.categories.length) ? data.categories : DEFAULT_CATEGORIES.slice();
+          state.categoryByBarcode = data.categoryByBarcode || {};
+          state.weightByBarcode = data.weightByBarcode || {};
+          state.freezers = (data.freezers && data.freezers.length) ? data.freezers : DEFAULT_FREEZERS.slice();
+          state.history = data.history || [];
+          state.categoryColors = (data.categoryColors && Object.keys(data.categoryColors).length) ? data.categoryColors : Object.assign({}, DEFAULT_CATEGORY_COLORS);
+          if (normalizeCategoryColors()) saveCategories();
+          updateFreezersRowSub();
+        } else {
+          // defensive fallback — shouldn't happen, since a code is only ever stored once its doc exists
+          docRef.set(freshFreezrDoc());
+          updateFreezersRowSub();
+        }
+        render();
+      }catch(e){
+        console.error(e);
+        showJsErrorBanner('CAUGHT (onSnapshot): ' + e.message + ' — ' + (e.stack||'').split('\n').slice(0,2).join(' | '));
+      }
+    }, function(err){
+      console.error(err);
+      setSyncState('failed');
+      showJsErrorBanner('FIRESTORE ERROR: ' + (err && (err.code || err.message) || err));
+      toast('Sync error — check Firestore rules/config', 'err');
+    });
+  }
+
   function initStorage(){
     if (!configured){
       document.getElementById('setupBanner').style.display = 'block';
@@ -1297,42 +1451,18 @@
       render();
       return;
     }
-    setSyncState('connecting');
     try{
       firebase.initializeApp(firebaseConfig);
       db = firebase.firestore();
-      docRef = db.collection('freezer').doc('inventory');
-      docRef.onSnapshot(function(snap){
-        try{
-          setSyncState('synced');
-          var data = snap.data();
-          if (data){
-            state.items = data.items || [];
-            state.products = data.products || {};
-            state.categories = (data.categories && data.categories.length) ? data.categories : DEFAULT_CATEGORIES.slice();
-            state.categoryByBarcode = data.categoryByBarcode || {};
-            state.weightByBarcode = data.weightByBarcode || {};
-            state.freezers = (data.freezers && data.freezers.length) ? data.freezers : DEFAULT_FREEZERS.slice();
-            state.history = data.history || [];
-            state.categoryColors = (data.categoryColors && Object.keys(data.categoryColors).length) ? data.categoryColors : Object.assign({}, DEFAULT_CATEGORY_COLORS);
-            if (normalizeCategoryColors()) saveCategories();
-            updateFreezersRowSub();
-          } else {
-            // first ever run for this project — create the doc
-            docRef.set({ items: [], products: {}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode: {}, weightByBarcode: {}, freezers: DEFAULT_FREEZERS.slice(), history: [], categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS) });
-            updateFreezersRowSub();
-          }
-          render();
-        }catch(e){
-          console.error(e);
-          showJsErrorBanner('CAUGHT (onSnapshot): ' + e.message + ' — ' + (e.stack||'').split('\n').slice(0,2).join(' | '));
-        }
-      }, function(err){
-        console.error(err);
+      var storedCode = getStoredFreezrCode();
+      if (storedCode){
+        connectToFreezr(storedCode);
+      } else {
+        els.subline.textContent = 'Join or create a Freezr to start syncing';
         setSyncState('failed');
-        showJsErrorBanner('FIRESTORE ERROR: ' + (err && (err.code || err.message) || err));
-        toast('Sync error — check Firestore rules/config', 'err');
-      });
+        render();
+        showFreezrChoiceModal();
+      }
     }catch(e){
       console.error(e);
       setSyncState('failed');
@@ -2890,6 +3020,130 @@
   }
   applyTheme(currentThemePref);
 
+  // ---------- Freezr (household) code — per-device, not synced, same pattern as theme/display name ----------
+  var FREEZR_CODE_KEY = 'freezr-code';
+  function getStoredFreezrCode(){
+    try{ return localStorage.getItem(FREEZR_CODE_KEY) || ''; }catch(e){ return ''; }
+  }
+  function setStoredFreezrCode(code){
+    try{ localStorage.setItem(FREEZR_CODE_KEY, code); }catch(e){}
+  }
+
+  var FREEZR_CODE_ADJECTIVES = ['FROSTY','ICY','CHILLY','ARCTIC','POLAR','FROZEN','GLACIAL','CRISP','SNOWY','COOL'];
+  var FREEZR_CODE_NOUNS = ['OTTER','PENGUIN','FOX','WALRUS','YETI','SEAL','HUSKY','MOOSE','NARWHAL','BEAR'];
+  function generateFreezrCode(){
+    var adj = FREEZR_CODE_ADJECTIVES[Math.floor(Math.random() * FREEZR_CODE_ADJECTIVES.length)];
+    var noun = FREEZR_CODE_NOUNS[Math.floor(Math.random() * FREEZR_CODE_NOUNS.length)];
+    return adj + '-' + noun;
+  }
+  async function pickUniqueFreezrCode(){
+    for (var i = 0; i < 8; i++){
+      var code = generateFreezrCode();
+      var snap = await db.collection('freezrs').doc(code).get();
+      if (!snap.exists) return code;
+    }
+    return generateFreezrCode() + '-' + Math.floor(10 + Math.random() * 90);
+  }
+
+  function renderFreezrCodeInSettings(){
+    els.freezrCodeValue.textContent = getStoredFreezrCode() || '—';
+  }
+
+  function hideAllFreezrModals(){
+    els.freezrChoiceModalBack.classList.remove('show');
+    els.freezrJoinModalBack.classList.remove('show');
+    els.freezrCreatedModalBack.classList.remove('show');
+  }
+  function showFreezrChoiceModal(){
+    hideAllFreezrModals();
+    els.freezrChoiceModalBack.classList.add('show');
+  }
+  function showFreezrJoinModal(){
+    hideAllFreezrModals();
+    els.freezrJoinInput.value = '';
+    els.freezrJoinInput.classList.remove('err');
+    els.freezrJoinError.classList.remove('show');
+    els.freezrJoinModalBack.classList.add('show');
+    setTimeout(function(){ els.freezrJoinInput.focus(); }, 50);
+  }
+  function onFreezrResolved(){
+    hideAllFreezrModals();
+    renderFreezrCodeInSettings();
+    setMode(state.mode);
+    maybeShowNamePrompt();
+  }
+
+  els.freezrGoJoinBtn.onclick = showFreezrJoinModal;
+  els.freezrJoinBackBtn.onclick = showFreezrChoiceModal;
+
+  els.freezrGoCreateBtn.onclick = async function(){
+    els.freezrGoCreateBtn.style.opacity = '0.6';
+    els.freezrGoJoinBtn.style.pointerEvents = els.freezrGoCreateBtn.style.pointerEvents = 'none';
+    try{
+      var code = await pickUniqueFreezrCode();
+      await db.collection('freezrs').doc(code).set(freshFreezrDoc());
+      setStoredFreezrCode(code);
+      connectToFreezr(code);
+      els.freezrCreatedCode.textContent = code;
+      hideAllFreezrModals();
+      els.freezrCreatedModalBack.classList.add('show');
+    }catch(e){
+      console.error(e);
+      toast('Could not create a Freezr — check connection', 'err');
+    }finally{
+      els.freezrGoCreateBtn.style.opacity = '';
+      els.freezrGoJoinBtn.style.pointerEvents = els.freezrGoCreateBtn.style.pointerEvents = '';
+    }
+  };
+
+  els.freezrCreatedContinueBtn.onclick = onFreezrResolved;
+
+  async function submitJoinFreezr(){
+    var code = els.freezrJoinInput.value.trim().toUpperCase();
+    if (!code){ toast('Please enter a code', 'warn'); return; }
+    els.freezrJoinInput.classList.remove('err');
+    els.freezrJoinError.classList.remove('show');
+    els.freezrJoinSubmitBtn.disabled = true;
+    try{
+      var snap = await db.collection('freezrs').doc(code).get();
+      if (!snap.exists){
+        els.freezrJoinInput.classList.add('err');
+        els.freezrJoinError.classList.add('show');
+        return;
+      }
+      setStoredFreezrCode(code);
+      connectToFreezr(code);
+      onFreezrResolved();
+    }catch(e){
+      console.error(e);
+      toast('Could not check that code — check connection', 'err');
+    }finally{
+      els.freezrJoinSubmitBtn.disabled = false;
+    }
+  }
+  els.freezrJoinSubmitBtn.onclick = submitJoinFreezr;
+  els.freezrJoinInput.addEventListener('input', function(e){ e.target.value = e.target.value.toUpperCase(); });
+  els.freezrJoinInput.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') submitJoinFreezr();
+  });
+
+  els.shareFreezrBtn.onclick = function(){
+    var code = getStoredFreezrCode();
+    if (!code){ toast('No Freezr code yet', 'warn'); return; }
+    var msg = 'Join my Freezr! Use code ' + code + ' when you open the app: ' + location.href;
+    if (navigator.share){
+      navigator.share({ text: msg }).catch(function(){});
+    } else if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(msg).then(function(){
+        toast('Invite copied — paste it in a message', 'ok');
+      }).catch(function(){
+        toast('Could not copy invite', 'err');
+      });
+    } else {
+      toast('Your code is ' + code, 'ok');
+    }
+  };
+
   // ---------- display name (per-device attribution, not synced — same pattern as theme) ----------
   var DISPLAY_NAME_KEY = 'freezr-username';
   var NAME_PROMPTED_KEY = 'freezr-username-prompted';
@@ -2911,6 +3165,12 @@
   function closeNameEntryModal(){
     setNamePrompted();
     els.nameEntryModalBack.classList.remove('show');
+  }
+  function maybeShowNamePrompt(){
+    if (!getNamePrompted() && !currentDisplayName){
+      els.nameEntryModalBack.classList.add('show');
+      setTimeout(function(){ els.nameEntryInput.focus(); }, 50);
+    }
   }
   els.nameEntrySaveBtn.onclick = function(){
     var n = els.nameEntryInput.value.trim();
@@ -2943,11 +3203,9 @@
 
   // ---------- init ----------
   setMode('add');
+  renderFreezrCodeInSettings();
   initStorage();
-  if (!getNamePrompted() && !currentDisplayName){
-    els.nameEntryModalBack.classList.add('show');
-    setTimeout(function(){ els.nameEntryInput.focus(); }, 50);
-  }
+  if (getStoredFreezrCode()) maybeShowNamePrompt();
  }catch(e){
    console.error(e);
    showJsErrorBanner('CAUGHT (init): ' + e.message + ' \u2014 ' + (e.stack||'').split('\n').slice(0,3).join(' | '));
