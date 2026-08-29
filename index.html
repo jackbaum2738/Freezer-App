@@ -796,7 +796,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 9.0.0</footer>
+    <footer>Freezr &mdash; Version: 9.0.1</footer>
   </div>
 </div>
 
@@ -1687,6 +1687,17 @@
 
   // ---------- Freezr deletion — this device's own delete, or discovering one deleted elsewhere ----------
   var freezrJustDeletedLocally = false;
+  // If another Freezr is already saved on this device, switch straight to the most
+  // recently saved one instead of forcing a re-join. Only falls through to join/create
+  // when nothing else is saved.
+  function switchToAnotherSavedFreezr(){
+    var list = getSavedFreezrs();
+    if (!list.length) return false;
+    setStoredFreezrCode(list[0].code);
+    connectToFreezr(list[0].code);
+    setMode(state.mode);
+    return true;
+  }
   function handleFreezrGone(code){
     if (code !== getStoredFreezrCode()) return; // listener from a Freezr we've since switched away from
     var wasSelf = freezrJustDeletedLocally;
@@ -1697,8 +1708,10 @@
     setStoredFreezrCode('');
     docRef = null;
     if (wasSelf){
-      freezrFlowContext = 'onboarding';
-      showFreezrChoiceModal();
+      if (!switchToAnotherSavedFreezr()){
+        freezrFlowContext = 'onboarding';
+        showFreezrChoiceModal();
+      }
     } else {
       els.freezrGoneMessage.textContent = '"' + name + '" no longer exists — it was deleted by someone in the Freezr.';
       els.freezrGoneModalBack.classList.add('show');
@@ -1706,8 +1719,10 @@
   }
   els.freezrGoneContinueBtn.onclick = function(){
     els.freezrGoneModalBack.classList.remove('show');
-    freezrFlowContext = 'onboarding';
-    showFreezrChoiceModal();
+    if (!switchToAnotherSavedFreezr()){
+      freezrFlowContext = 'onboarding';
+      showFreezrChoiceModal();
+    }
   };
 
   function initStorage(){
