@@ -796,7 +796,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 9.0.1</footer>
+    <footer>Freezr &mdash; Version: 9.0.2</footer>
   </div>
 </div>
 
@@ -1108,6 +1108,7 @@
   <div class="modal">
     <div class="modal-head">
       <h3>Freezr deleted</h3>
+      <button class="modal-x" id="freezrGoneCloseBtn" style="display:none;" aria-label="Close">✕</button>
     </div>
     <div class="warn-box" id="freezrGoneMessage"></div>
     <div class="modal-actions">
@@ -1606,6 +1607,7 @@
     freezrGoneModalBack: document.getElementById('freezrGoneModalBack'),
     freezrGoneMessage: document.getElementById('freezrGoneMessage'),
     freezrGoneContinueBtn: document.getElementById('freezrGoneContinueBtn'),
+    freezrGoneCloseBtn: document.getElementById('freezrGoneCloseBtn'),
     installGate: document.getElementById('installGate'),
     installGateContent: document.getElementById('installGateContent'),
   };
@@ -1698,6 +1700,15 @@
     setMode(state.mode);
     return true;
   }
+  // Dismissing the "Freezr deleted" notice (Continue, ✕, or tapping the backdrop) always
+  // lands here: switch to another saved Freezr if one exists, else fall through to join/create.
+  function finishFreezrGoneFlow(){
+    els.freezrGoneModalBack.classList.remove('show');
+    if (!switchToAnotherSavedFreezr()){
+      freezrFlowContext = 'onboarding';
+      showFreezrChoiceModal();
+    }
+  }
   function handleFreezrGone(code){
     if (code !== getStoredFreezrCode()) return; // listener from a Freezr we've since switched away from
     var wasSelf = freezrJustDeletedLocally;
@@ -1707,23 +1718,23 @@
     removeSavedFreezr(code);
     setStoredFreezrCode('');
     docRef = null;
-    if (wasSelf){
-      if (!switchToAnotherSavedFreezr()){
-        freezrFlowContext = 'onboarding';
-        showFreezrChoiceModal();
-      }
-    } else {
-      els.freezrGoneMessage.textContent = '"' + name + '" no longer exists — it was deleted by someone in the Freezr.';
-      els.freezrGoneModalBack.classList.add('show');
-    }
+    // The delete's own .then() also closes this, but that can resolve after this snapshot
+    // callback already fired — close it here too so the two modals never show stacked.
+    closeFreezrDeleteModal();
+    // Self-delete already got the "type the code to confirm" step, so this notice is just a
+    // dismissable success confirmation (✕/backdrop close it). A deletion discovered from
+    // another device stays mandatory — no ✕, no backdrop-dismiss — since it's news to acknowledge.
+    els.freezrGoneCloseBtn.style.display = wasSelf ? '' : 'none';
+    els.freezrGoneMessage.textContent = wasSelf
+      ? '"' + name + '" has been deleted.'
+      : '"' + name + '" no longer exists — it was deleted by someone in the Freezr.';
+    els.freezrGoneModalBack.classList.add('show');
   }
-  els.freezrGoneContinueBtn.onclick = function(){
-    els.freezrGoneModalBack.classList.remove('show');
-    if (!switchToAnotherSavedFreezr()){
-      freezrFlowContext = 'onboarding';
-      showFreezrChoiceModal();
-    }
-  };
+  els.freezrGoneContinueBtn.onclick = finishFreezrGoneFlow;
+  els.freezrGoneCloseBtn.onclick = finishFreezrGoneFlow;
+  els.freezrGoneModalBack.addEventListener('click', function(e){
+    if (e.target === els.freezrGoneModalBack && els.freezrGoneCloseBtn.style.display !== 'none') finishFreezrGoneFlow();
+  });
 
   function initStorage(){
     if (!configured){
