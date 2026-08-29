@@ -447,6 +447,84 @@
   .freezer-collapsed.fixed{ cursor:default; }
   .freezer-name{ font-size:13.5px; font-weight:700; color: var(--frost); }
   .freezer-name.unset{ color: var(--frost-dim); font-weight:600; font-style:italic; }
+
+  /* ---- Shopping List tab ---- */
+  .shop-restock-btn{
+    width:100%; border:none; border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 800;
+    cursor:pointer; margin: 0 0 4px; background: var(--cyan); color: var(--on-cyan);
+  }
+  .shop-restock-btn:disabled{ background: var(--panel-2); color: var(--frost-dim); cursor:not-allowed; }
+  .add-shop-row{
+    display:flex; gap:8px; margin-bottom: 10px; overflow: hidden;
+    max-height: 0; opacity: 0; transition: max-height .18s ease, opacity .18s ease;
+  }
+  .add-shop-row.open{ max-height: 60px; opacity: 1; }
+  .add-shop-row input{
+    flex:1; background: var(--panel); border:1px solid var(--cyan-dim); color: var(--frost);
+    border-radius: 10px; padding: 10px 12px; font-size: 13px; font-family: var(--sans);
+  }
+  .add-shop-row button{
+    flex-shrink:0; background: var(--cyan); color: var(--on-cyan); border:none; border-radius: 10px;
+    padding: 0 16px; font-size: 13px; font-weight: 700; cursor:pointer;
+  }
+  .shop-row{
+    display:flex; align-items:flex-start; gap: 12px; background: var(--panel);
+    border: 1px solid var(--edge); border-radius: 14px; padding: 12px;
+    margin-bottom: 8px; cursor:pointer; transition: opacity .15s;
+  }
+  .shop-row:active{ background: var(--panel-2); }
+  .shop-row.checked{ opacity: .55; }
+  .shop-tick{
+    flex-shrink:0; width: 24px; height: 24px; border-radius: 8px; border: 1.5px solid var(--edge);
+    background: var(--panel-2); display:flex; align-items:center; justify-content:center;
+    font-size: 14px; color: transparent; margin-top: 1px; transition: background .12s, border-color .12s, color .12s;
+  }
+  .shop-row.checked .shop-tick{ background: var(--cyan); border-color: var(--cyan); color: var(--on-cyan); }
+  .shop-row-name{ font-weight: 700; font-size: 14.5px; margin-bottom: 3px; }
+  .shop-row.checked .shop-row-name{ text-decoration: line-through; text-decoration-color: var(--frost-dim); }
+  .shop-row-remove{
+    flex-shrink:0; background: transparent; border:none; color: var(--frost-dim);
+    font-size: 15px; padding: 4px 4px; cursor:pointer; line-height:1;
+  }
+  .shop-row-remove:active{ color: var(--danger); }
+  .stockout-note{ font-size: 11px; color: var(--frost-dim); margin-top: 4px; }
+  .row-freezer{
+    display:inline-flex; align-items:center; gap:6px; width: fit-content;
+    background: var(--panel-2); border: 1px solid var(--edge); border-radius: 8px;
+    padding: 5px 10px; margin-top: 7px;
+  }
+  .row-freezer-ico{ font-size: 10px; }
+  .row-freezer-value{ font-size: 12px; font-weight:700; color: var(--frost); }
+  .shop-section-label{
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--frost-dim); margin: 16px 0 8px; display:flex; align-items:center; gap:8px;
+  }
+  .shop-section-label::after{ content:''; flex:1; height:1px; background: var(--edge); }
+  .shop-section-label:first-of-type{ margin-top: 2px; }
+  .restock-item-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding: 11px 0; border-bottom: 1px solid var(--edge);
+  }
+  .restock-item-row:last-of-type{ border-bottom:none; }
+  .restock-item-name{ font-size: 13.5px; font-weight: 700; }
+  .restock-freezer-pill{
+    display:flex; align-items:center; gap:6px; cursor:pointer; flex-shrink:0;
+    background: var(--panel-2); border: 1px solid var(--edge); border-radius: 999px;
+    padding: 6px 10px 6px 12px; font-size: 12px; font-weight:700; color: var(--frost);
+  }
+  .restock-freezer-pill:active{ background: var(--edge); }
+  .restock-note{ font-size: 12px; color: var(--frost-dim); margin: -6px 0 14px; }
+  .shop-confirm-btn{
+    width:100%; margin-top: 14px; border:none; border-radius: 12px; padding: 13px;
+    font-size: 14px; font-weight: 800; cursor:pointer; background: var(--cyan); color: var(--on-cyan);
+  }
+  .tab-btn .tab-icon{ position: relative; }
+  .tab-badge{
+    position:absolute; top:-4px; right:-10px; min-width:15px; height:15px; padding: 0 3px;
+    border-radius: 999px; background: var(--amber); color: var(--on-amber);
+    font-family: var(--mono); font-size: 9.5px; font-weight: 800;
+    display:flex; align-items:center; justify-content:center;
+  }
   .batch-cat-row{
     display:flex; align-items:center; gap:8px; cursor:pointer;
     background: var(--panel); border: 1px solid var(--edge); border-radius: 8px; padding: 8px 10px;
@@ -741,6 +819,39 @@
   <div id="listContainer"></div>
   </div>
 
+  <div id="shoppingView" style="display:none;">
+  <div class="list-head" style="margin-top:0;">
+    <h2>Shopping List</h2>
+  </div>
+  <div class="settings-row-sub" style="margin-bottom:14px;">Ticked items get added back to Freezr</div>
+
+  <button class="shop-restock-btn" id="shopRestockBtn" disabled>Tick items to add them to Freezr</button>
+
+  <div class="list-head">
+    <h2>To buy</h2>
+    <span class="count" id="shopListCount">0 items</span>
+  </div>
+
+  <div class="filter-row">
+    <div class="filter-pill" id="shopCategoryFilterPill">
+      <span class="filter-pill-label">Category</span>
+      <div class="cat-collapsed-value" id="shopCategoryFilterValue"></div>
+    </div>
+  </div>
+
+  <div class="search-row">
+    <input type="text" class="search" id="shopSearchInput" placeholder="Search shopping list…">
+    <button class="backup-btn" id="shopAddToggleBtn" title="Add item">+</button>
+  </div>
+
+  <div class="add-shop-row" id="shopAddRow">
+    <input type="text" id="shopAddInput" placeholder="e.g. Sweetcorn" autocomplete="off">
+    <button id="shopAddSubmitBtn">Add</button>
+  </div>
+
+  <div id="shopListContainer"></div>
+  </div>
+
   <div id="settingsView" style="display:none;">
     <div class="list-head">
       <h2>Settings</h2>
@@ -796,13 +907,16 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 9.0.2</footer>
+    <footer>Freezr &mdash; Version: 10.0.0</footer>
   </div>
 </div>
 
 <nav class="tab-bar">
   <button class="tab-btn active" id="tabInventoryBtn" data-tab="inventory">
     <span class="tab-icon">❄️</span><span>Freezr</span>
+  </button>
+  <button class="tab-btn" id="tabShoppingBtn" data-tab="shopping">
+    <span class="tab-icon">🛒<span class="tab-badge" id="shopTabBadge" style="display:none;"></span></span><span>List</span>
   </button>
   <button class="tab-btn" id="tabSettingsBtn" data-tab="settings">
     <span class="tab-icon">⚙️</span><span>Settings</span>
@@ -973,6 +1087,21 @@
       <button class="modal-x" id="colorPickerModalClose" aria-label="Close">✕</button>
     </div>
     <div class="color-swatch-grid" id="colorSwatchGrid"></div>
+  </div>
+</div>
+
+<!-- Must stay before categorySheetBack/freezerSheetBack below: it opens the freezer picker
+     sheet from inside itself, which needs to stack on top, matching the DOM-order convention
+     the picker sheets already rely on (they're placed after every modal that can invoke them). -->
+<div class="modal-back" id="shopRestockModalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Add to Freezr</h3>
+      <button class="modal-x" id="shopRestockClose" aria-label="Close">✕</button>
+    </div>
+    <div class="restock-note">Defaults to where each item was last kept — tap a freezer to change it.</div>
+    <div id="shopRestockList"></div>
+    <button class="shop-confirm-btn" id="shopRestockConfirmBtn">Add to Freezr</button>
   </div>
 </div>
 
@@ -1441,8 +1570,8 @@
 
   var state = {
     mode:'add', items:[], products:{}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode:{}, weightByBarcode:{}, freezers: DEFAULT_FREEZERS.slice(), history: [],
-    categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS), freezrName: '',
-    listView: 'items', activeCategory: null, filterCategory: null, filterFreezer: null,
+    categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS), freezrName: '', shoppingList: [],
+    listView: 'items', activeCategory: null, filterCategory: null, filterFreezer: null, shopFilterCategory: null,
     scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0, torchOn:false, batchMode:false, batchQueue:[]
   };
 
@@ -1482,8 +1611,25 @@
     freezersRowSub: document.getElementById('freezersRowSub'),
     inventoryView: document.getElementById('inventoryView'),
     settingsView: document.getElementById('settingsView'),
+    shoppingView: document.getElementById('shoppingView'),
     tabInventoryBtn: document.getElementById('tabInventoryBtn'),
     tabSettingsBtn: document.getElementById('tabSettingsBtn'),
+    tabShoppingBtn: document.getElementById('tabShoppingBtn'),
+    shopTabBadge: document.getElementById('shopTabBadge'),
+    shopRestockBtn: document.getElementById('shopRestockBtn'),
+    shopListCount: document.getElementById('shopListCount'),
+    shopCategoryFilterPill: document.getElementById('shopCategoryFilterPill'),
+    shopCategoryFilterValue: document.getElementById('shopCategoryFilterValue'),
+    shopSearchInput: document.getElementById('shopSearchInput'),
+    shopAddToggleBtn: document.getElementById('shopAddToggleBtn'),
+    shopAddRow: document.getElementById('shopAddRow'),
+    shopAddInput: document.getElementById('shopAddInput'),
+    shopAddSubmitBtn: document.getElementById('shopAddSubmitBtn'),
+    shopListContainer: document.getElementById('shopListContainer'),
+    shopRestockModalBack: document.getElementById('shopRestockModalBack'),
+    shopRestockClose: document.getElementById('shopRestockClose'),
+    shopRestockList: document.getElementById('shopRestockList'),
+    shopRestockConfirmBtn: document.getElementById('shopRestockConfirmBtn'),
     themeSegmented: document.getElementById('themeSegmented'),
     settingsModalBack: document.getElementById('settingsModalBack'),
     settingsCategoryList: document.getElementById('settingsCategoryList'),
@@ -1644,7 +1790,7 @@
   }
 
   function freshFreezrDoc(name){
-    return { name: name || '', items: [], products: {}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode: {}, weightByBarcode: {}, freezers: DEFAULT_FREEZERS.slice(), history: [], categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS) };
+    return { name: name || '', items: [], products: {}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode: {}, weightByBarcode: {}, freezers: DEFAULT_FREEZERS.slice(), history: [], categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS), shoppingList: [] };
   }
 
   var freezrUnsubscribe = null;
@@ -1665,6 +1811,7 @@
           state.weightByBarcode = data.weightByBarcode || {};
           state.freezers = (data.freezers && data.freezers.length) ? data.freezers : DEFAULT_FREEZERS.slice();
           state.history = data.history || [];
+          state.shoppingList = data.shoppingList || [];
           state.categoryColors = (data.categoryColors && Object.keys(data.categoryColors).length) ? data.categoryColors : Object.assign({}, DEFAULT_CATEGORY_COLORS);
           state.freezrName = data.name || '';
           if (normalizeCategoryColors()) saveCategories();
@@ -1768,7 +1915,7 @@
     if (!docRef) return;
     var silent = opts && opts.silent;
     try{
-      await docRef.set({ items: state.items, products: state.products, categories: state.categories, categoryByBarcode: state.categoryByBarcode, weightByBarcode: state.weightByBarcode, freezers: state.freezers, history: state.history, categoryColors: state.categoryColors }, { merge: true });
+      await docRef.set({ items: state.items, products: state.products, categories: state.categories, categoryByBarcode: state.categoryByBarcode, weightByBarcode: state.weightByBarcode, freezers: state.freezers, history: state.history, categoryColors: state.categoryColors, shoppingList: state.shoppingList }, { merge: true });
       setSyncState('synced');
     }catch(e){
       setSyncState('failed');
@@ -1780,6 +1927,7 @@
   function saveCategories(){ return persistState(); }
   function saveFreezers(){ return persistState(); }
   function saveHistory(){ return persistState(); }
+  function saveShoppingList(){ return persistState(); }
 
   // ---------- mode ----------
   function setMode(mode){
@@ -1991,6 +2139,10 @@
       addedBy: currentDisplayName || ''
     });
     saveItems();
+    // It's back in the freezer — silently drop it off the Shopping List if it was on there.
+    // Barcode-only match: manual (barcode-less) shopping-list entries are only ever cleared by
+    // ticking + restocking, never by a scan, since there's nothing here to match them against.
+    if (barcode) removeFromShoppingListByBarcode(barcode);
     render();
   }
 
@@ -2012,21 +2164,60 @@
     });
     state.history = state.history.concat(entries);
     saveHistory();
-    return entries;
+    // Every removal call here is one barcode+name group (the app never batches a removal
+    // across different items), so the first unit is a representative sample of the group.
+    var shopEntry = maybeAddToShoppingList(units[0]);
+    return { entries: entries, shopEntry: shopEntry };
   }
-  function unlogRemoval(entries){
-    var ids = entries.map(function(e){ return e.id; });
+  function unlogRemoval(removal){
+    var ids = removal.entries.map(function(e){ return e.id; });
     state.history = state.history.filter(function(e){ return ids.indexOf(e.id) === -1; });
     saveHistory();
+    // Undo an original removal un-adds the Shopping List entry it created too — same
+    // philosophy as un-logging history, so a mis-scan doesn't leave a phantom "ran out" behind.
+    // Only if it's still there and still unticked — never claw back something the user acted on.
+    if (removal.shopEntry){
+      var stillThere = state.shoppingList.some(function(s){ return s.id === removal.shopEntry.id && !s.checked; });
+      if (stillThere){
+        state.shoppingList = state.shoppingList.filter(function(s){ return s.id !== removal.shopEntry.id; });
+        saveShoppingList();
+      }
+    }
+  }
+
+  // ---------- Shopping List: data-side hooks (auto-add on stockout, auto-remove on rescan) ----------
+  function shoppingListMatch(barcode, name){
+    return state.shoppingList.filter(function(s){
+      return barcode ? s.barcode === barcode : s.name.toLowerCase() === name.toLowerCase();
+    })[0];
+  }
+  function maybeAddToShoppingList(unit){
+    if (!unit) return null;
+    var stillInFreezer = state.items.some(function(i){ return i.barcode === unit.barcode && i.name === unit.name; });
+    if (stillInFreezer) return null;
+    if (shoppingListMatch(unit.barcode, unit.name)) return null; // already on the list — don't duplicate
+    var entry = {
+      id: makeId(), barcode: unit.barcode, name: unit.name, category: unit.category || 'Other',
+      weight: unit.weight || null, freezer: unit.freezer || null, checked: false,
+      dateAdded: new Date().toISOString(), auto: true
+    };
+    state.shoppingList.push(entry);
+    saveShoppingList();
+    return entry;
+  }
+  function removeFromShoppingListByBarcode(barcode){
+    if (!state.shoppingList.some(function(s){ return s.barcode === barcode; })) return;
+    state.shoppingList = state.shoppingList.filter(function(s){ return s.barcode !== barcode; });
+    saveShoppingList();
   }
 
   function removeItemWithUndo(item){
     state.items = state.items.filter(function(i){ return i.id !== item.id; });
     saveItems();
-    var historyEntries = logRemoval([item]);
+    var removal = logRemoval([item]);
     render();
     toast('Removed: ' + item.name, 'ok', function(){
-      unlogRemoval(historyEntries);
+      unlogRemoval(removal);
       state.items.push(item);
       saveItems();
       render();
@@ -2605,7 +2796,216 @@
   els.categoryFilterPill.onclick = openCategoryFilterSheet;
   els.freezerFilterPill.onclick = openFreezerFilterSheet;
 
+  // ---------- Shopping List tab ----------
+  function daysAgoLabel(iso){
+    var days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+    if (days <= 0) return 'today';
+    if (days === 1) return 'yesterday';
+    return days + ' days ago';
+  }
+  function validFreezer(name){
+    return (name && state.freezers.indexOf(name) > -1) ? name : (state.freezers[0] || null);
+  }
+  function openShopCategoryFilterSheet(){
+    renderCategoryPicker(els.categorySheetGrid, state.shopFilterCategory, function(c){
+      state.shopFilterCategory = c;
+      closeCategorySheet();
+      renderShoppingList();
+    });
+    var allChipStyle = state.shopFilterCategory
+      ? 'border-color: var(--edge); background: var(--panel); color: var(--frost-dim);'
+      : 'border-color: var(--frost-dim); background: var(--panel-2); color: var(--frost);';
+    var allChip = '<button type="button" class="category-chip-option" data-category="" style="' + allChipStyle + '">' +
+      '<span class="chip-dot" style="background:var(--frost-dim);"></span>All categories</button>';
+    els.categorySheetGrid.insertAdjacentHTML('afterbegin', allChip);
+    els.categorySheetGrid.querySelector('.category-chip-option[data-category=""]').onclick = function(){
+      state.shopFilterCategory = null;
+      closeCategorySheet();
+      renderShoppingList();
+    };
+    els.categorySheetBack.classList.add('show');
+  }
+  els.shopCategoryFilterPill.onclick = openShopCategoryFilterSheet;
+
+  function renderShoppingList(){
+    var toBuyTotal = state.shoppingList.filter(function(s){ return !s.checked; }).length;
+    if (toBuyTotal > 0){
+      els.shopTabBadge.style.display = 'flex';
+      els.shopTabBadge.textContent = toBuyTotal > 99 ? '99+' : toBuyTotal;
+    } else {
+      els.shopTabBadge.style.display = 'none';
+    }
+
+    var catColor = state.shopFilterCategory ? categoryColor(state.shopFilterCategory) : null;
+    els.shopCategoryFilterValue.innerHTML =
+      '<span class="chip-dot" style="background:' + (catColor || 'var(--frost-dim)') + ';"></span>' +
+      '<span class="cat-collapsed-name" style="' + (catColor ? 'color:' + catColor + ';' : '') + '">' + escapeHtml(state.shopFilterCategory || 'All') + '</span>' +
+      '<span class="cat-chevron">›</span>';
+
+    var base = state.shoppingList.slice();
+    var filtersActive = false;
+    if (state.shopFilterCategory){
+      base = base.filter(function(s){ return (s.category || 'Other') === state.shopFilterCategory; });
+      filtersActive = true;
+    }
+    var q = els.shopSearchInput.value.trim().toLowerCase();
+    var filtered = q ? base.filter(function(s){ return s.name.toLowerCase().indexOf(q) > -1; }) : base;
+
+    var toBuy = filtered.filter(function(s){ return !s.checked; });
+    var gotIt = filtered.filter(function(s){ return s.checked; });
+
+    els.shopListCount.textContent = toBuy.length + (toBuy.length === 1 ? ' item' : ' items');
+
+    function rowHtml(s){
+      var color = categoryColor(s.category);
+      var metaParts = ['<span class="cat-pill" style="color:' + color + '; border-color:' + color + '66; background:' + color + '22;">' + escapeHtml(s.category || 'Other') + '</span>'];
+      if (s.weight) metaParts.push('<span>' + escapeHtml(formatWeightLabel(s.weight)) + '</span>');
+      var stockoutNote = s.auto ? '<div class="stockout-note">Ran out ' + daysAgoLabel(s.dateAdded) + '</div>' : '';
+      var freezerRow = state.freezers.length > 1
+        ? '<div class="row-freezer"><span class="row-freezer-ico">❄️</span><span class="row-freezer-value">' + escapeHtml(validFreezer(s.freezer)) + '</span></div>'
+        : '';
+      return '' +
+        '<div class="shop-row' + (s.checked ? ' checked' : '') + '" data-id="' + s.id + '">' +
+          '<div class="shop-tick">' + (s.checked ? '✓' : '') + '</div>' +
+          '<div class="row-main">' +
+            '<div class="shop-row-name">' + escapeHtml(s.name) + '</div>' +
+            '<div class="item-meta">' + metaParts.join('') + '</div>' +
+            stockoutNote + freezerRow +
+          '</div>' +
+          '<button class="shop-row-remove" data-remove="' + s.id + '" aria-label="Remove from list">✕</button>' +
+        '</div>';
+    }
+
+    var html;
+    if (filtered.length === 0){
+      if (state.shoppingList.length === 0) html = '<div class="empty">Nothing on your shopping list yet.</div>';
+      else if (filtersActive || q) html = '<div class="empty">No items match your search.</div>';
+      else html = '<div class="empty">Nothing on your shopping list yet.</div>';
+    } else {
+      html = toBuy.length ? toBuy.map(rowHtml).join('') : '<div class="empty">Everything on your list is ticked — hit the button above.</div>';
+      if (gotIt.length) html += '<div class="shop-section-label">Got it</div>' + gotIt.map(rowHtml).join('');
+    }
+    els.shopListContainer.innerHTML = html;
+
+    Array.prototype.forEach.call(els.shopListContainer.querySelectorAll('.shop-row'), function(row){
+      row.addEventListener('click', function(e){
+        if (e.target.closest('.shop-row-remove')) return;
+        var id = row.getAttribute('data-id');
+        var entry = state.shoppingList.filter(function(s){ return s.id === id; })[0];
+        if (entry) entry.checked = !entry.checked;
+        saveShoppingList();
+        renderShoppingList();
+      });
+    });
+    Array.prototype.forEach.call(els.shopListContainer.querySelectorAll('.shop-row-remove'), function(btn){
+      btn.onclick = function(e){
+        e.stopPropagation();
+        var id = btn.getAttribute('data-remove');
+        state.shoppingList = state.shoppingList.filter(function(s){ return s.id !== id; });
+        saveShoppingList();
+        toast('Removed from list', 'ok');
+        renderShoppingList();
+      };
+    });
+
+    var checkedCount = state.shoppingList.filter(function(s){ return s.checked; }).length;
+    if (checkedCount > 0){
+      els.shopRestockBtn.disabled = false;
+      els.shopRestockBtn.textContent = 'Add ' + checkedCount + (checkedCount === 1 ? ' item' : ' items') + ' to Freezr';
+    } else {
+      els.shopRestockBtn.disabled = true;
+      els.shopRestockBtn.textContent = 'Tick items to add them to Freezr';
+    }
+  }
+
+  els.shopSearchInput.addEventListener('input', renderShoppingList);
+
+  els.shopAddToggleBtn.onclick = function(){
+    var open = els.shopAddRow.classList.toggle('open');
+    els.shopAddToggleBtn.classList.toggle('active', open);
+    if (open) setTimeout(function(){ els.shopAddInput.focus(); }, 50);
+  };
+  function submitShopAdd(){
+    var name = els.shopAddInput.value.trim();
+    if (!name) return;
+    state.shoppingList.unshift({
+      id: makeId(), barcode: '', name: name, category: guessCategory(name), weight: null,
+      freezer: state.freezers[0] || null, checked: false, dateAdded: new Date().toISOString()
+    });
+    saveShoppingList();
+    els.shopAddInput.value = '';
+    els.shopAddRow.classList.remove('open');
+    els.shopAddToggleBtn.classList.remove('active');
+    toast('Added to list', 'ok');
+    renderShoppingList();
+  }
+  els.shopAddSubmitBtn.onclick = submitShopAdd;
+  els.shopAddInput.addEventListener('keydown', function(e){ if (e.key === 'Enter') submitShopAdd(); });
+
+  // ---------- restock: ticked items get added back into the freezer, then cleared off the list ----------
+  var shopRestockCandidates = [];
+  function finishRestock(list){
+    var now = new Date().toISOString();
+    list.forEach(function(s){
+      state.items.push({
+        id: makeId(), barcode: s.barcode, name: s.name, category: s.category || 'Other',
+        weight: s.weight || null, freezer: validFreezer(s.freezer), dateAdded: now, opened: false,
+        addedBy: currentDisplayName || ''
+      });
+    });
+    var ids = list.map(function(s){ return s.id; });
+    state.shoppingList = state.shoppingList.filter(function(s){ return ids.indexOf(s.id) === -1; });
+    saveItems();
+    saveShoppingList();
+    render();
+    renderShoppingList();
+    toast('Added ' + list.length + (list.length === 1 ? ' item' : ' items') + ' to Freezr', 'ok');
+  }
+  function renderShopRestockList(){
+    els.shopRestockList.innerHTML = shopRestockCandidates.map(function(c){
+      return '<div class="restock-item-row" data-id="' + c.id + '">' +
+        '<span class="restock-item-name">' + escapeHtml(c.name) + '</span>' +
+        '<span class="restock-freezer-pill" data-pick="' + c.id + '">' + escapeHtml(c.freezer) + ' <span class="cat-chevron">›</span></span>' +
+      '</div>';
+    }).join('');
+    Array.prototype.forEach.call(els.shopRestockList.querySelectorAll('.restock-freezer-pill'), function(pill){
+      pill.onclick = function(){
+        var id = pill.getAttribute('data-pick');
+        var c = shopRestockCandidates.filter(function(x){ return x.id === id; })[0];
+        openFreezerSheet(c.freezer, function(f){ c.freezer = f; renderShopRestockList(); });
+      };
+    });
+  }
+  function closeShopRestockModal(){
+    els.shopRestockModalBack.classList.remove('show');
+  }
+  els.shopRestockBtn.onclick = function(){
+    var checked = state.shoppingList.filter(function(s){ return s.checked; });
+    if (!checked.length) return;
+    if (state.freezers.length <= 1){
+      finishRestock(checked);
+      return;
+    }
+    shopRestockCandidates = checked.map(function(s){ return { id: s.id, name: s.name, freezer: validFreezer(s.freezer) }; });
+    renderShopRestockList();
+    els.shopRestockModalBack.classList.add('show');
+  };
+  els.shopRestockClose.onclick = closeShopRestockModal;
+  els.shopRestockModalBack.addEventListener('click', function(e){
+    if (e.target === els.shopRestockModalBack) closeShopRestockModal();
+  });
+  els.shopRestockConfirmBtn.onclick = function(){
+    var checked = state.shoppingList.filter(function(s){ return s.checked; });
+    checked.forEach(function(s){
+      var picked = shopRestockCandidates.filter(function(c){ return c.id === s.id; })[0];
+      if (picked) s.freezer = picked.freezer;
+    });
+    closeShopRestockModal();
+    finishRestock(checked);
+  };
+
   function render(){
+    renderShoppingList();
     els.listBackBtn.style.display = (state.listView === 'items') ? 'none' : '';
     els.categoryViewBtn.style.display = (state.listView === 'items') ? '' : 'none';
     els.historyViewBtn.style.display = (state.listView === 'items') ? '' : 'none';
@@ -2901,11 +3301,11 @@
     closeDetailModal();
     state.items = state.items.filter(function(i){ return !(i.barcode === barcode && i.name === name); });
     saveItems();
-    var historyEntries = logRemoval(units);
+    var removal = logRemoval(units);
     render();
     var label = units.length > 1 ? (name + ' (\u00d7' + units.length + ')') : name;
     toast('Deleted: ' + label, 'ok', function(){
-      unlogRemoval(historyEntries);
+      unlogRemoval(removal);
       state.items = state.items.concat(units);
       saveItems();
       render();
@@ -3275,13 +3675,15 @@
 
   // ---------- tabs ----------
   function setActiveTab(tab){
-    var isSettings = tab === 'settings';
-    els.inventoryView.style.display = isSettings ? 'none' : '';
-    els.settingsView.style.display = isSettings ? '' : 'none';
-    els.tabInventoryBtn.classList.toggle('active', !isSettings);
-    els.tabSettingsBtn.classList.toggle('active', isSettings);
+    els.inventoryView.style.display = tab === 'inventory' ? '' : 'none';
+    els.shoppingView.style.display = tab === 'shopping' ? '' : 'none';
+    els.settingsView.style.display = tab === 'settings' ? '' : 'none';
+    els.tabInventoryBtn.classList.toggle('active', tab === 'inventory');
+    els.tabShoppingBtn.classList.toggle('active', tab === 'shopping');
+    els.tabSettingsBtn.classList.toggle('active', tab === 'settings');
   }
   els.tabInventoryBtn.onclick = function(){ setActiveTab('inventory'); };
+  els.tabShoppingBtn.onclick = function(){ setActiveTab('shopping'); };
   els.tabSettingsBtn.onclick = function(){ setActiveTab('settings'); };
 
   // ---------- theme ----------

@@ -4,6 +4,14 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+10.0.0 -- 2026-08-29
+--------------------
+- Added a Shopping List: a new third tab (🛒 List, between Freezr and Settings) with a tick-box list, searchable and filterable by category using the exact same pill/sheet component as the inventory list. A badge on the tab icon shows how many items are still to buy.
+- Items are added to the list automatically the moment the last unit of something leaves the freezer (scan-to-remove, "Remove from Freezr", or a quantity step-down to zero) -- no duplicates if it's already sitting there unbought, matched by barcode or by name for barcode-less manual items. Undoing that removal un-adds it again too. Scanning something back in silently clears it off the list by barcode -- no extra toast either way, since the removal/scan already has its own.
+- Weight shows on each row when known. When 2+ freezers exist, each row also shows which freezer it was last kept in, on its own line.
+- Anything can be added by hand too, via a "+" button next to the search box -- same manual-entry pattern as the Add screen, with a guessed category.
+- Tick items off as you shop -- they grey out, get struck through, and sink into a "Got it" group so what's left stays at the top. A button pinned above the filters ("Add to Freezr") restocks everything ticked in one tap and clears them off the list. With one freezer it's instant; with two or more it opens a quick review defaulting each item to the freezer it was last kept in, tap any one to reassign before confirming.
+
 9.0.2 -- 2026-08-29
 --------------------
 - Deleting a Freezr now shows a "Freezr deleted" confirmation before switching you anywhere -- previously it went straight from typing the confirm code to the next screen with no acknowledgment the delete actually happened. Dismiss it with the X, tapping outside it, or Continue -- any of those then switches you to another saved Freezr, or the join/create screen if you have nothing else saved.
