@@ -65,6 +65,7 @@
     --danger-rgb: 240,128,107;
     --on-cyan: #04211d;
     --on-amber: #3a2a08;
+    --on-danger: #2a0f0a;
     --mono: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
     --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   }
@@ -84,6 +85,7 @@
     --danger-rgb: 193,64,43;
     --on-cyan: #ffffff;
     --on-amber: #ffffff;
+    --on-danger: #ffffff;
   }
   :root[data-theme="light"] body{ background: var(--bg); }
   *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
@@ -493,9 +495,19 @@
     width:100%; margin-top: 12px;
   }
   .btn-danger-outline:active{ background: rgba(var(--danger-rgb), 0.12); }
+  .btn-danger{ background: var(--danger); color: var(--on-danger); width:100%; }
+  .btn-danger:disabled{ opacity:.4; cursor:not-allowed; }
   .modal-actions{ display:flex; gap: 10px; }
   .modal-actions .btn{ flex:1; margin:0; }
   .btn-cancel{ background: transparent; color: var(--frost-dim); border: 1px solid var(--edge); }
+  #displayNameSaveBtn{ background: var(--cyan); color: var(--on-cyan); border: none; }
+  .warn-box{
+    background: rgba(var(--danger-rgb), 0.1); border: 1px solid var(--danger-dim); border-radius: 12px;
+    padding: 14px; font-size: 13px; line-height: 1.55; color: var(--frost); margin-bottom: 16px;
+  }
+  .warn-box b{ color: var(--danger); }
+  .confirm-label{ font-size: 12px; color: var(--frost-dim); margin-bottom: 8px; line-height: 1.5; }
+  .confirm-label code{ font-family: var(--mono); color: var(--frost); background: var(--panel-2); padding: 2px 6px; border-radius: 5px; }
 
   footer{ text-align:center; color: var(--frost-dim); font-size: 11px; margin-top: 26px; font-family: var(--mono); }
 
@@ -513,6 +525,8 @@
     padding: 14px; margin-bottom: 14px;
   }
   .settings-block .settings-row-title{ margin-bottom:10px; }
+  .danger-block{ border-color: var(--danger-dim); border-style: dashed; }
+  .danger-block .settings-row-title{ color: var(--danger); }
 
   .freezr-id-row{
     background: var(--panel-2); border: 1px solid var(--edge); border-radius: 10px;
@@ -776,7 +790,13 @@
       </div>
     </div>
 
-    <footer>Freezr &mdash; Version: 8.1.0</footer>
+    <div class="settings-block danger-block">
+      <div class="settings-row-title">Delete this Freezr</div>
+      <div class="settings-row-sub" style="margin-bottom:10px;">Permanently deletes <span id="deleteFreezrName">this Freezr</span> and everything in it, for everyone. This can't be undone.</div>
+      <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
+    </div>
+
+    <footer>Freezr &mdash; Version: 9.0.0</footer>
   </div>
 </div>
 
@@ -1065,6 +1085,34 @@
     </div>
     <div class="switch-list" id="freezrSwitcherList"></div>
     <button class="switch-add" id="freezrSwitcherAddBtn"><span class="plus">+</span> Join or create another Freezr</button>
+  </div>
+</div>
+
+<div class="modal-back" id="freezrDeleteModalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="freezrDeleteTitle">Delete this Freezr?</h3>
+      <button class="modal-x" id="freezrDeleteCloseBtn" aria-label="Close">✕</button>
+    </div>
+    <div class="warn-box">This permanently deletes everything in this Freezr — every item, category, freezer, and history entry — for every device using it. There's no undo.</div>
+    <div class="confirm-label">Type the Freezr code to confirm: <code id="freezrDeleteCode">—</code></div>
+    <input type="text" id="freezrDeleteInput" placeholder="Type the code" autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn btn-cancel" id="freezrDeleteCancelBtn">Cancel</button>
+      <button class="btn btn-danger" id="freezrDeleteConfirmBtn" disabled>Delete Freezr</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-back" id="freezrGoneModalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Freezr deleted</h3>
+    </div>
+    <div class="warn-box" id="freezrGoneMessage"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="freezrGoneContinueBtn">Continue</button>
+    </div>
   </div>
 </div>
 
@@ -1546,6 +1594,18 @@
     freezrSwitcherCloseBtn: document.getElementById('freezrSwitcherCloseBtn'),
     freezrSwitcherList: document.getElementById('freezrSwitcherList'),
     freezrSwitcherAddBtn: document.getElementById('freezrSwitcherAddBtn'),
+    openDeleteFreezrBtn: document.getElementById('openDeleteFreezrBtn'),
+    deleteFreezrName: document.getElementById('deleteFreezrName'),
+    freezrDeleteModalBack: document.getElementById('freezrDeleteModalBack'),
+    freezrDeleteTitle: document.getElementById('freezrDeleteTitle'),
+    freezrDeleteCode: document.getElementById('freezrDeleteCode'),
+    freezrDeleteInput: document.getElementById('freezrDeleteInput'),
+    freezrDeleteCloseBtn: document.getElementById('freezrDeleteCloseBtn'),
+    freezrDeleteCancelBtn: document.getElementById('freezrDeleteCancelBtn'),
+    freezrDeleteConfirmBtn: document.getElementById('freezrDeleteConfirmBtn'),
+    freezrGoneModalBack: document.getElementById('freezrGoneModalBack'),
+    freezrGoneMessage: document.getElementById('freezrGoneMessage'),
+    freezrGoneContinueBtn: document.getElementById('freezrGoneContinueBtn'),
     installGate: document.getElementById('installGate'),
     installGateContent: document.getElementById('installGateContent'),
   };
@@ -1585,10 +1645,13 @@
     return { name: name || '', items: [], products: {}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode: {}, weightByBarcode: {}, freezers: DEFAULT_FREEZERS.slice(), history: [], categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS) };
   }
 
+  var freezrUnsubscribe = null;
+
   function connectToFreezr(code){
+    if (freezrUnsubscribe){ freezrUnsubscribe(); freezrUnsubscribe = null; }
     setSyncState('connecting');
     docRef = db.collection('freezrs').doc(code);
-    docRef.onSnapshot(function(snap){
+    freezrUnsubscribe = docRef.onSnapshot(function(snap){
       try{
         setSyncState('synced');
         var data = snap.data();
@@ -1606,12 +1669,10 @@
           updateFreezersRowSub();
           upsertSavedFreezr(code, state.freezrName || code);
           renderFreezrCodeInSettings();
+          render();
         } else {
-          // defensive fallback — shouldn't happen, since a code is only ever stored once its doc exists
-          docRef.set(freshFreezrDoc());
-          updateFreezersRowSub();
+          handleFreezrGone(code);
         }
-        render();
       }catch(e){
         console.error(e);
         showJsErrorBanner('CAUGHT (onSnapshot): ' + e.message + ' — ' + (e.stack||'').split('\n').slice(0,2).join(' | '));
@@ -1623,6 +1684,31 @@
       toast('Sync error — check Firestore rules/config', 'err');
     });
   }
+
+  // ---------- Freezr deletion — this device's own delete, or discovering one deleted elsewhere ----------
+  var freezrJustDeletedLocally = false;
+  function handleFreezrGone(code){
+    if (code !== getStoredFreezrCode()) return; // listener from a Freezr we've since switched away from
+    var wasSelf = freezrJustDeletedLocally;
+    freezrJustDeletedLocally = false;
+    var name = state.freezrName || code;
+    if (freezrUnsubscribe){ freezrUnsubscribe(); freezrUnsubscribe = null; }
+    removeSavedFreezr(code);
+    setStoredFreezrCode('');
+    docRef = null;
+    if (wasSelf){
+      freezrFlowContext = 'onboarding';
+      showFreezrChoiceModal();
+    } else {
+      els.freezrGoneMessage.textContent = '"' + name + '" no longer exists — it was deleted by someone in the Freezr.';
+      els.freezrGoneModalBack.classList.add('show');
+    }
+  }
+  els.freezrGoneContinueBtn.onclick = function(){
+    els.freezrGoneModalBack.classList.remove('show');
+    freezrFlowContext = 'onboarding';
+    showFreezrChoiceModal();
+  };
 
   function initStorage(){
     if (!configured){
@@ -3263,6 +3349,7 @@
     var code = getStoredFreezrCode();
     els.freezrIdCode.textContent = code || '—';
     els.freezrIdName.textContent = code ? (state.freezrName || code) : '—';
+    els.deleteFreezrName.textContent = code ? ('"' + (state.freezrName || code) + '"') : 'this Freezr';
   }
 
   // 'onboarding' = mandatory first-run flow (no close button); 'switcher' = optional, reached from Settings
@@ -3454,6 +3541,45 @@
     showFreezrChoiceModal();
   };
 
+  // ---------- delete this Freezr ----------
+  function openFreezrDeleteModal(){
+    var code = getStoredFreezrCode();
+    if (!code) return;
+    els.freezrDeleteTitle.textContent = 'Delete "' + (state.freezrName || code) + '"?';
+    els.freezrDeleteCode.textContent = code;
+    els.freezrDeleteInput.value = '';
+    els.freezrDeleteConfirmBtn.disabled = true;
+    els.freezrDeleteModalBack.classList.add('show');
+    setTimeout(function(){ els.freezrDeleteInput.focus(); }, 50);
+  }
+  function closeFreezrDeleteModal(){
+    els.freezrDeleteModalBack.classList.remove('show');
+  }
+  els.openDeleteFreezrBtn.onclick = openFreezrDeleteModal;
+  els.freezrDeleteCloseBtn.onclick = closeFreezrDeleteModal;
+  els.freezrDeleteCancelBtn.onclick = closeFreezrDeleteModal;
+  els.freezrDeleteModalBack.addEventListener('click', function(e){
+    if (e.target === els.freezrDeleteModalBack) closeFreezrDeleteModal();
+  });
+  els.freezrDeleteInput.addEventListener('input', function(e){
+    e.target.value = e.target.value.toUpperCase();
+    els.freezrDeleteConfirmBtn.disabled = e.target.value.trim() !== getStoredFreezrCode();
+  });
+  els.freezrDeleteConfirmBtn.onclick = function(){
+    var code = getStoredFreezrCode();
+    if (!code || els.freezrDeleteInput.value.trim() !== code) return;
+    els.freezrDeleteConfirmBtn.disabled = true;
+    freezrJustDeletedLocally = true;
+    db.collection('freezrs').doc(code).delete().then(function(){
+      closeFreezrDeleteModal();
+    }).catch(function(e){
+      console.error(e);
+      freezrJustDeletedLocally = false;
+      els.freezrDeleteConfirmBtn.disabled = false;
+      toast('Could not delete — check connection', 'err');
+    });
+  };
+
   // ---------- display name (per-device attribution, not synced — same pattern as theme) ----------
   var DISPLAY_NAME_KEY = 'freezr-username';
   var NAME_PROMPTED_KEY = 'freezr-username-prompted';
@@ -3510,6 +3636,20 @@
     }
     toast(n ? 'Name saved' : 'Name cleared', 'ok');
   };
+
+  // ---------- refresh on reopen — Firestore's live listener doesn't reliably survive the app
+  // being backgrounded/suspended, so a stale app can otherwise sit there until manually
+  // pull-to-refreshed. Reload once it's been hidden for a while and comes back to the foreground. ----------
+  var appHiddenAt = null;
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden){
+      appHiddenAt = Date.now();
+    } else if (appHiddenAt !== null){
+      var awayMs = Date.now() - appHiddenAt;
+      appHiddenAt = null;
+      if (awayMs > 30000) location.reload();
+    }
+  });
 
   // ---------- init ----------
   if (!isStandalonePwa() && !isDevBypass()){

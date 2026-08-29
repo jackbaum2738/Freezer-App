@@ -4,6 +4,13 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+9.0.0 -- 2026-08-29
+--------------------
+- Added the ability to delete a Freezr, from a red button at the bottom of Settings. Double confirmation: the button opens a warning modal, and Delete stays disabled until you type the Freezr's own code to confirm. No Undo -- it's permanent for everyone in it.
+- The app now automatically refreshes when reopened after being backgrounded for a while (previously it only picked up changes -- new code or items added/removed by other devices -- after a manual pull-to-refresh). This is also what delivers the "this Freezr no longer exists" notice to other devices once one has been deleted -- they land on the join/create screen after acknowledging it.
+- Fixed a listener leak: switching or reconnecting to a Freezr now properly detaches the previous one's Firestore listener instead of leaving it running in the background.
+- The "Your name" Save button in Settings is now filled cyan, matching "Scan items" on the Add screen.
+
 8.1.0 -- 2026-08-29
 --------------------
 - Changed the manual-entry field on the Add screen from a barcode number to the item's name -- nobody realistically has a barcode memorised to type in. Typing a name and tapping Add opens the same "Confirm item" modal used for scans, pre-filled with that name, with the barcode saved as blank. Since there's no barcode, the name/category/weight aren't saved to the "remembers per barcode" list -- there's nothing to remember them against.
