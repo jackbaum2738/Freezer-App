@@ -4,6 +4,12 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+8.0.0 -- 2026-08-29
+--------------------
+- Added a Freezr switcher: Settings now has a "Switch" button that opens a list of every Freezr ever joined or created on this device -- tap one to switch instantly, no need to re-enter its code (e.g. swapping between a uni freezer and a home freezer over a weekend). The active Freezr is checkmarked; others have a remove (✕) button that forgets them from this device only (soft-delete with Undo -- the Freezr itself and its data are untouched).
+- A "Join or create another Freezr" row in the switcher reuses the existing onboarding screens, now with a close button since it's optional once you already have a working Freezr.
+- Creating a Freezr now asks for a name first (e.g. "Home Freezer", "Uni Freezer") -- shown throughout Settings, the switcher, and the code-reveal screen so multiple Freezrs are easy to tell apart.
+
 7.0.0 -- 2026-08-29
 --------------------
 - Added an install gate: opening Freezr in a regular browser tab (not installed to the home screen) now shows a full-screen, unskippable screen with install instructions instead of the app itself -- platform-specific steps for iOS (Share -> Add to Home Screen) and Android (Chrome's ⋮ menu, or a one-tap native Install button when the browser offers one), and a simple "open this on your phone" message on desktop. Detects install state via `display-mode: standalone` / `navigator.standalone`. Existing installed users are unaffected.

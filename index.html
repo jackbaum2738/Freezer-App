@@ -513,14 +513,44 @@
   }
   .settings-block .settings-row-title{ margin-bottom:10px; }
 
-  .freezr-code-row{
-    display:flex; align-items:center; justify-content:space-between;
+  .freezr-id-row{
     background: var(--panel-2); border: 1px solid var(--edge); border-radius: 10px;
     padding: 12px 14px; margin-bottom:12px;
   }
-  .freezr-code-row .code-label{ font-size:10.5px; color: var(--frost-dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px; }
-  .freezr-code-row .code-value{ font-family: var(--mono); font-size: 16px; font-weight:700; letter-spacing:.03em; color: var(--cyan); }
+  .freezr-id-name{ font-size:15px; font-weight:700; color: var(--frost); margin-bottom:2px; }
+  .freezr-id-code{ font-family: var(--mono); font-size: 12.5px; letter-spacing:.03em; color: var(--cyan); }
+  .freezr-btn-row{ display:flex; gap:8px; }
+  .freezr-btn-row .btn{ flex:1; width:auto; margin-top:0; }
   .btn-share{ display:flex; align-items:center; justify-content:center; gap:8px; }
+
+  .switch-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+  .switch-row{
+    display:flex; align-items:center; gap:12px; cursor:pointer;
+    background: var(--panel-2); border: 1px solid var(--edge); border-radius: 14px; padding: 12px 14px;
+  }
+  .switch-row.active{ border-color: var(--cyan-dim); background: var(--cyan-dim); }
+  .switch-check{
+    width:22px; height:22px; border-radius:50%; flex-shrink:0; font-size:12px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .switch-row.active .switch-check{ background: var(--cyan); color: var(--on-cyan); }
+  .switch-row:not(.active) .switch-check{ border: 1.5px solid var(--edge); }
+  .switch-name{ font-weight:700; font-size:14px; color: var(--frost); }
+  .switch-code{ font-family: var(--mono); font-size:11.5px; color: var(--frost-dim); margin-top:1px; }
+  .switch-remove{
+    background: transparent; border:none; color: var(--frost-dim); font-size:18px;
+    padding:4px 6px; cursor:pointer; border-radius:8px; flex-shrink:0;
+  }
+  .switch-remove:active{ color: var(--danger); background: var(--danger-dim); }
+  .switch-add{
+    display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+    background:transparent; border: 1px dashed var(--edge); border-radius: 14px; padding: 12px 14px;
+    cursor:pointer; color: var(--frost-dim); font-size:13.5px; font-weight:600; font-family: var(--sans);
+  }
+  .switch-add .plus{
+    width:22px; height:22px; border-radius:50%; border: 1px dashed var(--frost-dim);
+    display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;
+  }
 
   .modal-back-btn{
     background: transparent; border: none; color: var(--cyan); font-size: 14px; font-weight:700;
@@ -543,6 +573,7 @@
     background: var(--panel-2); border: 1px dashed var(--cyan-dim); border-radius: 14px;
     padding: 22px 16px; text-align:center; margin-bottom:16px;
   }
+  .code-reveal .code-reveal-name{ font-size:15px; font-weight:700; color: var(--frost); margin-bottom:12px; }
   .code-reveal .code-reveal-label{ font-size:11px; color: var(--frost-dim); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
   .code-reveal .code-reveal-value{ font-family: var(--mono); font-size: 26px; font-weight:800; color: var(--cyan); letter-spacing:.03em; }
 
@@ -701,13 +732,14 @@
     </div>
     <div class="settings-block">
       <div class="settings-row-title">Freezr</div>
-      <div class="freezr-code-row">
-        <div>
-          <div class="code-label">Your code</div>
-          <div class="code-value" id="freezrCodeValue">—</div>
-        </div>
+      <div class="freezr-id-row">
+        <div class="freezr-id-name" id="freezrIdName">—</div>
+        <div class="freezr-id-code" id="freezrIdCode">—</div>
       </div>
-      <button class="btn btn-ghost btn-share" id="shareFreezrBtn"><span>📤</span> Share invite</button>
+      <div class="freezr-btn-row">
+        <button class="btn btn-ghost" id="switchFreezrBtn">🔀 Switch</button>
+        <button class="btn btn-ghost btn-share" id="shareFreezrBtn"><span>📤</span> Share</button>
+      </div>
     </div>
     <div class="settings-row" id="openCategoriesBtn">
       <div>
@@ -743,7 +775,7 @@
       </div>
     </div>
 
-    <footer>Freezr &mdash; Version: 7.0.0</footer>
+    <footer>Freezr &mdash; Version: 8.0.0</footer>
   </div>
 </div>
 
@@ -956,9 +988,10 @@
 <div class="modal-back" id="freezrChoiceModalBack">
   <div class="modal">
     <div class="modal-head">
-      <h3>Welcome to Freezr</h3>
+      <h3 id="freezrChoiceTitle">Welcome to Freezr</h3>
+      <button class="modal-x" id="freezrChoiceCloseBtn" style="display:none;" aria-label="Close">✕</button>
     </div>
-    <div class="barcode-tag">Join an existing Freezr, or create a new one. You can find your code later in Settings.</div>
+    <div class="barcode-tag" id="freezrChoiceSub">Join an existing Freezr, or create a new one. You can find your code later in Settings.</div>
     <button class="choice-card" id="freezrGoJoinBtn">
       <div class="choice-icon">🔑</div>
       <div>
@@ -980,6 +1013,7 @@
   <div class="modal">
     <div class="modal-head">
       <button class="modal-back-btn" id="freezrJoinBackBtn">&lsaquo; Back</button>
+      <button class="modal-x" id="freezrJoinCloseBtn" style="display:none;" aria-label="Close">✕</button>
     </div>
     <h3 style="margin-top:6px;">Join a Freezr</h3>
     <div class="barcode-tag">Ask someone already in the Freezr for their code — it's shown in their Settings tab.</div>
@@ -991,19 +1025,45 @@
   </div>
 </div>
 
+<div class="modal-back" id="freezrNameModalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <button class="modal-back-btn" id="freezrNameBackBtn">&lsaquo; Back</button>
+    </div>
+    <h3 style="margin-top:6px;">Name your Freezr</h3>
+    <div class="barcode-tag">This is how you'll tell your Freezrs apart when switching between them.</div>
+    <input type="text" id="freezrNameInput" placeholder="e.g. Home Freezer, Uni Freezer" autocomplete="off">
+    <div class="modal-actions" style="margin-top:6px;">
+      <button class="btn btn-primary" id="freezrNameSubmitBtn">Create Freezr</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-back" id="freezrCreatedModalBack">
   <div class="modal">
     <div class="modal-head">
       <h3>Freezr created</h3>
     </div>
-    <div class="barcode-tag">Share this code so others can join the same Freezr.</div>
+    <div class="barcode-tag" id="freezrCreatedSub">Share this code so others can join the same Freezr.</div>
     <div class="code-reveal">
-      <div class="code-reveal-label">Your Freezr code</div>
+      <div class="code-reveal-name" id="freezrCreatedName"></div>
+      <div class="code-reveal-label">Freezr code</div>
       <div class="code-reveal-value" id="freezrCreatedCode">&nbsp;</div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-primary" id="freezrCreatedContinueBtn">Continue</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-back" id="freezrSwitcherModalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Switch Freezr</h3>
+      <button class="modal-x" id="freezrSwitcherCloseBtn" aria-label="Close">✕</button>
+    </div>
+    <div class="switch-list" id="freezrSwitcherList"></div>
+    <button class="switch-add" id="freezrSwitcherAddBtn"><span class="plus">+</span> Join or create another Freezr</button>
   </div>
 </div>
 
@@ -1331,7 +1391,7 @@
 
   var state = {
     mode:'add', items:[], products:{}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode:{}, weightByBarcode:{}, freezers: DEFAULT_FREEZERS.slice(), history: [],
-    categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS),
+    categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS), freezrName: '',
     listView: 'items', activeCategory: null, filterCategory: null, filterFreezer: null,
     scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0, torchOn:false, batchMode:false, batchQueue:[]
   };
@@ -1455,19 +1515,35 @@
     nameEntryModalBack: document.getElementById('nameEntryModalBack'),
     nameEntryInput: document.getElementById('nameEntryInput'),
     nameEntrySaveBtn: document.getElementById('nameEntrySaveBtn'),
-    freezrCodeValue: document.getElementById('freezrCodeValue'),
+    freezrIdName: document.getElementById('freezrIdName'),
+    freezrIdCode: document.getElementById('freezrIdCode'),
+    switchFreezrBtn: document.getElementById('switchFreezrBtn'),
     shareFreezrBtn: document.getElementById('shareFreezrBtn'),
     freezrChoiceModalBack: document.getElementById('freezrChoiceModalBack'),
+    freezrChoiceTitle: document.getElementById('freezrChoiceTitle'),
+    freezrChoiceSub: document.getElementById('freezrChoiceSub'),
+    freezrChoiceCloseBtn: document.getElementById('freezrChoiceCloseBtn'),
     freezrGoJoinBtn: document.getElementById('freezrGoJoinBtn'),
     freezrGoCreateBtn: document.getElementById('freezrGoCreateBtn'),
     freezrJoinModalBack: document.getElementById('freezrJoinModalBack'),
     freezrJoinBackBtn: document.getElementById('freezrJoinBackBtn'),
+    freezrJoinCloseBtn: document.getElementById('freezrJoinCloseBtn'),
     freezrJoinInput: document.getElementById('freezrJoinInput'),
     freezrJoinError: document.getElementById('freezrJoinError'),
     freezrJoinSubmitBtn: document.getElementById('freezrJoinSubmitBtn'),
+    freezrNameModalBack: document.getElementById('freezrNameModalBack'),
+    freezrNameBackBtn: document.getElementById('freezrNameBackBtn'),
+    freezrNameInput: document.getElementById('freezrNameInput'),
+    freezrNameSubmitBtn: document.getElementById('freezrNameSubmitBtn'),
     freezrCreatedModalBack: document.getElementById('freezrCreatedModalBack'),
+    freezrCreatedSub: document.getElementById('freezrCreatedSub'),
+    freezrCreatedName: document.getElementById('freezrCreatedName'),
     freezrCreatedCode: document.getElementById('freezrCreatedCode'),
     freezrCreatedContinueBtn: document.getElementById('freezrCreatedContinueBtn'),
+    freezrSwitcherModalBack: document.getElementById('freezrSwitcherModalBack'),
+    freezrSwitcherCloseBtn: document.getElementById('freezrSwitcherCloseBtn'),
+    freezrSwitcherList: document.getElementById('freezrSwitcherList'),
+    freezrSwitcherAddBtn: document.getElementById('freezrSwitcherAddBtn'),
     installGate: document.getElementById('installGate'),
     installGateContent: document.getElementById('installGateContent'),
   };
@@ -1503,8 +1579,8 @@
     if (syncPillText) syncPillText.textContent = s === 'synced' ? 'Synced' : (s === 'failed' ? 'Sync failed' : 'Connecting');
   }
 
-  function freshFreezrDoc(){
-    return { items: [], products: {}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode: {}, weightByBarcode: {}, freezers: DEFAULT_FREEZERS.slice(), history: [], categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS) };
+  function freshFreezrDoc(name){
+    return { name: name || '', items: [], products: {}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode: {}, weightByBarcode: {}, freezers: DEFAULT_FREEZERS.slice(), history: [], categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS) };
   }
 
   function connectToFreezr(code){
@@ -1523,8 +1599,11 @@
           state.freezers = (data.freezers && data.freezers.length) ? data.freezers : DEFAULT_FREEZERS.slice();
           state.history = data.history || [];
           state.categoryColors = (data.categoryColors && Object.keys(data.categoryColors).length) ? data.categoryColors : Object.assign({}, DEFAULT_CATEGORY_COLORS);
+          state.freezrName = data.name || '';
           if (normalizeCategoryColors()) saveCategories();
           updateFreezersRowSub();
+          upsertSavedFreezr(code, state.freezrName || code);
+          renderFreezrCodeInSettings();
         } else {
           // defensive fallback — shouldn't happen, since a code is only ever stored once its doc exists
           docRef.set(freshFreezrDoc());
@@ -3130,6 +3209,35 @@
     try{ localStorage.setItem(FREEZR_CODE_KEY, code); }catch(e){}
   }
 
+  // ---------- saved Freezrs (per-device list of every Freezr ever joined/created, for the switcher) ----------
+  var FREEZR_SAVED_KEY = 'freezr-saved';
+  function getSavedFreezrs(){
+    try{ return JSON.parse(localStorage.getItem(FREEZR_SAVED_KEY) || '[]'); }catch(e){ return []; }
+  }
+  function setSavedFreezrs(list){
+    try{ localStorage.setItem(FREEZR_SAVED_KEY, JSON.stringify(list)); }catch(e){}
+  }
+  function upsertSavedFreezr(code, name){
+    var list = getSavedFreezrs();
+    var existing = list.find(function(f){ return f.code === code; });
+    if (existing){ existing.name = name; }
+    else { list.unshift({ code: code, name: name }); }
+    setSavedFreezrs(list);
+  }
+  function removeSavedFreezr(code){
+    var list = getSavedFreezrs();
+    var index = list.findIndex(function(f){ return f.code === code; });
+    if (index === -1) return null;
+    var entry = list.splice(index, 1)[0];
+    setSavedFreezrs(list);
+    return { entry: entry, index: index };
+  }
+  function restoreSavedFreezrAt(entry, index){
+    var list = getSavedFreezrs();
+    list.splice(Math.min(index, list.length), 0, entry);
+    setSavedFreezrs(list);
+  }
+
   var FREEZR_CODE_ADJECTIVES = ['FROSTY','ICY','CHILLY','ARCTIC','POLAR','FROZEN','GLACIAL','CRISP','SNOWY','COOL'];
   var FREEZR_CODE_NOUNS = ['OTTER','PENGUIN','FOX','WALRUS','YETI','SEAL','HUSKY','MOOSE','NARWHAL','BEAR'];
   function generateFreezrCode(){
@@ -3147,44 +3255,83 @@
   }
 
   function renderFreezrCodeInSettings(){
-    els.freezrCodeValue.textContent = getStoredFreezrCode() || '—';
+    var code = getStoredFreezrCode();
+    els.freezrIdCode.textContent = code || '—';
+    els.freezrIdName.textContent = code ? (state.freezrName || code) : '—';
   }
+
+  // 'onboarding' = mandatory first-run flow (no close button); 'switcher' = optional, reached from Settings
+  var freezrFlowContext = 'onboarding';
 
   function hideAllFreezrModals(){
     els.freezrChoiceModalBack.classList.remove('show');
     els.freezrJoinModalBack.classList.remove('show');
+    els.freezrNameModalBack.classList.remove('show');
     els.freezrCreatedModalBack.classList.remove('show');
+  }
+  function closeFreezrFlow(){
+    hideAllFreezrModals();
+    if (freezrFlowContext === 'switcher') showSwitcherModal();
   }
   function showFreezrChoiceModal(){
     hideAllFreezrModals();
+    var fromSwitcher = freezrFlowContext === 'switcher';
+    els.freezrChoiceCloseBtn.style.display = fromSwitcher ? '' : 'none';
+    els.freezrChoiceTitle.textContent = fromSwitcher ? 'Join or create a Freezr' : 'Welcome to Freezr';
+    els.freezrChoiceSub.textContent = fromSwitcher
+      ? 'Adding another Freezr won’t affect “' + (state.freezrName || 'your current Freezr') + '” — switch back to it anytime.'
+      : 'Join an existing Freezr, or create a new one. You can find your code later in Settings.';
     els.freezrChoiceModalBack.classList.add('show');
   }
   function showFreezrJoinModal(){
     hideAllFreezrModals();
+    els.freezrJoinCloseBtn.style.display = freezrFlowContext === 'switcher' ? '' : 'none';
     els.freezrJoinInput.value = '';
     els.freezrJoinInput.classList.remove('err');
     els.freezrJoinError.classList.remove('show');
     els.freezrJoinModalBack.classList.add('show');
     setTimeout(function(){ els.freezrJoinInput.focus(); }, 50);
   }
+  function showFreezrNameModal(){
+    hideAllFreezrModals();
+    els.freezrNameInput.value = '';
+    els.freezrNameModalBack.classList.add('show');
+    setTimeout(function(){ els.freezrNameInput.focus(); }, 50);
+  }
   function onFreezrResolved(){
     hideAllFreezrModals();
+    freezrFlowContext = 'onboarding';
     renderFreezrCodeInSettings();
     setMode(state.mode);
     maybeShowNamePrompt();
   }
 
+  els.freezrChoiceCloseBtn.onclick = closeFreezrFlow;
+  els.freezrChoiceModalBack.addEventListener('click', function(e){
+    if (e.target === els.freezrChoiceModalBack && freezrFlowContext === 'switcher') closeFreezrFlow();
+  });
+  els.freezrJoinCloseBtn.onclick = closeFreezrFlow;
+  els.freezrJoinModalBack.addEventListener('click', function(e){
+    if (e.target === els.freezrJoinModalBack && freezrFlowContext === 'switcher') closeFreezrFlow();
+  });
+
   els.freezrGoJoinBtn.onclick = showFreezrJoinModal;
   els.freezrJoinBackBtn.onclick = showFreezrChoiceModal;
+  els.freezrGoCreateBtn.onclick = showFreezrNameModal;
+  els.freezrNameBackBtn.onclick = showFreezrChoiceModal;
 
-  els.freezrGoCreateBtn.onclick = async function(){
-    els.freezrGoCreateBtn.style.opacity = '0.6';
-    els.freezrGoJoinBtn.style.pointerEvents = els.freezrGoCreateBtn.style.pointerEvents = 'none';
+  els.freezrNameSubmitBtn.onclick = async function(){
+    var name = els.freezrNameInput.value.trim();
+    if (!name){ toast('Please name your Freezr', 'warn'); return; }
+    els.freezrNameSubmitBtn.disabled = true;
     try{
       var code = await pickUniqueFreezrCode();
-      await db.collection('freezrs').doc(code).set(freshFreezrDoc());
+      await db.collection('freezrs').doc(code).set(freshFreezrDoc(name));
       setStoredFreezrCode(code);
+      upsertSavedFreezr(code, name);
       connectToFreezr(code);
+      els.freezrCreatedName.textContent = name;
+      els.freezrCreatedSub.textContent = 'Share this code so others can join "' + name + '".';
       els.freezrCreatedCode.textContent = code;
       hideAllFreezrModals();
       els.freezrCreatedModalBack.classList.add('show');
@@ -3192,8 +3339,7 @@
       console.error(e);
       toast('Could not create a Freezr — check connection', 'err');
     }finally{
-      els.freezrGoCreateBtn.style.opacity = '';
-      els.freezrGoJoinBtn.style.pointerEvents = els.freezrGoCreateBtn.style.pointerEvents = '';
+      els.freezrNameSubmitBtn.disabled = false;
     }
   };
 
@@ -3212,7 +3358,9 @@
         els.freezrJoinError.classList.add('show');
         return;
       }
+      var data = snap.data();
       setStoredFreezrCode(code);
+      upsertSavedFreezr(code, (data && data.name) || code);
       connectToFreezr(code);
       onFreezrResolved();
     }catch(e){
@@ -3231,7 +3379,8 @@
   els.shareFreezrBtn.onclick = function(){
     var code = getStoredFreezrCode();
     if (!code){ toast('No Freezr code yet', 'warn'); return; }
-    var msg = 'Join my Freezr! Use code ' + code + ' when you open the app: ' + location.href;
+    var label = state.freezrName ? ('my "' + state.freezrName + '" Freezr') : 'my Freezr';
+    var msg = 'Join ' + label + '! Use code ' + code + ' when you open the app: ' + location.href;
     if (navigator.share){
       navigator.share({ text: msg }).catch(function(){});
     } else if (navigator.clipboard && navigator.clipboard.writeText){
@@ -3243,6 +3392,61 @@
     } else {
       toast('Your code is ' + code, 'ok');
     }
+  };
+
+  // ---------- Freezr switcher ----------
+  function showSwitcherModal(){
+    renderSwitcherList();
+    els.freezrSwitcherModalBack.classList.add('show');
+  }
+  function hideSwitcherModal(){
+    els.freezrSwitcherModalBack.classList.remove('show');
+  }
+  function renderSwitcherList(){
+    var active = getStoredFreezrCode();
+    var list = getSavedFreezrs();
+    els.freezrSwitcherList.innerHTML = list.map(function(f){
+      var isActive = f.code === active;
+      return '<div class="switch-row' + (isActive ? ' active' : '') + '" data-code="' + escapeHtml(f.code) + '">' +
+          '<div class="switch-check">' + (isActive ? '✓' : '') + '</div>' +
+          '<div style="flex:1;"><div class="switch-name">' + escapeHtml(f.name || f.code) + '</div><div class="switch-code">' + escapeHtml(f.code) + '</div></div>' +
+          (isActive ? '' : '<button class="switch-remove" data-code="' + escapeHtml(f.code) + '" aria-label="Remove">✕</button>') +
+        '</div>';
+    }).join('');
+    Array.prototype.forEach.call(els.freezrSwitcherList.querySelectorAll('.switch-row'), function(row){
+      row.addEventListener('click', function(e){
+        if (e.target.closest('.switch-remove')) return;
+        var code = row.getAttribute('data-code');
+        if (code === getStoredFreezrCode()){ hideSwitcherModal(); return; }
+        setStoredFreezrCode(code);
+        connectToFreezr(code);
+        setMode(state.mode);
+        hideSwitcherModal();
+      });
+    });
+    Array.prototype.forEach.call(els.freezrSwitcherList.querySelectorAll('.switch-remove'), function(btn){
+      btn.onclick = function(e){
+        e.stopPropagation();
+        var code = btn.getAttribute('data-code');
+        var removed = removeSavedFreezr(code);
+        if (!removed) return;
+        renderSwitcherList();
+        toast('Removed "' + (removed.entry.name || removed.entry.code) + '"', 'ok', function(){
+          restoreSavedFreezrAt(removed.entry, removed.index);
+          renderSwitcherList();
+        });
+      };
+    });
+  }
+  els.switchFreezrBtn.onclick = showSwitcherModal;
+  els.freezrSwitcherCloseBtn.onclick = hideSwitcherModal;
+  els.freezrSwitcherModalBack.addEventListener('click', function(e){
+    if (e.target === els.freezrSwitcherModalBack) hideSwitcherModal();
+  });
+  els.freezrSwitcherAddBtn.onclick = function(){
+    freezrFlowContext = 'switcher';
+    hideSwitcherModal();
+    showFreezrChoiceModal();
   };
 
   // ---------- display name (per-device attribution, not synced — same pattern as theme) ----------
