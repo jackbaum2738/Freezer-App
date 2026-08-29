@@ -35,7 +35,14 @@ Running list of possible improvements. Nothing here is built yet unless marked �
 - **Shopping list tab** — a third bottom tab (alongside Freezr and Settings) for a shopping list. When removing an item from the freezer, offer the option to add it to the shopping list.
 - **Receipt scanning (mass import)** — scan a shopping receipt, extract the list of product names from it, then choose which ones to add to the freezer in one go.
 - **Package as a real app (Play Store / App Store)** — wrap the existing web app natively via Trusted Web Activity (Android, lightweight) and/or Capacitor (iOS, needs Apple Developer account + review). Would likely also fix the camera focus/torch quirks we've hit, since native camera APIs are far more capable than what a browser can do. Not urgent — the current PWA architecture carries over directly whenever this gets tackled, so no need to prepare for it now.
-- **First-time onboarding tour** — a short walkthrough shown the first time someone installs/opens the app, explaining how it works. Would include entering their name (see "Who added it" attribution above) as one step.
+- **Freezer households (multi-household support)** — let other households use the app with their own completely separate data, instead of everyone sharing the single freezer that exists today. Plan:
+  - Each household gets a short code, shown in Settings for all its members.
+  - As the first step of the onboarding tour (before the name prompt), ask whether to join an existing household (enter its code) or start a new one.
+  - Starting a new household seeds default categories + one freezer, exactly like today's fresh install, and gives it a code to share.
+  - Joining a household loads that household's categories/freezers/items/history — i.e. everything currently in `state`.
+  - A "Share" button in Settings generates a WhatsApp-friendly invite message (the household code + a link to install the app), ready to copy/paste or hand to the OS share sheet.
+  - Architectural note: today the whole app reads/writes one single shared Firestore document (`freezer/inventory`) — there's no household concept at all. This needs each household in its own document (e.g. `households/{code}`), with the household code stored locally (like the theme/name) so the app knows which document to open, and the wide-open `allow read, write: if true` security rule scoped by household code instead. Worth designing carefully before starting, since it touches every existing read/write in the app.
+- **First-time onboarding tour** — a short walkthrough shown the first time someone installs/opens the app, explaining how it works. Order: join/create a household (see "Freezer households" above) first, then the name prompt (see "Who added it" attribution above).
 
 ## Ideas from Claude
 - ~~Use-by / expiry tracking~~ — **not wanted for now** (frozen food doesn't really need this tracked); may reconsider in future.
