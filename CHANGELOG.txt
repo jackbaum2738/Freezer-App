@@ -4,6 +4,10 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+9.0.2 -- 2026-08-29
+--------------------
+- Deleting a Freezr now shows a "Freezr deleted" confirmation before switching you anywhere -- previously it went straight from typing the confirm code to the next screen with no acknowledgment the delete actually happened. Dismiss it with the X, tapping outside it, or Continue -- any of those then switches you to another saved Freezr, or the join/create screen if you have nothing else saved.
+
 9.0.1 -- 2026-08-29
 --------------------
 - Fixed Freezr deletion always dropping you on the join/create screen, even when another Freezr was already saved on the device. It now switches straight to the most recently saved one instead -- for both the device that deleted it and any other device that discovers the deletion (after acknowledging the "no longer exists" notice). Join/create is now only shown when there's genuinely nothing else saved.
