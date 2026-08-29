@@ -183,6 +183,7 @@
   }
   .manual-row input:focus{ outline: 2px solid var(--cyan); outline-offset: -1px; }
   .manual-row button{ background: var(--panel-2); color: var(--frost-dim); border: 1px solid var(--edge); border-radius: 10px; padding: 0 16px; font-weight:700; }
+  #manualInput{ font-family: var(--sans); }
 
   /* List */
   .list-head{ display:flex; align-items:baseline; justify-content:space-between; margin: 22px 0 10px; }
@@ -694,8 +695,8 @@
     <input type="file" accept="image/*" capture="environment" id="photoInput" style="display:none">
     <div id="photoScanStatus" style="display:none; text-align:center; font-size:12.5px; color:var(--frost-dim); margin-top:8px; font-family:var(--mono);">Reading barcode from photo…</div>
 
-    <div class="manual-row">
-      <input type="text" id="manualInput" placeholder="Manual input" inputmode="numeric">
+    <div class="manual-row" id="manualRow">
+      <input type="text" id="manualInput" placeholder="e.g. Chicken thighs" autocomplete="off">
       <button id="manualBtn">Add</button>
     </div>
   </div>
@@ -775,7 +776,7 @@
       </div>
     </div>
 
-    <footer>Freezr &mdash; Version: 8.0.0</footer>
+    <footer>Freezr &mdash; Version: 8.1.0</footer>
   </div>
 </div>
 
@@ -1410,6 +1411,7 @@
     video: document.getElementById('scannerContainer'),
     scanOverlay: document.getElementById('scanOverlay'),
     scanHint: document.getElementById('scanHint'),
+    manualRow: document.getElementById('manualRow'),
     manualInput: document.getElementById('manualInput'),
     manualBtn: document.getElementById('manualBtn'),
     listTitle: document.getElementById('listTitle'),
@@ -1675,7 +1677,7 @@
     els.modeRemove.classList.toggle('active', mode === 'remove');
     els.listTitle.textContent = mode === 'add' ? 'In the freezer' : 'In the freezer';
     els.scanToggle.textContent = state.scanning ? 'Stop scanning' : 'Scan items';
-    els.manualBtn.textContent = mode === 'add' ? 'Add' : 'Remove';
+    els.manualRow.style.display = mode === 'add' ? '' : 'none';
     els.subline.textContent = mode === 'add' ? 'Scanning will ask you to confirm the name, then add it with today\u2019s date' : 'Scanning will remove the oldest matching item';
   }
   els.modeAdd.onclick = function(){ setMode('add'); };
@@ -1806,7 +1808,7 @@
   els.manualBtn.onclick = function(){
     var v = els.manualInput.value.trim();
     if (!v) return;
-    handleScan(v);
+    openNameModal('', { presetName: v });
     els.manualInput.value = '';
   };
   els.manualInput.addEventListener('keydown', function(e){
@@ -1934,7 +1936,7 @@
   function openRemoveModal(item){
     state.scanPaused = true;
     pendingRemoveItem = item;
-    els.removeModalBarcode.textContent = 'Barcode: ' + item.barcode;
+    els.removeModalBarcode.textContent = item.barcode ? ('Barcode: ' + item.barcode) : 'No barcode — added manually';
     els.removeModalInfo.innerHTML =
       '<strong>' + escapeHtml(item.name) + '</strong><br>' +
       'Added ' + fmtDate(item.dateAdded) + ' \u2014 ' + daysLabel(item.dateAdded);
@@ -2008,15 +2010,16 @@
     state.scanPaused = true;
     pendingBarcode = barcode;
     pendingEditOnly = !!(opts && opts.editOnly);
+    var presetName = (opts && opts.presetName) || '';
     els.modalTitle.textContent = pendingEditOnly ? 'Edit item name' : 'Confirm item';
     els.modalSave.textContent = pendingEditOnly ? 'Save name' : 'Save & add';
-    els.modalBarcode.textContent = 'Barcode: ' + barcode;
-    var known = state.products[barcode];
-    els.modalNameInput.value = known || '';
-    var knownCategory = state.categoryByBarcode[barcode];
+    els.modalBarcode.textContent = barcode ? ('Barcode: ' + barcode) : 'No barcode — added manually';
+    var known = barcode ? state.products[barcode] : null;
+    els.modalNameInput.value = known || presetName;
+    var knownCategory = barcode ? state.categoryByBarcode[barcode] : null;
     categoryManuallySet = !!knownCategory;
-    selectModalCategory(knownCategory || guessCategory(known || ''));
-    var knownWeight = state.weightByBarcode[barcode] || null;
+    selectModalCategory(knownCategory || guessCategory(known || presetName));
+    var knownWeight = barcode ? (state.weightByBarcode[barcode] || null) : null;
     weightManuallySet = !!knownWeight;
     applyModalWeight(knownWeight);
     if (state.freezers.length > 1){
@@ -2028,7 +2031,7 @@
     }
     els.modalBack.classList.add('show');
     setTimeout(function(){ els.modalNameInput.focus(); els.modalNameInput.select(); }, 50);
-    if (!known && !pendingEditOnly) tryLookup(barcode);
+    if (barcode && !known && !pendingEditOnly) tryLookup(barcode);
   }
   function closeModal(){
     state.scanPaused = false;
@@ -2045,15 +2048,17 @@
   });
   els.modalSave.onclick = function(){
     var name = els.modalNameInput.value.trim();
-    if (!name || !pendingBarcode) return;
+    if (!name || pendingBarcode === null) return;
     var category = modalSelectedCategory || 'Other';
     var weight = readModalWeight();
     var freezer = state.freezers.length > 1 ? modalSelectedFreezer : (state.freezers[0] || 'Freezer');
-    state.products[pendingBarcode] = name;
-    state.categoryByBarcode[pendingBarcode] = category;
-    if (weight) state.weightByBarcode[pendingBarcode] = weight;
-    else delete state.weightByBarcode[pendingBarcode];
-    saveProducts();
+    if (pendingBarcode){
+      state.products[pendingBarcode] = name;
+      state.categoryByBarcode[pendingBarcode] = category;
+      if (weight) state.weightByBarcode[pendingBarcode] = weight;
+      else delete state.weightByBarcode[pendingBarcode];
+      saveProducts();
+    }
     if (pendingEditOnly){
       var barcode = pendingBarcode;
       var changed = false;
@@ -2655,7 +2660,7 @@
     pendingCategory = originalCategory;
     originalWeight = oldest.weight || null;
     originalFreezer = oldest.freezer || null;
-    els.detailBarcode.textContent = 'Barcode: ' + barcode;
+    els.detailBarcode.textContent = barcode ? ('Barcode: ' + barcode) : 'No barcode — added manually';
     els.detailNameInput.value = name;
     selectDetailCategory(pendingCategory);
     applyDetailWeight(originalWeight);

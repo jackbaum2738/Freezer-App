@@ -4,6 +4,11 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+8.1.0 -- 2026-08-29
+--------------------
+- Changed the manual-entry field on the Add screen from a barcode number to the item's name -- nobody realistically has a barcode memorised to type in. Typing a name and tapping Add opens the same "Confirm item" modal used for scans, pre-filled with that name, with the barcode saved as blank. Since there's no barcode, the name/category/weight aren't saved to the "remembers per barcode" list -- there's nothing to remember them against.
+- Removed the manual-entry field from Remove mode entirely -- removing an item without a barcode is done by searching for it in the list and using the remove button there.
+
 8.0.0 -- 2026-08-29
 --------------------
 - Added a Freezr switcher: Settings now has a "Switch" button that opens a list of every Freezr ever joined or created on this device -- tap one to switch instantly, no need to re-enter its code (e.g. swapping between a uni freezer and a home freezer over a weekend). The active Freezr is checkmarked; others have a remove (✕) button that forgets them from this device only (soft-delete with Undo -- the Freezr itself and its data are untouched).
