@@ -550,6 +550,38 @@
   .field-error.show{ display:block; }
   .modal input[type=text].err{ border-color: var(--danger); }
 
+  #installGate{
+    display:none; position:fixed; inset:0; z-index:200; background: var(--bg);
+  }
+  .gate{
+    height:100%; display:flex; flex-direction:column; align-items:center;
+    padding: 64px 26px 32px; text-align:center; overflow-y:auto;
+  }
+  .gate-icon{
+    width:64px; height:64px; border-radius:18px; background: var(--cyan-dim);
+    display:flex; align-items:center; justify-content:center; font-size:30px; margin-bottom:18px; flex-shrink:0;
+  }
+  .gate h2{ margin:0 0 8px; font-size:20px; letter-spacing:-0.01em; }
+  .gate .gate-sub{ margin:0 0 28px; font-size:13.5px; color: var(--frost-dim); line-height:1.5; max-width:280px; }
+  .steps{ width:100%; max-width:340px; display:flex; flex-direction:column; gap:10px; text-align:left; }
+  .step{
+    display:flex; align-items:flex-start; gap:12px;
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 14px; padding: 14px;
+  }
+  .step-num{
+    width:24px; height:24px; border-radius:50%; background: var(--cyan-dim); color: var(--cyan);
+    font-family: var(--mono); font-size:12px; font-weight:800; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; margin-top:1px;
+  }
+  .step-text{ font-size:13.5px; line-height:1.5; }
+  .step-text b{ color: var(--frost); }
+  .gate-footnote{ margin-top:22px; font-size:11.5px; color: var(--frost-dim); line-height:1.5; max-width:280px; }
+  .gate .install-btn{
+    width:100%; max-width:340px; border:none; border-radius:12px; padding:14px 16px; font-size:15px; font-weight:700;
+    cursor:pointer; font-family: var(--sans); background: var(--cyan); color: var(--on-cyan); margin-bottom:14px;
+  }
+  .fallback-icon{ font-size:36px; margin-bottom:6px; }
+
   .segmented{
     display:flex; gap:6px; background: var(--panel-2);
     border: 1px solid var(--edge); border-radius: 12px; padding: 4px;
@@ -585,6 +617,9 @@
 </style>
 </head>
 <body>
+<div id="installGate">
+  <div class="gate" id="installGateContent"></div>
+</div>
 <div class="wrap">
   <header>
     <div class="title-row">
@@ -708,7 +743,7 @@
       </div>
     </div>
 
-    <footer>Freezr &mdash; Version: 6.0.0</footer>
+    <footer>Freezr &mdash; Version: 7.0.0</footer>
   </div>
 </div>
 
@@ -1004,6 +1039,70 @@
 <script>
 (function(){
  try{
+  // ---------- install gate — Freezr only works installed to the home screen, not in a browser tab ----------
+  function isStandalonePwa(){
+    try{
+      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+    }catch(e){ return false; }
+  }
+  function isDevBypass(){
+    try{ return /(^|[?&])dev=1(&|$)/.test(location.search); }catch(e){ return false; }
+  }
+  function detectPlatform(){
+    var ua = navigator.userAgent || '';
+    var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (isIOS) return 'ios';
+    if (/Android/.test(ua)) return 'android';
+    return 'other';
+  }
+  var deferredInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    if (els.installGate.style.display !== 'none') renderInstallGate();
+  });
+  function renderInstallGate(){
+    var platform = detectPlatform();
+    var html = '<div class="gate-icon">❄️</div>';
+    if (platform === 'ios'){
+      html += '<h2>Install Freezr to continue</h2>' +
+        '<p class="gate-sub">Freezr runs as an app on your home screen — this only takes a few seconds, and you’ll only need to do it once.</p>' +
+        '<div class="steps">' +
+          '<div class="step"><div class="step-num">1</div><div class="step-text">Tap the <b>Share</b> button ⬆️ in Safari’s toolbar</div></div>' +
+          '<div class="step"><div class="step-num">2</div><div class="step-text">Scroll down and tap <b>Add to Home Screen</b></div></div>' +
+          '<div class="step"><div class="step-num">3</div><div class="step-text">Tap <b>Add</b>, then close this tab and open Freezr from your home screen</div></div>' +
+        '</div>' +
+        '<div class="gate-footnote">Freezr needs to be added to your home screen to sync properly and feel like a real app.</div>';
+    } else if (platform === 'android' && deferredInstallPrompt){
+      html += '<h2>Install Freezr to continue</h2>' +
+        '<p class="gate-sub">Freezr runs as an app on your home screen — this only takes a few seconds, and you’ll only need to do it once.</p>' +
+        '<button class="install-btn" id="installGateBtn">⬇️ Install Freezr</button>' +
+        '<div class="gate-footnote">Tap Install, then open Freezr from your home screen.</div>';
+    } else if (platform === 'android'){
+      html += '<h2>Install Freezr to continue</h2>' +
+        '<p class="gate-sub">Freezr runs as an app on your home screen — this only takes a few seconds, and you’ll only need to do it once.</p>' +
+        '<div class="steps">' +
+          '<div class="step"><div class="step-num">1</div><div class="step-text">Tap the ⋮ menu in Chrome</div></div>' +
+          '<div class="step"><div class="step-num">2</div><div class="step-text">Tap <b>Add to Home screen</b> (or <b>Install app</b>)</div></div>' +
+          '<div class="step"><div class="step-num">3</div><div class="step-text">Tap <b>Install</b>, then open Freezr from your home screen</div></div>' +
+        '</div>' +
+        '<div class="gate-footnote">Freezr needs to be added to your home screen to sync properly and feel like a real app.</div>';
+    } else {
+      html += '<h2>Open Freezr on your phone</h2>' +
+        '<div class="fallback-icon">📱</div>' +
+        '<p class="gate-sub">Freezr is designed to be installed as an app on a phone. Open this page on an iPhone or Android phone to install it.</p>';
+    }
+    els.installGateContent.innerHTML = html;
+    var btn = document.getElementById('installGateBtn');
+    if (btn){
+      btn.onclick = function(){
+        if (!deferredInstallPrompt) return;
+        deferredInstallPrompt.prompt();
+        deferredInstallPrompt.userChoice.finally(function(){ deferredInstallPrompt = null; });
+      };
+    }
+  }
+
   var DEFAULT_CATEGORIES = ['Meat','Poultry','Fish & Seafood','Vegetables','Fruit','Bakery','Ready Meals & Leftovers','Dairy & Ice Cream','Other'];
 
   // 24 preset swatches (bright + pastel), picked from exclusively — this is the only way to
@@ -1369,6 +1468,8 @@
     freezrCreatedModalBack: document.getElementById('freezrCreatedModalBack'),
     freezrCreatedCode: document.getElementById('freezrCreatedCode'),
     freezrCreatedContinueBtn: document.getElementById('freezrCreatedContinueBtn'),
+    installGate: document.getElementById('installGate'),
+    installGateContent: document.getElementById('installGateContent'),
   };
 
   function toast(msg, kind, onUndo){
@@ -3202,6 +3303,11 @@
   };
 
   // ---------- init ----------
+  if (!isStandalonePwa() && !isDevBypass()){
+    renderInstallGate();
+    els.installGate.style.display = 'block';
+    return;
+  }
   setMode('add');
   renderFreezrCodeInSettings();
   initStorage();
