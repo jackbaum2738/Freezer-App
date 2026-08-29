@@ -4,6 +4,10 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+9.0.1 -- 2026-08-29
+--------------------
+- Fixed Freezr deletion always dropping you on the join/create screen, even when another Freezr was already saved on the device. It now switches straight to the most recently saved one instead -- for both the device that deleted it and any other device that discovers the deletion (after acknowledging the "no longer exists" notice). Join/create is now only shown when there's genuinely nothing else saved.
+
 9.0.0 -- 2026-08-29
 --------------------
 - Added the ability to delete a Freezr, from a red button at the bottom of Settings. Double confirmation: the button opens a warning modal, and Delete stays disabled until you type the Freezr's own code to confirm. No Undo -- it's permanent for everyone in it.
