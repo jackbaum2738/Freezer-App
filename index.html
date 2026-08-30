@@ -917,7 +917,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.5.2</footer>
+    <footer>Freezr &mdash; Version: 10.5.3</footer>
   </div>
 </div>
 
@@ -3768,13 +3768,14 @@
   });
   function addSettingsCategory(){
     var val = els.settingsNewCategoryInput.value.trim();
-    if (!val) return;
+    if (!val) return true;
     var lower = val.toLowerCase();
     var isDup = pendingCategoriesList.some(function(e){ return e.value.trim().toLowerCase() === lower; });
-    if (isDup){ toast('That category already exists', 'warn'); return; }
+    if (isDup){ toast('That category already exists', 'warn'); return false; }
     pendingCategoriesList.push({ key: makeId(), original: null, value: val, color: NEW_CATEGORY_DEFAULT_COLOR });
     els.settingsNewCategoryInput.value = '';
     renderSettingsCategoryList();
+    return true;
   }
   els.settingsAddCategoryBtn.onclick = addSettingsCategory;
   els.settingsNewCategoryInput.addEventListener('keydown', function(e){
@@ -3782,7 +3783,7 @@
   });
   els.settingsModalSaveBtn.onclick = function(){
     if (!pendingCategoriesList) return;
-    if (els.settingsNewCategoryInput.value.trim()) addSettingsCategory();
+    if (els.settingsNewCategoryInput.value.trim() && !addSettingsCategory()) return;
     pendingCategoriesList.forEach(function(e){ e.value = e.value.trim(); });
 
     if (pendingCategoriesList.length === 0){
@@ -3883,13 +3884,14 @@
   });
   function addSettingsFreezer(){
     var val = els.settingsNewFreezerInput.value.trim();
-    if (!val) return;
+    if (!val) return true;
     var lower = val.toLowerCase();
     var isDup = pendingFreezersList.some(function(e){ return e.value.trim().toLowerCase() === lower; });
-    if (isDup){ toast('That freezer name already exists', 'warn'); return; }
+    if (isDup){ toast('That freezer name already exists', 'warn'); return false; }
     pendingFreezersList.push({ key: makeId(), original: null, value: val });
     els.settingsNewFreezerInput.value = '';
     renderSettingsFreezerList();
+    return true;
   }
   els.settingsAddFreezerBtn.onclick = addSettingsFreezer;
   els.settingsNewFreezerInput.addEventListener('keydown', function(e){
@@ -3897,7 +3899,7 @@
   });
   els.freezersModalSaveBtn.onclick = function(){
     if (!pendingFreezersList) return;
-    if (els.settingsNewFreezerInput.value.trim()) addSettingsFreezer();
+    if (els.settingsNewFreezerInput.value.trim() && !addSettingsFreezer()) return;
     pendingFreezersList.forEach(function(e){ e.value = e.value.trim(); });
 
     if (pendingFreezersList.length === 0){

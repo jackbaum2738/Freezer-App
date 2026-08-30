@@ -4,6 +4,10 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+10.5.3 -- 2026-08-30
+--------------------
+- Fixed a bug introduced by the previous fix: typing a category/freezer name that already exists and tapping Save (instead of Add) closed the modal and showed the normal "updated" toast instead of keeping the modal open with the "already exists" warning. Save now stops there, same as tapping Add on a duplicate already did.
+
 10.5.2 -- 2026-08-30
 --------------------
 - Typing a new category or freezer name and tapping Save (without tapping Add first) now adds it automatically, instead of silently discarding whatever was typed. Pressing Add or Enter still works exactly as before.
