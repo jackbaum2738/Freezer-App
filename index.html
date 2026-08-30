@@ -917,7 +917,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.5.1</footer>
+    <footer>Freezr &mdash; Version: 10.5.2</footer>
   </div>
 </div>
 
@@ -3782,6 +3782,7 @@
   });
   els.settingsModalSaveBtn.onclick = function(){
     if (!pendingCategoriesList) return;
+    if (els.settingsNewCategoryInput.value.trim()) addSettingsCategory();
     pendingCategoriesList.forEach(function(e){ e.value = e.value.trim(); });
 
     if (pendingCategoriesList.length === 0){
@@ -3896,6 +3897,7 @@
   });
   els.freezersModalSaveBtn.onclick = function(){
     if (!pendingFreezersList) return;
+    if (els.settingsNewFreezerInput.value.trim()) addSettingsFreezer();
     pendingFreezersList.forEach(function(e){ e.value = e.value.trim(); });
 
     if (pendingFreezersList.length === 0){

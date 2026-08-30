@@ -4,6 +4,10 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+10.5.2 -- 2026-08-30
+--------------------
+- Typing a new category or freezer name and tapping Save (without tapping Add first) now adds it automatically, instead of silently discarding whatever was typed. Pressing Add or Enter still works exactly as before.
+
 10.5.1 -- 2026-08-30
 --------------------
 - Fixed the colour swatch, name, and delete button in Categories/Freezers settings rows not lining up vertically -- a leftover CSS rule from the Backup feature was silently overriding their height/padding. Rows are also a bit more compact now as a result.
