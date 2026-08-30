@@ -4,6 +4,10 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+10.1.2 -- 2026-08-30
+--------------------
+- Fixed the app getting visually stuck zoomed-in/too-wide on iPhone after typing into any text field (reported on an iPhone 16 Pro Max). Every text input in the app had a font-size under 16px, which is the exact threshold that makes iOS Safari auto-zoom the page when a field is focused -- on a PWA in standalone mode that zoom sometimes doesn't reset afterwards, leaving the whole app shifted and cut off on the right edge. Bumped every input/number field to 16px so the zoom never triggers. Also added a defensive overflow-x:hidden on the page as a safety net against this class of bug in general.
+
 10.1.1 -- 2026-08-30
 --------------------
 - Fixed the remove (X) button on shopping list rows: it was sitting right next to the item name instead of pinned to the row's right edge, because the text wrapper next to it was missing a CSS rule to make it fill the available space. Also made the button vertically centered on the row and slightly bigger, since it was riding high near the top instead.
