@@ -810,6 +810,11 @@
       <span class="filter-pill-label">Freezer</span>
       <div class="freezer-collapsed" id="freezerFilterValue"></div>
     </div>
+    <div class="filter-pill" id="sortFilterPill">
+      <span class="filter-pill-label">Sort</span>
+      <span class="cat-collapsed-name" id="sortFilterValue"></span>
+      <span class="cat-chevron">›</span>
+    </div>
   </div>
   <div class="search-row" id="searchRow">
     <input type="text" class="search" id="searchInput" placeholder="Search inventory…">
@@ -836,6 +841,11 @@
     <div class="filter-pill" id="shopCategoryFilterPill">
       <span class="filter-pill-label">Category</span>
       <div class="cat-collapsed-value" id="shopCategoryFilterValue"></div>
+    </div>
+    <div class="filter-pill" id="shopSortFilterPill">
+      <span class="filter-pill-label">Sort</span>
+      <span class="cat-collapsed-name" id="shopSortFilterValue"></span>
+      <span class="cat-chevron">›</span>
     </div>
   </div>
 
@@ -917,7 +927,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.1.3</footer>
+    <footer>Freezr &mdash; Version: 10.2.0</footer>
   </div>
 </div>
 
@@ -1553,6 +1563,16 @@
 
   // ---------- freezers (locations; only shown/editable once a second one exists) ----------
   var DEFAULT_FREEZERS = ['Freezer'];
+
+  var SORT_ITEMS_KEY = 'freezr-sort-items';
+  var SORT_HISTORY_KEY = 'freezr-sort-history';
+  var SORT_SHOP_KEY = 'freezr-sort-shop';
+  function getStoredSort(key){
+    try{ return localStorage.getItem(key) === 'alpha' ? 'alpha' : 'date'; }catch(e){ return 'date'; }
+  }
+  function setStoredSort(key, mode){
+    try{ localStorage.setItem(key, mode); }catch(e){}
+  }
   function renderFreezerPicker(container, selected, onSelect){
     container.innerHTML = state.freezers.map(function(f){
       var isSel = f === selected;
@@ -1596,6 +1616,7 @@
     mode:'add', items:[], products:{}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode:{}, weightByBarcode:{}, freezers: DEFAULT_FREEZERS.slice(), history: [],
     categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS), freezrName: '', shoppingList: [], lastBackup: null,
     listView: 'items', activeCategory: null, filterCategory: null, filterFreezer: null, shopFilterCategory: null,
+    sortItems: getStoredSort(SORT_ITEMS_KEY), sortHistory: getStoredSort(SORT_HISTORY_KEY), sortShop: getStoredSort(SORT_SHOP_KEY),
     scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0, torchOn:false, batchMode:false, batchQueue:[]
   };
 
@@ -1625,6 +1646,8 @@
     categoryFilterValue: document.getElementById('categoryFilterValue'),
     freezerFilterPill: document.getElementById('freezerFilterPill'),
     freezerFilterValue: document.getElementById('freezerFilterValue'),
+    sortFilterPill: document.getElementById('sortFilterPill'),
+    sortFilterValue: document.getElementById('sortFilterValue'),
     searchRow: document.getElementById('searchRow'),
     searchInput: document.getElementById('searchInput'),
     categoryViewBtn: document.getElementById('categoryViewBtn'),
@@ -1652,6 +1675,8 @@
     shopListCount: document.getElementById('shopListCount'),
     shopCategoryFilterPill: document.getElementById('shopCategoryFilterPill'),
     shopCategoryFilterValue: document.getElementById('shopCategoryFilterValue'),
+    shopSortFilterPill: document.getElementById('shopSortFilterPill'),
+    shopSortFilterValue: document.getElementById('shopSortFilterValue'),
     shopSearchInput: document.getElementById('shopSearchInput'),
     shopAddToggleBtn: document.getElementById('shopAddToggleBtn'),
     shopAddRow: document.getElementById('shopAddRow'),
@@ -2612,7 +2637,7 @@
     return formatDurationBetween(dateAdded, new Date().toISOString());
   }
 
-  function groupItems(items){
+  function groupItems(items, sortMode){
     var map = {};
     var order = [];
     items.forEach(function(item){
@@ -2631,9 +2656,13 @@
         g.oldestCategory = item.category || 'Other';
       }
     });
-    return order.map(function(k){ return map[k]; }).sort(function(a,b){
-      return new Date(a.oldestDate) - new Date(b.oldestDate);
-    });
+    var groups = order.map(function(k){ return map[k]; });
+    if (sortMode === 'alpha'){
+      groups.sort(function(a,b){ return a.name.toLowerCase().localeCompare(b.name.toLowerCase()); });
+    } else {
+      groups.sort(function(a,b){ return new Date(b.oldestDate) - new Date(a.oldestDate); });
+    }
+    return groups;
   }
 
   function setListView(view, category){
@@ -2668,7 +2697,7 @@
   }
 
   // ---------- history view ----------
-  function groupHistory(entries){
+  function groupHistory(entries, sortMode){
     var map = {};
     var order = [];
     entries.forEach(function(h){
@@ -2684,9 +2713,13 @@
       g.ids.push(h.id);
       if (new Date(h.dateAdded) < new Date(g.dateAdded)) g.dateAdded = h.dateAdded;
     });
-    return order.map(function(k){ return map[k]; }).sort(function(a,b){
-      return new Date(b.dateRemoved) - new Date(a.dateRemoved);
-    });
+    var groups = order.map(function(k){ return map[k]; });
+    if (sortMode === 'alpha'){
+      groups.sort(function(a,b){ return a.name.toLowerCase().localeCompare(b.name.toLowerCase()); });
+    } else {
+      groups.sort(function(a,b){ return new Date(b.dateRemoved) - new Date(a.dateRemoved); });
+    }
+    return groups;
   }
 
   var historyGroupsByKey = {};
@@ -2703,7 +2736,7 @@
     }
     var q = els.searchInput.value.trim().toLowerCase();
     var filtered = q ? base.filter(function(h){ return h.name.toLowerCase().indexOf(q) > -1 || h.barcode.indexOf(q) > -1 || (h.category || '').toLowerCase().indexOf(q) > -1; }) : base;
-    var groups = groupHistory(filtered);
+    var groups = groupHistory(filtered, state.sortHistory);
     historyGroupsByKey = {};
     groups.forEach(function(g){ historyGroupsByKey[g.key] = g; });
 
@@ -2797,7 +2830,19 @@
       els.freezerFilterPill.style.display = 'none';
       state.filterFreezer = null;
     }
+    var sortMode = state.listView === 'history' ? state.sortHistory : state.sortItems;
+    els.sortFilterValue.textContent = sortMode === 'alpha' ? 'Alphabetical' : 'Date';
   }
+  els.sortFilterPill.onclick = function(){
+    if (state.listView === 'history'){
+      state.sortHistory = state.sortHistory === 'alpha' ? 'date' : 'alpha';
+      setStoredSort(SORT_HISTORY_KEY, state.sortHistory);
+    } else {
+      state.sortItems = state.sortItems === 'alpha' ? 'date' : 'alpha';
+      setStoredSort(SORT_ITEMS_KEY, state.sortItems);
+    }
+    render();
+  };
   function openCategoryFilterSheet(){
     renderCategoryPicker(els.categorySheetGrid, state.filterCategory, function(c){
       state.filterCategory = c;
@@ -2865,6 +2910,11 @@
     els.categorySheetBack.classList.add('show');
   }
   els.shopCategoryFilterPill.onclick = openShopCategoryFilterSheet;
+  els.shopSortFilterPill.onclick = function(){
+    state.sortShop = state.sortShop === 'alpha' ? 'date' : 'alpha';
+    setStoredSort(SORT_SHOP_KEY, state.sortShop);
+    renderShoppingList();
+  };
 
   function renderShoppingList(){
     var toBuyTotal = state.shoppingList.filter(function(s){ return !s.checked; }).length;
@@ -2880,6 +2930,7 @@
       '<span class="chip-dot" style="background:' + (catColor || 'var(--frost-dim)') + ';"></span>' +
       '<span class="cat-collapsed-name" style="' + (catColor ? 'color:' + catColor + ';' : '') + '">' + escapeHtml(state.shopFilterCategory || 'All') + '</span>' +
       '<span class="cat-chevron">›</span>';
+    els.shopSortFilterValue.textContent = state.sortShop === 'alpha' ? 'Alphabetical' : 'Date';
 
     var base = state.shoppingList.slice();
     var filtersActive = false;
@@ -2890,8 +2941,17 @@
     var q = els.shopSearchInput.value.trim().toLowerCase();
     var filtered = q ? base.filter(function(s){ return s.name.toLowerCase().indexOf(q) > -1; }) : base;
 
-    var toBuy = filtered.filter(function(s){ return !s.checked; });
-    var gotIt = filtered.filter(function(s){ return s.checked; });
+    function sortShopEntries(arr){
+      var sorted = arr.slice();
+      if (state.sortShop === 'alpha'){
+        sorted.sort(function(a,b){ return a.name.toLowerCase().localeCompare(b.name.toLowerCase()); });
+      } else {
+        sorted.sort(function(a,b){ return new Date(b.dateAdded) - new Date(a.dateAdded); });
+      }
+      return sorted;
+    }
+    var toBuy = sortShopEntries(filtered.filter(function(s){ return !s.checked; }));
+    var gotIt = sortShopEntries(filtered.filter(function(s){ return s.checked; }));
 
     els.shopListCount.textContent = toBuy.length + (toBuy.length === 1 ? ' item' : ' items');
 
@@ -3085,7 +3145,7 @@
     }
     var q = els.searchInput.value.trim().toLowerCase();
     var filtered = q ? base.filter(function(i){ return i.name.toLowerCase().indexOf(q) > -1 || i.barcode.indexOf(q) > -1 || (i.category || '').toLowerCase().indexOf(q) > -1; }) : base;
-    var groups = groupItems(filtered);
+    var groups = groupItems(filtered, state.sortItems);
 
     els.listCount.textContent = base.length + (base.length === 1 ? ' item' : ' items');
 
