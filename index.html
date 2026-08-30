@@ -180,11 +180,11 @@
   /* Manual entry */
   .manual-row{ display:flex; gap:8px; margin-top: 12px; }
   .manual-row input{
-    flex:1; background: var(--panel-2); border: 1px solid var(--edge); color: var(--frost);
-    border-radius: 10px; padding: 12px; font-family: var(--mono); font-size: 16px;
+    flex:1; height:46px; box-sizing:border-box; background: var(--panel-2); border: 1px solid var(--edge); color: var(--frost);
+    border-radius: 10px; padding: 0 12px; font-family: var(--mono); font-size: 16px;
   }
   .manual-row input:focus{ outline: 2px solid var(--cyan); outline-offset: -1px; }
-  .manual-row button{ background: var(--panel-2); color: var(--frost-dim); border: 1px solid var(--edge); border-radius: 10px; padding: 0 16px; font-weight:700; }
+  .manual-row button{ height:46px; box-sizing:border-box; background: var(--panel-2); color: var(--frost-dim); border: 1px solid var(--edge); border-radius: 10px; padding: 0 16px; font-weight:700; }
   #manualInput{ font-family: var(--sans); }
 
   /* List */
@@ -306,7 +306,7 @@
   }
   .modal-x:active{ color: var(--frost); background: var(--panel-2); }
   .modal .barcode-tag{ font-family: var(--mono); font-size: 12px; color: var(--frost-dim); margin-bottom: 14px; }
-  .modal input[type=text]:not(.weight-amount), .modal select{
+  .modal input[type=text]:not(.weight-amount):not(.settings-category-input):not(.settings-freezer-input), .modal select{
     width:100%; background: var(--panel-2); border: 1px solid var(--edge); color: var(--frost);
     border-radius: 10px; padding: 13px 12px; font-size: 16px; margin-bottom: 12px; font-family: var(--sans);
   }
@@ -528,11 +528,11 @@
     border: 1px solid var(--edge); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px;
   }
   .settings-cat-row input[type=text]{
-    flex:1; background: var(--panel); border: 1px solid var(--edge); color: var(--frost);
-    border-radius: 8px; padding: 9px 10px; font-size: 16px; font-family: var(--sans);
+    flex:1; height:34px; box-sizing:border-box; background: var(--panel); border: 1px solid var(--edge); color: var(--frost);
+    border-radius: 8px; padding: 0 10px; font-size: 16px; font-family: var(--sans);
   }
   .settings-category-swatch{
-    width:32px; height:32px; flex-shrink:0; border-radius:50%; border: 2px solid var(--panel);
+    width:34px; height:34px; flex-shrink:0; border-radius:50%; border: 2px solid var(--panel);
     box-shadow: 0 0 0 1px var(--edge); cursor:pointer; padding:0;
   }
   .settings-cat-del{
@@ -917,7 +917,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.5.0</footer>
+    <footer>Freezr &mdash; Version: 10.5.1</footer>
   </div>
 </div>
 
