@@ -814,7 +814,6 @@
     <input type="text" class="search" id="searchInput" placeholder="Search inventory…">
     <button class="backup-btn" id="categoryViewBtn" title="Browse by category">▦</button>
     <button class="backup-btn" id="historyViewBtn" title="View history">🕘</button>
-    <button class="backup-btn" id="backupBtn" title="Download a backup of your inventory">⬇️</button>
   </div>
   <div id="listContainer"></div>
   </div>
@@ -901,13 +900,23 @@
       </div>
     </div>
 
+    <div class="settings-block">
+      <div class="settings-row-title">Backup</div>
+      <div class="settings-row-sub" id="lastBackupInfo" style="margin-bottom:10px;">No backup yet</div>
+      <div class="freezr-btn-row">
+        <button class="btn btn-ghost" id="downloadBackupBtn">⬇️ Download backup</button>
+        <button class="btn btn-ghost" id="restoreBackupBtn">⬆️ Restore backup</button>
+      </div>
+      <input type="file" id="restoreFileInput" accept=".freezrbackup,application/json" style="display:none;">
+    </div>
+
     <div class="settings-block danger-block">
       <div class="settings-row-title">Delete this Freezr</div>
       <div class="settings-row-sub" style="margin-bottom:10px;">Permanently deletes <span id="deleteFreezrName">this Freezr</span> and everything in it, for everyone. This can't be undone.</div>
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.0.0</footer>
+    <footer>Freezr &mdash; Version: 10.1.0</footer>
   </div>
 </div>
 
@@ -1259,6 +1268,20 @@
   </div>
 </div>
 
+<div class="modal-back" id="restoreModalBack">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Restore this backup?</h3>
+      <button class="modal-x" id="restoreModalClose" aria-label="Cancel">✕</button>
+    </div>
+    <div id="restoreModalInfo" style="margin-bottom:16px; font-size:15px; line-height:1.5;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" id="restoreModalCancel">Cancel</button>
+      <button class="btn btn-danger" id="restoreModalConfirm">Restore</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js" crossorigin="anonymous"></script>
@@ -1570,7 +1593,7 @@
 
   var state = {
     mode:'add', items:[], products:{}, categories: DEFAULT_CATEGORIES.slice(), categoryByBarcode:{}, weightByBarcode:{}, freezers: DEFAULT_FREEZERS.slice(), history: [],
-    categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS), freezrName: '', shoppingList: [],
+    categoryColors: Object.assign({}, DEFAULT_CATEGORY_COLORS), freezrName: '', shoppingList: [], lastBackup: null,
     listView: 'items', activeCategory: null, filterCategory: null, filterFreezer: null, shopFilterCategory: null,
     scanning:false, scanPaused:false, lastCode:null, lastScanAt:0, quaggaReady:false, candidateCode:null, candidateCount:0, torchOn:false, batchMode:false, batchQueue:[]
   };
@@ -1605,7 +1628,15 @@
     searchInput: document.getElementById('searchInput'),
     categoryViewBtn: document.getElementById('categoryViewBtn'),
     historyViewBtn: document.getElementById('historyViewBtn'),
-    backupBtn: document.getElementById('backupBtn'),
+    lastBackupInfo: document.getElementById('lastBackupInfo'),
+    downloadBackupBtn: document.getElementById('downloadBackupBtn'),
+    restoreBackupBtn: document.getElementById('restoreBackupBtn'),
+    restoreFileInput: document.getElementById('restoreFileInput'),
+    restoreModalBack: document.getElementById('restoreModalBack'),
+    restoreModalClose: document.getElementById('restoreModalClose'),
+    restoreModalCancel: document.getElementById('restoreModalCancel'),
+    restoreModalConfirm: document.getElementById('restoreModalConfirm'),
+    restoreModalInfo: document.getElementById('restoreModalInfo'),
     openCategoriesBtn: document.getElementById('openCategoriesBtn'),
     openFreezersBtn: document.getElementById('openFreezersBtn'),
     freezersRowSub: document.getElementById('freezersRowSub'),
@@ -1814,10 +1845,12 @@
           state.shoppingList = data.shoppingList || [];
           state.categoryColors = (data.categoryColors && Object.keys(data.categoryColors).length) ? data.categoryColors : Object.assign({}, DEFAULT_CATEGORY_COLORS);
           state.freezrName = data.name || '';
+          state.lastBackup = data.lastBackup || null;
           if (normalizeCategoryColors()) saveCategories();
           updateFreezersRowSub();
           upsertSavedFreezr(code, state.freezrName || code);
           renderFreezrCodeInSettings();
+          renderBackupInfo();
           render();
         } else {
           handleFreezrGone(code);
@@ -1915,7 +1948,7 @@
     if (!docRef) return;
     var silent = opts && opts.silent;
     try{
-      await docRef.set({ items: state.items, products: state.products, categories: state.categories, categoryByBarcode: state.categoryByBarcode, weightByBarcode: state.weightByBarcode, freezers: state.freezers, history: state.history, categoryColors: state.categoryColors, shoppingList: state.shoppingList }, { merge: true });
+      await docRef.set({ items: state.items, products: state.products, categories: state.categories, categoryByBarcode: state.categoryByBarcode, weightByBarcode: state.weightByBarcode, freezers: state.freezers, history: state.history, categoryColors: state.categoryColors, shoppingList: state.shoppingList, lastBackup: state.lastBackup }, { merge: true });
       setSyncState('synced');
     }catch(e){
       setSyncState('failed');
@@ -2551,6 +2584,11 @@
   function fmtDate(iso){
     var d = new Date(iso);
     return d.toLocaleDateString(undefined, { day:'numeric', month:'short', year: 'numeric' });
+  }
+  function fmtDateTime(iso){
+    var d = new Date(iso);
+    return d.toLocaleDateString(undefined, { day:'numeric', month:'short', year: 'numeric' }) +
+      ' at ' + d.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' });
   }
   function formatDurationBetween(startIso, endIso){
     var days = Math.floor((new Date(endIso).getTime() - new Date(startIso).getTime()) / 86400000);
@@ -3318,10 +3356,38 @@
   els.historyViewBtn.onclick = function(){ setListView('history'); };
   els.listBackBtn.onclick = function(){ setListView('items'); };
 
-  els.backupBtn.onclick = function(){
+  // ---------- backup / restore ----------
+  function renderBackupInfo(){
+    if (!els.lastBackupInfo) return;
+    els.lastBackupInfo.textContent = state.lastBackup
+      ? ('Last backup: ' + fmtDateTime(state.lastBackup.at) + ' by ' + (state.lastBackup.by || 'someone'))
+      : 'No backup yet';
+  }
+
+  function validateBackupPayload(obj){
+    if (!obj || typeof obj !== 'object') return false;
+    if (obj.app !== 'Freezr') return false;
+    if (!Array.isArray(obj.items)) return false;
+    if (!Array.isArray(obj.categories)) return false;
+    if (!Array.isArray(obj.freezers)) return false;
+    if (!Array.isArray(obj.history)) return false;
+    if (!Array.isArray(obj.shoppingList)) return false;
+    if (typeof obj.products !== 'object' || obj.products === null) return false;
+    if (typeof obj.categoryByBarcode !== 'object' || obj.categoryByBarcode === null) return false;
+    if (typeof obj.weightByBarcode !== 'object' || obj.weightByBarcode === null) return false;
+    if (typeof obj.categoryColors !== 'object' || obj.categoryColors === null) return false;
+    return true;
+  }
+
+  els.downloadBackupBtn.onclick = function(){
+    var nowIso = new Date().toISOString();
     var payload = {
-      exportedAt: new Date().toISOString(),
       app: 'Freezr',
+      schema: 1,
+      exportedAt: nowIso,
+      exportedBy: currentDisplayName || '',
+      freezrCode: getStoredFreezrCode(),
+      freezrName: state.freezrName,
       items: state.items,
       products: state.products,
       categories: state.categories,
@@ -3329,19 +3395,72 @@
       weightByBarcode: state.weightByBarcode,
       freezers: state.freezers,
       history: state.history,
-      categoryColors: state.categoryColors
+      categoryColors: state.categoryColors,
+      shoppingList: state.shoppingList
     };
     var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
-    var dateStamp = new Date().toISOString().slice(0, 10);
+    var dateStamp = nowIso.slice(0, 10);
     a.href = url;
-    a.download = 'freezr-backup-' + dateStamp + '.json';
+    a.download = 'freezr-backup-' + dateStamp + '.freezrbackup';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    state.lastBackup = { at: nowIso, by: currentDisplayName || '' };
+    renderBackupInfo();
+    saveItems();
     toast('Backup downloaded', 'ok');
+  };
+
+  var pendingRestorePayload = null;
+  els.restoreBackupBtn.onclick = function(){ els.restoreFileInput.value = ''; els.restoreFileInput.click(); };
+  els.restoreFileInput.onchange = function(){
+    var file = els.restoreFileInput.files && els.restoreFileInput.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      var parsed;
+      try{ parsed = JSON.parse(reader.result); }catch(e){ parsed = null; }
+      if (!validateBackupPayload(parsed)){
+        toast('That doesn\'t look like a valid Freezr backup file', 'err');
+        return;
+      }
+      pendingRestorePayload = parsed;
+      els.restoreModalInfo.textContent = 'This will replace all items, categories, freezers, and history in "' +
+        (state.freezrName || 'this Freezr') + '" with the contents of this backup' +
+        (parsed.exportedAt ? (', taken ' + fmtDateTime(parsed.exportedAt) + (parsed.exportedBy ? (' by ' + parsed.exportedBy) : '')) : '') +
+        '. Everyone in this Freezr will see the replaced data. This can\'t be undone.';
+      els.restoreModalBack.classList.add('show');
+    };
+    reader.readAsText(file);
+  };
+  function closeRestoreModal(){
+    els.restoreModalBack.classList.remove('show');
+    pendingRestorePayload = null;
+  }
+  els.restoreModalClose.onclick = closeRestoreModal;
+  els.restoreModalCancel.onclick = closeRestoreModal;
+  els.restoreModalBack.addEventListener('click', function(e){ if (e.target === els.restoreModalBack) closeRestoreModal(); });
+  els.restoreModalConfirm.onclick = function(){
+    if (!pendingRestorePayload) return;
+    var p = pendingRestorePayload;
+    state.items = p.items;
+    state.products = p.products || {};
+    state.categories = (p.categories && p.categories.length) ? p.categories : DEFAULT_CATEGORIES.slice();
+    state.categoryByBarcode = p.categoryByBarcode || {};
+    state.weightByBarcode = p.weightByBarcode || {};
+    state.freezers = (p.freezers && p.freezers.length) ? p.freezers : DEFAULT_FREEZERS.slice();
+    state.history = p.history || [];
+    state.shoppingList = p.shoppingList || [];
+    state.categoryColors = (p.categoryColors && Object.keys(p.categoryColors).length) ? p.categoryColors : Object.assign({}, DEFAULT_CATEGORY_COLORS);
+    normalizeCategoryColors();
+    closeRestoreModal();
+    updateFreezersRowSub();
+    saveItems();
+    render();
+    toast('Backup restored', 'ok');
   };
 
   // ---------- categories settings modal ----------

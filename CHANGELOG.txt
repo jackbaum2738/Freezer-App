@@ -4,6 +4,13 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+10.1.0 -- 2026-08-30
+--------------------
+- Renamed "Export" to "Backup" and moved it from the Freezr screen's icon row into a new Backup section in Settings, which now shows when the last backup was taken and who by (shared across everyone in the Freezr, not per-device).
+- Added Restore: pick a previously downloaded backup file and it's checked for validity, then a confirmation screen shows when it was taken and by whom before replacing every item, category, freezer, and history entry in the Freezr with the backup's contents. No Undo -- restoring replaces everyone's data.
+- Backup files now save as .freezrbackup instead of .json (still the same format underneath) so they don't invite casual editing in a text editor, and a corrupted or hand-edited file is now rejected with a clear error instead of silently breaking the restore.
+- The backup file also now includes the shopping list, which the old export was missing.
+
 10.0.0 -- 2026-08-29
 --------------------
 - Added a Shopping List: a new third tab (🛒 List, between Freezr and Settings) with a tick-box list, searchable and filterable by category using the exact same pill/sheet component as the inventory list. A badge on the tab icon shows how many items are still to buy.
