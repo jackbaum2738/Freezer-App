@@ -4,6 +4,10 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+10.7.0 -- 2026-08-30
+--------------------
+- The Freezr, List, and Settings tabs can now be switched by swiping left/right on the content area, in addition to tapping the tab bar. A quick slide/fade plays either way. It's a simple threshold-based swipe rather than a live finger-tracking drag, since these are full scrollable pages with the live camera scanner and category drag-to-reorder on them -- a tracking carousel would risk fighting those. Disabled while any modal or overlay is open, and a vertical drag (scrolling) is left alone.
+
 10.6.2 -- 2026-08-30
 --------------------
 - Welcome tour swipe now tracks your finger instead of switching instantly: the incoming page slides in alongside the current one as you drag, snapping the rest of the way on release past ~30% of the screen width, or springing back if you let go short of that. A vertical drag (e.g. scrolling a long feature list) is left alone -- only a horizontal drag is treated as a swipe.
