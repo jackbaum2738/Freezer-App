@@ -697,6 +697,62 @@
   }
   .fallback-icon{ font-size:36px; margin-bottom:6px; }
 
+  /* ---------- welcome tour (first-run) ---------- */
+  #welcomeTourGate{
+    display:none; position:fixed; inset:0; z-index:90; background: var(--bg);
+  }
+  #welcomeTourGate.show{ display:block; }
+  .tour-page{
+    position:relative; height:100%; display:flex; flex-direction:column;
+    padding: calc(54px + env(safe-area-inset-top)) 22px calc(22px + env(safe-area-inset-bottom));
+    max-width: 480px; margin: 0 auto;
+  }
+  .tour-back{
+    position:absolute; top: calc(18px + env(safe-area-inset-top)); left:18px; z-index:2;
+    background:transparent; border:none; color: var(--frost-dim); font-size:13px;
+    font-family: var(--sans); font-weight:600; cursor:pointer; padding:4px 6px; border-radius:8px;
+  }
+  .tour-back[hidden]{ display:none; }
+  .tour-dots{ display:flex; gap:7px; justify-content:center; margin-bottom: 26px; }
+  .tour-dot{
+    width:7px; height:7px; border-radius:50%; background: var(--frost-dim); opacity:.45;
+    cursor:pointer; transition: opacity .15s, box-shadow .15s;
+  }
+  .tour-dot.active{ background: var(--cyan); opacity:1; box-shadow: 0 0 6px var(--cyan); }
+  .tour-body{ flex:1; display:flex; flex-direction:column; overflow-y:auto; }
+  .tour-hero-icon{
+    width:76px; height:76px; border-radius:20px; background: var(--cyan-dim); color: var(--cyan);
+    display:flex; align-items:center; justify-content:center; font-size:36px; margin: 8px auto 22px;
+  }
+  .tour-page.tour-welcome h2, .tour-page.tour-welcome .tour-tagline{ text-align:center; }
+  .tour-eyebrow-row{ display:flex; align-items:center; gap:8px; margin-bottom: 10px; }
+  .tour-eyebrow-icon{
+    width:26px; height:26px; border-radius:8px; background: var(--cyan-dim); color: var(--cyan);
+    display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0;
+  }
+  .tour-eyebrow-label{
+    font-family: var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    color: var(--cyan); font-weight:700;
+  }
+  .tour-page h2{ font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 6px; }
+  .tour-tagline{ color: var(--frost-dim); font-size: 13.5px; line-height:1.5; margin: 0 0 22px; }
+  .tour-feature-list{ display:flex; flex-direction:column; gap:9px; }
+  .tour-feature-row{
+    display:flex; align-items:flex-start; gap:11px; text-align:left;
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 13px; padding: 12px 13px;
+  }
+  .tour-feature-icon{
+    width:34px; height:34px; border-radius:9px; background: var(--cyan-dim); color: var(--cyan);
+    display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;
+  }
+  .tour-feature-title{ font-weight:700; font-size:13.5px; margin-bottom:1px; }
+  .tour-feature-sub{ font-size:11.5px; color: var(--frost-dim); line-height:1.4; }
+  .tour-footer{ margin-top: 16px; }
+  .tour-btn{
+    width:100%; border:none; border-radius:12px; padding:14px 16px; font-weight:700;
+    font-size:14px; font-family: var(--sans); cursor:pointer; background: var(--cyan); color: var(--on-cyan);
+  }
+
   .segmented{
     display:flex; gap:6px; background: var(--panel-2);
     border: 1px solid var(--edge); border-radius: 12px; padding: 4px;
@@ -734,6 +790,10 @@
 <body>
 <div id="installGate">
   <div class="gate" id="installGateContent"></div>
+</div>
+
+<div id="welcomeTourGate">
+  <div id="welcomeTourContent"></div>
 </div>
 <div class="wrap">
   <header>
@@ -902,6 +962,12 @@
     </div>
 
     <div class="settings-block">
+      <div class="settings-row-title">Help</div>
+      <div class="settings-row-sub" style="margin-bottom:10px;">See the welcome tour again — how scanning, the shopping list, and Freezr sharing all work</div>
+      <button class="btn btn-ghost" id="replayTourBtn">🔄 Replay welcome tour</button>
+    </div>
+
+    <div class="settings-block">
       <div class="settings-row-title">Backup</div>
       <div class="settings-row-sub" id="lastBackupInfo" style="margin-bottom:10px;">No backup yet</div>
       <div class="freezr-btn-row">
@@ -917,7 +983,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.5.4</footer>
+    <footer>Freezr &mdash; Version: 10.6.0</footer>
   </div>
 </div>
 
@@ -1805,6 +1871,9 @@
     freezrGoneCloseBtn: document.getElementById('freezrGoneCloseBtn'),
     installGate: document.getElementById('installGate'),
     installGateContent: document.getElementById('installGateContent'),
+    welcomeTourGate: document.getElementById('welcomeTourGate'),
+    welcomeTourContent: document.getElementById('welcomeTourContent'),
+    replayTourBtn: document.getElementById('replayTourBtn'),
   };
 
   function toast(msg, kind, onUndo){
@@ -4304,12 +4373,109 @@
   function setNamePrompted(){
     try{ localStorage.setItem(NAME_PROMPTED_KEY, '1'); }catch(e){}
   }
+
+  // ---------- welcome tour (first-run) — shown once, right after a brand-new device
+  // finishes the name prompt above. Devices that had already onboarded before this shipped
+  // are migrated straight to "seen" so they're never shown it retroactively. ----------
+  var TOUR_SEEN_KEY = 'freezr-tour-seen';
+  function getTourSeen(){
+    try{ return localStorage.getItem(TOUR_SEEN_KEY) === '1'; }catch(e){ return false; }
+  }
+  function setTourSeen(){
+    try{ localStorage.setItem(TOUR_SEEN_KEY, '1'); }catch(e){}
+  }
+  if (getNamePrompted() && !getTourSeen()) setTourSeen();
+
+  var TOUR_PAGES = [
+    { type: 'welcome' },
+    {
+      eyebrowIcon: '❄️', eyebrow: 'FREEZR TAB', title: 'Scan it in, scan it out',
+      features: [
+        ['📷','Scan a barcode','Point your camera at any barcode to add or remove it instantly.'],
+        ['🖼️','Or snap a photo','Camera being fussy? Use your phone’s own camera app instead.'],
+        ['⌨️','Add by hand','No barcode? Just type the item’s name.'],
+        ['✏️','Edit anytime','Tap an item to change its name, quantity, or opened status.'],
+        ['📚','Batch scan','Doing a big shop? Queue up a whole stack of barcodes at once.'],
+        ['🕘','Full history','Everything you’ve ever removed, searchable and filterable.']
+      ],
+      cta: 'Continue'
+    },
+    {
+      eyebrowIcon: '🛒', eyebrow: 'LIST TAB', title: 'Never run out again',
+      features: [
+        ['🔄','Added automatically','The moment something runs out in Freezr, it lands here.'],
+        ['➕','Add anything by hand','Want something that’s not in the freezer yet? Add it yourself.'],
+        ['✅','Tick things off','Check items off as you shop — they grey out and sink to the bottom.'],
+        ['❄️','Restock in one tap','Send everything you ticked straight back into Freezr.']
+      ],
+      cta: 'Continue'
+    },
+    {
+      eyebrowIcon: '⚙️', eyebrow: 'SETTINGS TAB', title: 'Built for the whole house',
+      features: [
+        ['🔗','Share your code','Invite everyone in your household with a two-word code.'],
+        ['🔁','Switch Freezrs','Part of more than one household? Jump between them instantly.'],
+        ['🎨','Customize categories','Rename, recolor, and reorder categories to fit your freezer.'],
+        ['🧊','Add more freezers','Got more than one? Track them separately.']
+      ],
+      cta: 'Start Freezing'
+    }
+  ];
+  var tourPageIndex = 0;
+
+  function renderTourPage(){
+    var p = TOUR_PAGES[tourPageIndex];
+    var html = '<div class="tour-page' + (tourPageIndex === 0 ? ' tour-welcome' : '') + '">';
+    html += '<button class="tour-back" id="tourBackBtn"' + (tourPageIndex === 0 ? ' hidden' : '') + '>&lsaquo; Back</button>';
+    html += '<div class="tour-dots">';
+    for (var i = 0; i < TOUR_PAGES.length; i++){
+      html += '<div class="tour-dot' + (i === tourPageIndex ? ' active' : '') + '" data-i="' + i + '"></div>';
+    }
+    html += '</div><div class="tour-body">';
+    if (tourPageIndex === 0){
+      html += '<div class="tour-hero-icon">❄️</div><h2>Welcome to Freezr</h2>' +
+        '<p class="tour-tagline">Let’s break the ice.</p>';
+    } else {
+      html += '<div class="tour-eyebrow-row"><div class="tour-eyebrow-icon">' + p.eyebrowIcon + '</div>' +
+        '<div class="tour-eyebrow-label">' + p.eyebrow + '</div></div>' +
+        '<h2>' + p.title + '</h2><div class="tour-feature-list">' +
+        p.features.map(function(f){
+          return '<div class="tour-feature-row"><div class="tour-feature-icon">' + f[0] + '</div>' +
+            '<div><div class="tour-feature-title">' + f[1] + '</div><div class="tour-feature-sub">' + f[2] + '</div></div></div>';
+        }).join('') + '</div>';
+    }
+    html += '</div><div class="tour-footer"><button class="tour-btn" id="tourNextBtn">' + (p.cta || 'Let’s go') + '</button></div></div>';
+    els.welcomeTourContent.innerHTML = html;
+
+    document.getElementById('tourNextBtn').onclick = function(){
+      if (tourPageIndex === TOUR_PAGES.length - 1){ closeWelcomeTour(); return; }
+      tourPageIndex++;
+      renderTourPage();
+    };
+    var backBtn = document.getElementById('tourBackBtn');
+    if (backBtn) backBtn.onclick = function(){ tourPageIndex = Math.max(0, tourPageIndex - 1); renderTourPage(); };
+    Array.prototype.forEach.call(els.welcomeTourContent.querySelectorAll('.tour-dot'), function(dot){
+      dot.onclick = function(){ tourPageIndex = parseInt(dot.getAttribute('data-i'), 10); renderTourPage(); };
+    });
+  }
+  function showWelcomeTour(){
+    tourPageIndex = 0;
+    renderTourPage();
+    els.welcomeTourGate.classList.add('show');
+  }
+  function closeWelcomeTour(){
+    setTourSeen();
+    els.welcomeTourGate.classList.remove('show');
+  }
+  els.replayTourBtn.onclick = showWelcomeTour;
+
   var currentDisplayName = getStoredDisplayName();
   els.displayNameInput.value = currentDisplayName;
 
   function closeNameEntryModal(){
     setNamePrompted();
     els.nameEntryModalBack.classList.remove('show');
+    if (!getTourSeen()) showWelcomeTour();
   }
   function maybeShowNamePrompt(){
     if (!getNamePrompted() && !currentDisplayName){
