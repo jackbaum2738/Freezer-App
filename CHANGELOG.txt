@@ -4,6 +4,10 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+10.6.1 -- 2026-08-30
+--------------------
+- Welcome tour polish: the welcome page now shows the real Freezr app icon instead of a generic snowflake, with a new paragraph explaining why the app exists (forgetting what's in the freezer, tracking it across one or more freezers, syncing live with your household). Pages can now be swiped left/right in addition to tapping Continue/Back. Removed the colored circle background behind every icon. Dropped the word "Tab" from each page's label and renamed the Shopping List page's label to match. Reworded the "Added automatically," "Share your code," and page 4 heading lines.
+
 10.6.0 -- 2026-08-30
 --------------------
 - Added a first-run welcome tour: four full-screen pages ("Welcome to Freezr", the Freezr tab, the Shopping List tab, and Settings) shown once, right after a brand-new device finishes joining/creating a Freezr and the name prompt, walking through scanning/photo/manual add, editing, batch mode, and history; how the shopping list auto-fills, manual add, ticking, and restocking work; and sharing your Freezr code, switching Freezrs, customizing categories, and adding freezers. Devices that had already finished onboarding before this shipped are never shown it retroactively.

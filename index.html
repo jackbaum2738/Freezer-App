@@ -721,30 +721,25 @@
   .tour-dot.active{ background: var(--cyan); opacity:1; box-shadow: 0 0 6px var(--cyan); }
   .tour-body{ flex:1; display:flex; flex-direction:column; overflow-y:auto; }
   .tour-hero-icon{
-    width:76px; height:76px; border-radius:20px; background: var(--cyan-dim); color: var(--cyan);
-    display:flex; align-items:center; justify-content:center; font-size:36px; margin: 8px auto 22px;
+    width:76px; height:76px; border-radius:20px; overflow:hidden; margin: 8px auto 22px; flex-shrink:0;
   }
-  .tour-page.tour-welcome h2, .tour-page.tour-welcome .tour-tagline{ text-align:center; }
-  .tour-eyebrow-row{ display:flex; align-items:center; gap:8px; margin-bottom: 10px; }
-  .tour-eyebrow-icon{
-    width:26px; height:26px; border-radius:8px; background: var(--cyan-dim); color: var(--cyan);
-    display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0;
-  }
+  .tour-hero-icon img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .tour-page.tour-welcome h2, .tour-page.tour-welcome .tour-tagline, .tour-page.tour-welcome .tour-lede{ text-align:center; }
+  .tour-eyebrow-row{ display:flex; align-items:center; gap:7px; margin-bottom: 10px; }
+  .tour-eyebrow-icon{ font-size:15px; line-height:1; flex-shrink:0; }
   .tour-eyebrow-label{
     font-family: var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
     color: var(--cyan); font-weight:700;
   }
   .tour-page h2{ font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 6px; }
-  .tour-tagline{ color: var(--frost-dim); font-size: 13.5px; line-height:1.5; margin: 0 0 22px; }
+  .tour-tagline{ color: var(--frost); font-weight:700; font-size: 15px; line-height:1.4; margin: 0 0 12px; }
+  .tour-lede{ color: var(--frost-dim); font-size: 13px; line-height:1.6; margin: 0 auto 4px; max-width: 300px; }
   .tour-feature-list{ display:flex; flex-direction:column; gap:9px; }
   .tour-feature-row{
     display:flex; align-items:flex-start; gap:11px; text-align:left;
     background: var(--panel); border: 1px solid var(--edge); border-radius: 13px; padding: 12px 13px;
   }
-  .tour-feature-icon{
-    width:34px; height:34px; border-radius:9px; background: var(--cyan-dim); color: var(--cyan);
-    display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;
-  }
+  .tour-feature-icon{ font-size:19px; line-height:1; width:26px; text-align:center; flex-shrink:0; margin-top:1px; }
   .tour-feature-title{ font-weight:700; font-size:13.5px; margin-bottom:1px; }
   .tour-feature-sub{ font-size:11.5px; color: var(--frost-dim); line-height:1.4; }
   .tour-footer{ margin-top: 16px; }
@@ -983,7 +978,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.6.0</footer>
+    <footer>Freezr &mdash; Version: 10.6.1</footer>
   </div>
 </div>
 
@@ -4389,7 +4384,7 @@
   var TOUR_PAGES = [
     { type: 'welcome' },
     {
-      eyebrowIcon: '❄️', eyebrow: 'FREEZR TAB', title: 'Scan it in, scan it out',
+      eyebrowIcon: '❄️', eyebrow: 'FREEZR', title: 'Scan it in, scan it out',
       features: [
         ['📷','Scan a barcode','Point your camera at any barcode to add or remove it instantly.'],
         ['🖼️','Or snap a photo','Camera being fussy? Use your phone’s own camera app instead.'],
@@ -4401,9 +4396,9 @@
       cta: 'Continue'
     },
     {
-      eyebrowIcon: '🛒', eyebrow: 'LIST TAB', title: 'Never run out again',
+      eyebrowIcon: '🛒', eyebrow: 'SHOPPING LIST', title: 'Never run out again',
       features: [
-        ['🔄','Added automatically','The moment something runs out in Freezr, it lands here.'],
+        ['🔄','Added automatically','The moment you run out of something, it lands here.'],
         ['➕','Add anything by hand','Want something that’s not in the freezer yet? Add it yourself.'],
         ['✅','Tick things off','Check items off as you shop — they grey out and sink to the bottom.'],
         ['❄️','Restock in one tap','Send everything you ticked straight back into Freezr.']
@@ -4411,9 +4406,9 @@
       cta: 'Continue'
     },
     {
-      eyebrowIcon: '⚙️', eyebrow: 'SETTINGS TAB', title: 'Built for the whole house',
+      eyebrowIcon: '⚙️', eyebrow: 'SETTINGS', title: 'Built for the whole family',
       features: [
-        ['🔗','Share your code','Invite everyone in your household with a two-word code.'],
+        ['🔗','Share your code','Share a two-word code — everyone who joins sees the same Freezr, live.'],
         ['🔁','Switch Freezrs','Part of more than one household? Jump between them instantly.'],
         ['🎨','Customize categories','Rename, recolor, and reorder categories to fit your freezer.'],
         ['🧊','Add more freezers','Got more than one? Track them separately.']
@@ -4433,8 +4428,9 @@
     }
     html += '</div><div class="tour-body">';
     if (tourPageIndex === 0){
-      html += '<div class="tour-hero-icon">❄️</div><h2>Welcome to Freezr</h2>' +
-        '<p class="tour-tagline">Let’s break the ice.</p>';
+      html += '<div class="tour-hero-icon"><img src="icon-192.png" alt=""></div><h2>Welcome to Freezr</h2>' +
+        '<p class="tour-tagline">Let’s break the ice.</p>' +
+        '<p class="tour-lede">We’ve all opened the freezer and drawn a total blank. Freezr keeps track for you — across every freezer in the house, synced live with everyone in your household.</p>';
     } else {
       html += '<div class="tour-eyebrow-row"><div class="tour-eyebrow-icon">' + p.eyebrowIcon + '</div>' +
         '<div class="tour-eyebrow-label">' + p.eyebrow + '</div></div>' +
@@ -4468,6 +4464,22 @@
     els.welcomeTourGate.classList.remove('show');
   }
   els.replayTourBtn.onclick = showWelcomeTour;
+
+  // swipe between tour pages, in addition to the Continue/Back buttons
+  var tourTouchX = null, tourTouchY = null;
+  els.welcomeTourGate.addEventListener('touchstart', function(e){
+    var t = e.touches[0];
+    tourTouchX = t.clientX; tourTouchY = t.clientY;
+  }, { passive: true });
+  els.welcomeTourGate.addEventListener('touchend', function(e){
+    if (tourTouchX === null) return;
+    var t = e.changedTouches[0];
+    var dx = t.clientX - tourTouchX, dy = t.clientY - tourTouchY;
+    tourTouchX = null;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0 && tourPageIndex < TOUR_PAGES.length - 1){ tourPageIndex++; renderTourPage(); }
+    else if (dx > 0 && tourPageIndex > 0){ tourPageIndex--; renderTourPage(); }
+  }, { passive: true });
 
   var currentDisplayName = getStoredDisplayName();
   els.displayNameInput.value = currentDisplayName;
