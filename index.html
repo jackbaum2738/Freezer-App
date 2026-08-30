@@ -927,7 +927,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.3.0</footer>
+    <footer>Freezr &mdash; Version: 10.3.1</footer>
   </div>
 </div>
 
@@ -2833,7 +2833,7 @@
       state.filterFreezer = null;
     }
     var sortMode = state.listView === 'history' ? state.sortHistory : state.sortItems;
-    els.sortFilterValue.textContent = sortMode === 'alpha' ? 'Alphabetical' : 'Date';
+    els.sortFilterValue.textContent = sortMode === 'alpha' ? 'Name' : 'Date';
   }
   els.sortFilterPill.onclick = function(){
     if (state.listView === 'history'){
@@ -2932,7 +2932,7 @@
       '<span class="chip-dot" style="background:' + (catColor || 'var(--frost-dim)') + ';"></span>' +
       '<span class="cat-collapsed-name" style="' + (catColor ? 'color:' + catColor + ';' : '') + '">' + escapeHtml(state.shopFilterCategory || 'All') + '</span>' +
       '<span class="cat-chevron">›</span>';
-    els.shopSortFilterValue.textContent = state.sortShop === 'alpha' ? 'Alphabetical' : 'Date';
+    els.shopSortFilterValue.textContent = state.sortShop === 'alpha' ? 'Name' : 'Date';
 
     var base = state.shoppingList.slice();
     var filtersActive = false;
