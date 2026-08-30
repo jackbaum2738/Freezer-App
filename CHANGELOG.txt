@@ -4,6 +4,12 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+10.4.0 -- 2026-08-30
+--------------------
+- Reworked Inventory and History rows to a clearer 3-line layout: name on its own line; category, weight, quantity, and (with 2+ freezers) which freezer it's in all together on the middle line; the date on its own line at the bottom. History keeps its "Frozen X" duration and "Removed by" attribution, now on their own two lines rather than crammed into one.
+- Weight/quantity now shows on Inventory rows for the first time -- it previously only appeared in the item detail popup, History, and the Shopping List.
+- Items using the new Count unit now display as "8 count" (previously a bare "8") wherever their weight is shown.
+
 10.3.1 -- 2026-08-30
 --------------------
 - Renamed the Sort pill's "Alphabetical" option to "Name" on the Inventory list, History, and Shopping List.
