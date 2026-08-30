@@ -4,6 +4,10 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+10.7.1 -- 2026-08-30
+--------------------
+- Fixed the new tab swipe not registering when a swipe started in the blank space below a short list (e.g. a shopping list or inventory with only one item) -- the swipe listener was bound to `.wrap`, which only wraps its own content height, not the fixed-height `body` behind it. Bound to `body` instead, so swiping anywhere on screen works regardless of how much content is on the current tab.
+
 10.7.0 -- 2026-08-30
 --------------------
 - The Freezr, List, and Settings tabs can now be switched by swiping left/right on the content area, in addition to tapping the tab bar. A quick slide/fade plays either way. It's a simple threshold-based swipe rather than a live finger-tracking drag, since these are full scrollable pages with the live camera scanner and category drag-to-reorder on them -- a tracking carousel would risk fighting those. Disabled while any modal or overlay is open, and a vertical drag (scrolling) is left alone.
