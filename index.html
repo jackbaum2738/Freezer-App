@@ -984,7 +984,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.7.0</footer>
+    <footer>Freezr &mdash; Version: 10.7.1</footer>
   </div>
 </div>
 
@@ -4064,7 +4064,9 @@
     return false;
   }
   var tabSwipe = null;
-  var tabSwipeZone = document.querySelector('.wrap');
+  // bound to body, not .wrap — .wrap only wraps its own content height, so with a short list
+  // the blank space below it (still visible on screen) belongs to body, which has min-height:100vh
+  var tabSwipeZone = document.body;
   tabSwipeZone.addEventListener('touchstart', function(e){
     if (anyModalOrGateOpen()){ tabSwipe = null; return; }
     var t = e.touches[0];
