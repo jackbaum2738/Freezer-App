@@ -480,11 +480,12 @@
     font-size: 14px; color: transparent; margin-top: 1px; transition: background .12s, border-color .12s, color .12s;
   }
   .shop-row.checked .shop-tick{ background: var(--cyan); border-color: var(--cyan); color: var(--on-cyan); }
+  .row-main{ flex:1; min-width:0; }
   .shop-row-name{ font-weight: 700; font-size: 14.5px; margin-bottom: 3px; }
   .shop-row.checked .shop-row-name{ text-decoration: line-through; text-decoration-color: var(--frost-dim); }
   .shop-row-remove{
-    flex-shrink:0; background: transparent; border:none; color: var(--frost-dim);
-    font-size: 15px; padding: 4px 4px; cursor:pointer; line-height:1;
+    flex-shrink:0; align-self:center; background: transparent; border:none; color: var(--frost-dim);
+    font-size: 18px; padding: 6px 6px; cursor:pointer; line-height:1;
   }
   .shop-row-remove:active{ color: var(--danger); }
   .stockout-note{ font-size: 11px; color: var(--frost-dim); margin-top: 4px; }
@@ -916,7 +917,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.1.0</footer>
+    <footer>Freezr &mdash; Version: 10.1.1</footer>
   </div>
 </div>
 
