@@ -4,6 +4,10 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+10.1.3 -- 2026-08-30
+--------------------
+- Fixed the weight field on Android only being tappable near its right edge. It was an <input type="number">, and Android Chrome reserves part of that input's box for its native increment/decrement control even though it's not visibly drawn there with our styling -- switched it to a plain text input with inputmode="decimal" (still brings up the numeric keyboard, still parsed the same way) so the whole box is tappable, like it already was on iOS.
+
 10.1.2 -- 2026-08-30
 --------------------
 - Fixed the app getting visually stuck zoomed-in/too-wide on iPhone after typing into any text field (reported on an iPhone 16 Pro Max). Every text input in the app had a font-size under 16px, which is the exact threshold that makes iOS Safari auto-zoom the page when a field is focused -- on a PWA in standalone mode that zoom sometimes doesn't reset afterwards, leaving the whole app shifted and cut off on the right edge. Bumped every input/number field to 16px so the zoom never triggers. Also added a defensive overflow-x:hidden on the page as a safety net against this class of bug in general.
