@@ -4,6 +4,11 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+10.2.0 -- 2026-08-30
+--------------------
+- Added a Sort pill (matching the Category pill's style) to the Freezr inventory list, History, and Shopping List. Tapping it flips directly between "Date" (newest first) and "Alphabetical" -- no picker sheet, since there are only two options. Each of the three lists remembers its own choice independently, saved per-device.
+- The inventory list's default order changed from oldest-added-first to newest-added-first, to match Date mode's "newest first" meaning consistently across all three lists. This is purely visual -- removing/using up stock still always takes the oldest physical unit first (FIFO), regardless of what's sorted to the top of the list.
+
 10.1.3 -- 2026-08-30
 --------------------
 - Fixed the weight field on Android only being tappable near its right edge. It was an <input type="number">, and Android Chrome reserves part of that input's box for its native increment/decrement control even though it's not visibly drawn there with our styling -- switched it to a plain text input with inputmode="decimal" (still brings up the numeric keyboard, still parsed the same way) so the whole box is tappable, like it already was on iOS.
