@@ -306,7 +306,7 @@
   }
   .modal-x:active{ color: var(--frost); background: var(--panel-2); }
   .modal .barcode-tag{ font-family: var(--mono); font-size: 12px; color: var(--frost-dim); margin-bottom: 14px; }
-  .modal input[type=text], .modal select{
+  .modal input[type=text]:not(.weight-amount), .modal select{
     width:100%; background: var(--panel-2); border: 1px solid var(--edge); color: var(--frost);
     border-radius: 10px; padding: 13px 12px; font-size: 16px; margin-bottom: 12px; font-family: var(--sans);
   }
@@ -317,7 +317,7 @@
     padding: 12px 14px; margin-bottom: 14px;
   }
   .qty-row-label{ font-size: 13.5px; color: var(--frost-dim); font-weight:700; }
-  .qty-row input[type=text]{
+  .qty-row input[type=text]:not(.weight-amount){
     flex:1; margin-left:14px; margin-bottom:0; text-align:right;
     background: var(--panel); border: 1px solid var(--edge); color: var(--frost);
     border-radius: 8px; padding: 8px 10px; font-size: 16px; font-family: var(--sans);
@@ -917,7 +917,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.1.2</footer>
+    <footer>Freezr &mdash; Version: 10.1.3</footer>
   </div>
 </div>
 
@@ -954,7 +954,7 @@
     <div class="qty-row weight-row">
       <span class="qty-row-label">Weight</span>
       <div class="weight-controls" id="modalWeightControls">
-        <input class="weight-amount" id="modalWeightAmount" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 500">
+        <input class="weight-amount" id="modalWeightAmount" type="text" inputmode="decimal" placeholder="e.g. 500">
         <div class="unit-collapsed" id="modalWeightUnitRow"></div>
       </div>
     </div>
@@ -1006,7 +1006,7 @@
     <div class="qty-row weight-row">
       <span class="qty-row-label">Weight</span>
       <div class="weight-controls" id="detailWeightControls">
-        <input class="weight-amount" id="detailWeightAmount" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 500">
+        <input class="weight-amount" id="detailWeightAmount" type="text" inputmode="decimal" placeholder="e.g. 500">
         <div class="unit-collapsed" id="detailWeightUnitRow"></div>
       </div>
     </div>
