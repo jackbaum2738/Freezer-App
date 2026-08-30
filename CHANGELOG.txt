@@ -4,6 +4,11 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+10.5.0 -- 2026-08-30
+--------------------
+- Fixed batch review not pulling in remembered/looked-up names for barcodes it hadn't seen before -- it only checked names already learned locally, unlike single-item scanning, which also does a live product lookup for a brand-new barcode. Batch now does the same lookup per row, filling in name, guessed category, and a best-effort weight guess when it succeeds.
+- Batch review rows now also ask for Freezer and Weight, matching the single-item "Confirm item" screen exactly (same fields, same layout, same look) -- previously batch only asked for name and category, silently defaulting weight and freezer for every item in the batch.
+
 10.4.0 -- 2026-08-30
 --------------------
 - Reworked Inventory and History rows to a clearer 3-line layout: name on its own line; category, weight, quantity, and (with 2+ freezers) which freezer it's in all together on the middle line; the date on its own line at the bottom. History keeps its "Frozen X" duration and "Removed by" attribution, now on their own two lines rather than crammed into one.

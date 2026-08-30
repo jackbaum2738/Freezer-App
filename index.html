@@ -410,17 +410,13 @@
   .category-tile-count{ font-family: var(--mono); font-size:11px; color: var(--frost-dim); }
 
   .batch-row{
-    display:flex; flex-direction:column; gap: 6px; background: var(--panel-2);
-    border: 1px solid var(--edge); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px;
+    border: 1px solid var(--edge); border-radius: 14px; padding: 12px; margin-bottom: 12px;
   }
-  .batch-row-top{ display:flex; align-items:center; gap: 10px; }
-  .batch-row input[type=text]{
-    flex:1; background: var(--panel); border: 1px solid var(--edge); color: var(--frost);
-    border-radius: 8px; padding: 9px 10px; font-size: 16px; font-family: var(--sans);
-  }
-  .batch-row .batch-barcode{
-    font-family: var(--mono); font-size: 10px; color: var(--frost-dim); flex-shrink:0;
-    width: 78px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  .batch-row-barcode{ font-family: var(--mono); font-size: 11px; color: var(--frost-dim); margin-bottom: 6px; }
+  .batch-row-top{ display:flex; align-items:center; gap: 10px; margin-bottom: 10px; }
+  .batch-row-top input[type=text]{
+    flex:1; background: var(--panel-2); border: 1px solid var(--edge); color: var(--frost);
+    border-radius: 10px; padding: 10px 12px; font-size: 16px; font-family: var(--sans);
   }
   .batch-row-del{
     background: transparent; border: none; color: var(--frost-dim); font-size: 16px;
@@ -526,12 +522,6 @@
     font-family: var(--mono); font-size: 9.5px; font-weight: 800;
     display:flex; align-items:center; justify-content:center;
   }
-  .batch-cat-row{
-    display:flex; align-items:center; gap:8px; cursor:pointer;
-    background: var(--panel); border: 1px solid var(--edge); border-radius: 8px; padding: 8px 10px;
-  }
-  .batch-cat-row .cat-collapsed-name{ font-size:12.5px; }
-  .batch-cat-row .cat-chevron{ margin-left:auto; }
 
   .settings-cat-row{
     display:flex; align-items:center; gap: 10px; background: var(--panel-2);
@@ -927,7 +917,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.4.0</footer>
+    <footer>Freezr &mdash; Version: 10.5.0</footer>
   </div>
 </div>
 
@@ -2468,10 +2458,46 @@
   function addToBatchQueue(barcode){
     var known = state.products[barcode];
     var knownCategory = state.categoryByBarcode[barcode];
-    state.batchQueue.push({ tempId: makeId(), barcode: barcode, name: known || '', category: knownCategory || guessCategory(known || ''), categoryManual: !!knownCategory });
+    var knownWeight = state.weightByBarcode[barcode] || null;
+    var isKnownContainer = knownWeight && WEIGHT_CONTAINER_UNITS.indexOf(knownWeight.unit) > -1;
+    var defaultFreezer = (lastUsedFreezer && state.freezers.indexOf(lastUsedFreezer) > -1) ? lastUsedFreezer : (state.freezers[0] || 'Freezer');
+    var q = {
+      tempId: makeId(), barcode: barcode, name: known || '',
+      category: knownCategory || guessCategory(known || ''), categoryManual: !!knownCategory,
+      unit: (knownWeight && knownWeight.unit) || 'g',
+      weightAmount: (knownWeight && !isKnownContainer && knownWeight.amount != null) ? String(knownWeight.amount) : '',
+      weightManual: !!knownWeight,
+      freezer: defaultFreezer
+    };
+    state.batchQueue.push(q);
     updateReviewBatchBtn();
     if (navigator.vibrate) navigator.vibrate(60);
     toast((known ? known : 'Item') + ' added to batch (' + state.batchQueue.length + ')', 'ok');
+    if (!known) tryBatchLookup(barcode, q.tempId);
+  }
+
+  function tryBatchLookup(barcode, tempId){
+    try{
+      var controller = new AbortController();
+      var t = setTimeout(function(){ controller.abort(); }, 3000);
+      fetch('https://world.openfoodfacts.org/api/v0/product/' + encodeURIComponent(barcode) + '.json', { signal: controller.signal })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          clearTimeout(t);
+          var q = state.batchQueue.find(function(x){ return x.tempId === tempId; });
+          if (!q) return; // removed from the batch before the lookup finished
+          if (d && d.status === 1 && d.product && d.product.product_name){
+            q.name = d.product.product_name;
+            if (!q.categoryManual) q.category = guessCategory(d.product.product_name);
+            if (!q.weightManual){
+              var guess = parseWeightGuess(d.product.quantity);
+              if (guess){ q.unit = guess.unit; q.weightAmount = String(guess.amount); }
+            }
+            renderBatchList();
+          }
+        })
+        .catch(function(){ /* ignore — manual entry still works */ });
+    }catch(e){ /* ignore */ }
   }
 
   function renderBatchList(){
@@ -2481,28 +2507,74 @@
       els.batchList.innerHTML = '<div class="empty">No items in this batch yet.</div>';
       return;
     }
+    var showFreezerRow = state.freezers.length > 1;
     els.batchList.innerHTML = state.batchQueue.map(function(q){
+      var isContainer = WEIGHT_CONTAINER_UNITS.indexOf(q.unit) > -1;
       return '' +
         '<div class="batch-row" data-temp-id="' + q.tempId + '">' +
+          '<div class="batch-row-barcode">Barcode: ' + escapeHtml(q.barcode) + '</div>' +
           '<div class="batch-row-top">' +
-            '<span class="batch-barcode">' + escapeHtml(q.barcode) + '</span>' +
             '<input type="text" class="batch-name-input" data-temp-id="' + q.tempId + '" placeholder="Item name" value="' + escapeHtml(q.name) + '">' +
             '<button class="batch-row-del" data-temp-id="' + q.tempId + '" title="Remove from batch">\u2715</button>' +
           '</div>' +
-          '<div class="batch-cat-row" data-temp-id="' + q.tempId + '"></div>' +
+          '<div class="qty-row cat-collapsed-row batch-cat-row" data-temp-id="' + q.tempId + '">' +
+            '<span class="qty-row-label">Category</span>' +
+            '<div class="cat-collapsed-value"></div>' +
+          '</div>' +
+          (showFreezerRow ?
+            '<div class="qty-row batch-freezer-row" data-temp-id="' + q.tempId + '">' +
+              '<span class="qty-row-label">Freezer</span>' +
+              '<div class="freezer-collapsed"></div>' +
+            '</div>' : '') +
+          '<div class="qty-row weight-row batch-weight-row" data-temp-id="' + q.tempId + '">' +
+            '<span class="qty-row-label">Weight</span>' +
+            '<div class="weight-controls' + (isContainer ? ' container-mode' : '') + '">' +
+              '<input class="weight-amount batch-weight-amount" type="text" inputmode="decimal" placeholder="e.g. 500" data-temp-id="' + q.tempId + '" value="' + escapeHtml(q.weightAmount || '') + '">' +
+              '<div class="unit-collapsed"></div>' +
+            '</div>' +
+          '</div>' +
         '</div>';
     }).join('');
 
-    function bindBatchCategoryPicker(rowEl, q){
-      renderCollapsedCategory(rowEl, rowEl, q.category, function(c){
+    function bindBatchCategoryPicker(q){
+      var rowEl = els.batchList.querySelector('.batch-cat-row[data-temp-id="' + q.tempId + '"]');
+      if (!rowEl) return;
+      var valueEl = rowEl.querySelector('.cat-collapsed-value');
+      renderCollapsedCategory(rowEl, valueEl, q.category, function(c){
         q.category = c;
         q.categoryManual = true;
-        bindBatchCategoryPicker(rowEl, q);
+        bindBatchCategoryPicker(q);
       });
     }
-    Array.prototype.forEach.call(els.batchList.querySelectorAll('.batch-cat-row'), function(rowEl){
-      var q = state.batchQueue.find(function(x){ return x.tempId === rowEl.getAttribute('data-temp-id'); });
-      if (q) bindBatchCategoryPicker(rowEl, q);
+    function bindBatchFreezerPicker(q){
+      if (!showFreezerRow) return;
+      var rowEl = els.batchList.querySelector('.batch-freezer-row[data-temp-id="' + q.tempId + '"]');
+      if (!rowEl) return;
+      var valueEl = rowEl.querySelector('.freezer-collapsed');
+      renderCollapsedFreezer(valueEl, q.freezer, function(f){
+        q.freezer = f;
+        bindBatchFreezerPicker(q);
+      });
+    }
+    function bindBatchUnitPicker(q){
+      var rowEl = els.batchList.querySelector('.batch-weight-row[data-temp-id="' + q.tempId + '"]');
+      if (!rowEl) return;
+      var controlsEl = rowEl.querySelector('.weight-controls');
+      var amountEl = rowEl.querySelector('.batch-weight-amount');
+      var unitEl = rowEl.querySelector('.unit-collapsed');
+      renderCollapsedUnit(unitEl, q.unit, function(u2){
+        q.unit = u2;
+        q.weightManual = true;
+        var isC = WEIGHT_CONTAINER_UNITS.indexOf(u2) > -1;
+        controlsEl.classList.toggle('container-mode', isC);
+        if (isC){ q.weightAmount = ''; amountEl.value = ''; }
+        bindBatchUnitPicker(q);
+      });
+    }
+    state.batchQueue.forEach(function(q){
+      bindBatchCategoryPicker(q);
+      bindBatchFreezerPicker(q);
+      bindBatchUnitPicker(q);
     });
 
     Array.prototype.forEach.call(els.batchList.querySelectorAll('.batch-name-input'), function(inp){
@@ -2512,11 +2584,16 @@
           q.name = inp.value;
           if (!q.categoryManual){
             q.category = guessCategory(q.name);
-            var rowEl = els.batchList.querySelector('.batch-cat-row[data-temp-id="' + q.tempId + '"]');
-            if (rowEl) bindBatchCategoryPicker(rowEl, q);
+            bindBatchCategoryPicker(q);
           }
         }
         inp.classList.remove('empty-warn');
+      });
+    });
+    Array.prototype.forEach.call(els.batchList.querySelectorAll('.batch-weight-amount'), function(inp){
+      inp.addEventListener('input', function(){
+        var q = state.batchQueue.find(function(x){ return x.tempId === inp.getAttribute('data-temp-id'); });
+        if (q){ q.weightAmount = inp.value; q.weightManual = true; }
       });
     });
     Array.prototype.forEach.call(els.batchList.querySelectorAll('.batch-row-del'), function(btn){
@@ -2559,13 +2636,24 @@
       return;
     }
     var count = state.batchQueue.length;
-    var batchFreezer = state.freezers.length > 1 ? (lastUsedFreezer && state.freezers.indexOf(lastUsedFreezer) > -1 ? lastUsedFreezer : state.freezers[0]) : (state.freezers[0] || 'Freezer');
     state.batchQueue.forEach(function(q){
       var name = q.name.trim();
       var category = q.category || 'Other';
+      var weight = (WEIGHT_CONTAINER_UNITS.indexOf(q.unit) > -1)
+        ? { amount: null, unit: q.unit }
+        : (function(){
+            var raw = (q.weightAmount || '').trim();
+            if (!raw) return null;
+            var amt = parseFloat(raw);
+            return isNaN(amt) ? null : { amount: amt, unit: q.unit };
+          })();
+      var freezer = state.freezers.length > 1 ? q.freezer : (state.freezers[0] || 'Freezer');
       state.products[q.barcode] = name;
       state.categoryByBarcode[q.barcode] = category;
-      state.items.push({ id: makeId(), barcode: q.barcode, name: name, category: category, weight: state.weightByBarcode[q.barcode] || null, freezer: batchFreezer, dateAdded: new Date().toISOString(), opened: false, addedBy: currentDisplayName || '' });
+      if (weight) state.weightByBarcode[q.barcode] = weight;
+      else delete state.weightByBarcode[q.barcode];
+      state.items.push({ id: makeId(), barcode: q.barcode, name: name, category: category, weight: weight, freezer: freezer, dateAdded: new Date().toISOString(), opened: false, addedBy: currentDisplayName || '' });
+      lastUsedFreezer = freezer;
     });
     state.batchQueue = [];
     saveItems();
