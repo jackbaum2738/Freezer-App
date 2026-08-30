@@ -4,6 +4,10 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+10.5.4 -- 2026-08-30
+--------------------
+- Clarified the first-run "Create a Freezr" copy, which was confusingly worded as if you were naming a single physical freezer rather than the shared household. "Set up a new shared freezer" now reads "Set up a new shared household"; the naming screen is now "Name your Freezr household" with copy explicitly saying it's the household, not a specific freezer; and the placeholder examples changed from "Home Freezer, Uni Freezer" to "The Smiths, Home, Uni House".
+
 10.5.3 -- 2026-08-30
 --------------------
 - Fixed a bug introduced by the previous fix: typing a category/freezer name that already exists and tapping Save (instead of Add) closed the modal and showed the normal "updated" toast instead of keeping the modal open with the "already exists" warning. Save now stops there, same as tapping Add on a duplicate already did.
