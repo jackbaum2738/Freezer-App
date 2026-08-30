@@ -228,7 +228,7 @@
   .item.age-old::before{ background: var(--danger); }
   .item-main{ flex:1; min-width:0; }
   .item-name{ font-weight: 700; font-size: 14.5px; margin-bottom: 3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .item-meta{ display:flex; gap: 10px; flex-wrap:wrap; font-family: var(--mono); font-size: 11px; color: var(--frost-dim); }
+  .item-meta{ display:flex; align-items:center; gap: 8px; flex-wrap:wrap; font-family: var(--mono); font-size: 11px; color: var(--frost-dim); margin-bottom: 3px; }
   .item-meta-2{ font-size: 11px; color: var(--frost-dim); margin-top: 3px; }
   .chip{
     font-family: var(--mono); font-size: 10.5px; padding: 3px 7px; border-radius: 999px;
@@ -927,7 +927,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.3.1</footer>
+    <footer>Freezr &mdash; Version: 10.4.0</footer>
   </div>
 </div>
 
@@ -2645,7 +2645,7 @@
     items.forEach(function(item){
       var key = item.barcode + '||' + item.name;
       if (!map[key]){
-        map[key] = { barcode: item.barcode, name: item.name, count: 0, oldestDate: item.dateAdded, oldestId: item.id, oldestOpened: !!item.opened, oldestCategory: item.category || 'Other', ids: [] };
+        map[key] = { barcode: item.barcode, name: item.name, count: 0, oldestDate: item.dateAdded, oldestId: item.id, oldestOpened: !!item.opened, oldestCategory: item.category || 'Other', oldestWeight: item.weight || null, oldestFreezer: item.freezer || null, ids: [] };
         order.push(key);
       }
       var g = map[key];
@@ -2656,6 +2656,8 @@
         g.oldestId = item.id;
         g.oldestOpened = !!item.opened;
         g.oldestCategory = item.category || 'Other';
+        g.oldestWeight = item.weight || null;
+        g.oldestFreezer = item.freezer || null;
       }
     });
     var groups = order.map(function(k){ return map[k]; });
@@ -2755,17 +2757,19 @@
     }
 
     els.listContainer.innerHTML = groups.map(function(g){
-      var qtyBadge = g.ids.length > 1 ? ' <span class="qty-badge">×' + g.ids.length + '</span>' : '';
+      var qtyBadge = g.ids.length > 1 ? '<span class="qty-badge">×' + g.ids.length + '</span>' : '';
       var catColor = categoryColor(g.category);
       var metaParts = ['<span class="cat-pill" style="color:' + catColor + '; border-color:' + catColor + '66; background:' + catColor + '22;">' + escapeHtml(g.category) + '</span>'];
       if (g.weight) metaParts.push('<span>' + escapeHtml(formatWeightLabel(g.weight)) + '</span>');
-      if (g.freezer) metaParts.push('<span>' + escapeHtml(g.freezer) + '</span>');
+      if (qtyBadge) metaParts.push(qtyBadge);
+      if (state.freezers.length > 1 && g.freezer) metaParts.push('<span>❄️ ' + escapeHtml(g.freezer) + '</span>');
       return '' +
         '<div class="item">' +
           '<div class="item-main">' +
-            '<div class="item-name">' + escapeHtml(g.name) + qtyBadge + '</div>' +
+            '<div class="item-name">' + escapeHtml(g.name) + '</div>' +
             '<div class="item-meta">' + metaParts.join('') + '</div>' +
-            '<div class="item-meta-2">Frozen ' + formatDurationBetween(g.dateAdded, g.dateRemoved) + ' · removed ' + fmtDate(g.dateRemoved) + (g.removedBy ? ' by ' + escapeHtml(g.removedBy) : '') + '</div>' +
+            '<div class="item-meta-2">Frozen ' + formatDurationBetween(g.dateAdded, g.dateRemoved) + '</div>' +
+            '<div class="item-meta-2">Removed ' + fmtDate(g.dateRemoved) + (g.removedBy ? ' by ' + escapeHtml(g.removedBy) : '') + '</div>' +
           '</div>' +
           '<div class="hist-actions">' +
             '<button class="hist-btn readd" data-key="' + g.key + '" title="Re-add to freezer">↺</button>' +
@@ -3162,18 +3166,20 @@
     } else {
       els.listContainer.innerHTML = groups.map(function(g){
         var ac = ageClass(g.oldestDate);
-        var qtyBadge = g.count > 1 ? ' <span class="qty-badge">\u00d7' + g.count + '</span>' : '';
+        var qtyBadge = g.count > 1 ? '<span class="qty-badge">\u00d7' + g.count + '</span>' : '';
         var openedBadge = g.oldestOpened ? '<span class="opened-badge">Opened</span>' : '';
         var catColor = categoryColor(g.oldestCategory);
         var catPill = '<span class="cat-pill" style="color:' + catColor + '; border-color:' + catColor + '66; background:' + catColor + '22;">' + escapeHtml(g.oldestCategory) + '</span>';
+        var metaParts = [catPill];
+        if (g.oldestWeight) metaParts.push('<span>' + escapeHtml(formatWeightLabel(g.oldestWeight)) + '</span>');
+        if (qtyBadge) metaParts.push(qtyBadge);
+        if (state.freezers.length > 1 && g.oldestFreezer) metaParts.push('<span>\u2744\ufe0f ' + escapeHtml(g.oldestFreezer) + '</span>');
         return '' +
           '<div class="item ' + ac + '" data-barcode="' + escapeHtml(g.barcode) + '" data-name="' + escapeHtml(g.name) + '">' +
             '<div class="item-main">' +
-              '<div class="item-name">' + escapeHtml(g.name) + qtyBadge + '</div>' +
-              '<div class="item-meta">' +
-                '<span>Added ' + fmtDate(g.oldestDate) + '</span>' +
-                catPill +
-              '</div>' +
+              '<div class="item-name">' + escapeHtml(g.name) + '</div>' +
+              '<div class="item-meta">' + metaParts.join('') + '</div>' +
+              '<div class="item-meta-2">Added ' + fmtDate(g.oldestDate) + '</div>' +
             '</div>' +
             openedBadge +
             '<span class="chip ' + ac + '">' + daysLabel(g.oldestDate) + '</span>' +
@@ -3223,7 +3229,7 @@
     if (!w) return 'not set';
     if (w.unit === 'small') return 'small container';
     if (w.unit === 'large') return 'large container';
-    if (w.unit === 'count') return String(w.amount);
+    if (w.unit === 'count') return w.amount + ' count';
     return w.amount + ' ' + w.unit;
   }
   function selectDetailUnit(u){
