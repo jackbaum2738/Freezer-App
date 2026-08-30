@@ -927,7 +927,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.2.0</footer>
+    <footer>Freezr &mdash; Version: 10.3.0</footer>
   </div>
 </div>
 
@@ -1505,9 +1505,10 @@
 
   // ---------- weight (amount + unit; remembered per barcode, same as name/category) ----------
   var WEIGHT_UNITS = ['g', 'kg', 'ml', 'l', 'oz', 'lb'];
+  var WEIGHT_COUNT_UNITS = ['count'];
   var WEIGHT_CONTAINER_UNITS = ['small', 'large'];
-  var UNIT_SHEET_LABELS = { g:'g', kg:'kg', ml:'ml', l:'l', oz:'oz', lb:'lb', small:'Small container', large:'Large container' };
-  var UNIT_COLLAPSED_LABELS = { g:'g', kg:'kg', ml:'ml', l:'l', oz:'oz', lb:'lb', small:'Small', large:'Large' };
+  var UNIT_SHEET_LABELS = { g:'g', kg:'kg', ml:'ml', l:'l', oz:'oz', lb:'lb', count:'Count', small:'Small container', large:'Large container' };
+  var UNIT_COLLAPSED_LABELS = { g:'g', kg:'kg', ml:'ml', l:'l', oz:'oz', lb:'lb', count:'Count', small:'Small', large:'Large' };
   function weightsEqual(a, b){
     if (!a && !b) return true;
     if (!a || !b) return false;
@@ -1526,6 +1527,7 @@
   function renderUnitPicker(container, selected, onSelect){
     var groups = [
       { label: 'Weight / volume', units: WEIGHT_UNITS },
+      { label: 'Count', units: WEIGHT_COUNT_UNITS },
       { label: 'Container size', units: WEIGHT_CONTAINER_UNITS }
     ];
     container.innerHTML = groups.map(function(g){
@@ -3221,6 +3223,7 @@
     if (!w) return 'not set';
     if (w.unit === 'small') return 'small container';
     if (w.unit === 'large') return 'large container';
+    if (w.unit === 'count') return String(w.amount);
     return w.amount + ' ' + w.unit;
   }
   function selectDetailUnit(u){
