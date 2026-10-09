@@ -329,7 +329,7 @@
     cursor:pointer; line-height:1;
   }
   .qty-stepper button:active{ background: var(--cyan-dim); color: var(--cyan); border-color: var(--cyan-dim); }
-  #detailQtyValue{ font-family: var(--mono); font-size: 17px; font-weight: 800; min-width: 22px; text-align:center; }
+  #detailQtyValue, #modalQtyValue{ font-family: var(--mono); font-size: 17px; font-weight: 800; min-width: 22px; text-align:center; }
 
   .weight-row{ align-items:center; }
   .weight-controls{ display:flex; align-items:center; gap:8px; flex:1; margin-left:14px; justify-content:flex-end; }
@@ -984,7 +984,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.7.1</footer>
+    <footer>Freezr &mdash; Version: 10.8.0</footer>
   </div>
 </div>
 
@@ -1023,6 +1023,14 @@
       <div class="weight-controls" id="modalWeightControls">
         <input class="weight-amount" id="modalWeightAmount" type="text" inputmode="decimal" placeholder="e.g. 500">
         <div class="unit-collapsed" id="modalWeightUnitRow"></div>
+      </div>
+    </div>
+    <div class="qty-row" id="modalQtyRow">
+      <span class="qty-row-label">Quantity</span>
+      <div class="qty-stepper">
+        <button id="modalQtyMinus" aria-label="Decrease quantity">−</button>
+        <span id="modalQtyValue">1</span>
+        <button id="modalQtyPlus" aria-label="Increase quantity">+</button>
       </div>
     </div>
     <div class="modal-actions">
@@ -1796,6 +1804,10 @@
     modalCancel: document.getElementById('modalCancel'),
     modalClose: document.getElementById('modalClose'),
     modalSave: document.getElementById('modalSave'),
+    modalQtyRow: document.getElementById('modalQtyRow'),
+    modalQtyMinus: document.getElementById('modalQtyMinus'),
+    modalQtyValue: document.getElementById('modalQtyValue'),
+    modalQtyPlus: document.getElementById('modalQtyPlus'),
     removeModalBack: document.getElementById('removeModalBack'),
     removeModalBarcode: document.getElementById('removeModalBarcode'),
     removeModalInfo: document.getElementById('removeModalInfo'),
@@ -2393,7 +2405,17 @@
   var modalSelectedCategory = 'Other';
   var modalSelectedUnit = 'g';
   var modalSelectedFreezer = null;
+  var modalQty = 1;
   var lastUsedFreezer = null;
+  els.modalQtyMinus.onclick = function(){
+    if (modalQty <= 1) return;
+    modalQty--;
+    els.modalQtyValue.textContent = modalQty;
+  };
+  els.modalQtyPlus.onclick = function(){
+    modalQty++;
+    els.modalQtyValue.textContent = modalQty;
+  };
   els.modalWeightAmount.addEventListener('input', function(){ weightManuallySet = true; });
   function selectModalCategory(c){
     modalSelectedCategory = c;
@@ -2453,6 +2475,9 @@
       els.modalFreezerRow.style.display = 'none';
       modalSelectedFreezer = state.freezers[0] || 'Freezer';
     }
+    modalQty = 1;
+    els.modalQtyValue.textContent = modalQty;
+    els.modalQtyRow.style.display = pendingEditOnly ? 'none' : '';
     els.modalBack.classList.add('show');
     setTimeout(function(){ els.modalNameInput.focus(); els.modalNameInput.select(); }, 50);
     if (barcode && !known && !pendingEditOnly) tryLookup(barcode);
@@ -2496,8 +2521,14 @@
       toast('Renamed to: ' + name, 'ok');
     } else {
       lastUsedFreezer = freezer;
-      addItem(pendingBarcode, name, category, weight, freezer);
-      toast('Added: ' + name, 'ok');
+      var qty = Math.max(1, modalQty);
+      for (var i = 0; i < qty; i++){
+        state.items.push({ id: makeId(), barcode: pendingBarcode, name: name, category: category, weight: weight, freezer: freezer, dateAdded: new Date().toISOString(), opened: false, addedBy: currentDisplayName || '' });
+      }
+      if (pendingBarcode) removeFromShoppingListByBarcode(pendingBarcode);
+      saveItems();
+      render();
+      toast(qty > 1 ? ('Added ' + qty + '× ' + name) : ('Added: ' + name), 'ok');
     }
     closeModal();
   };
