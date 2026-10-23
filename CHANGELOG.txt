@@ -4,6 +4,10 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+10.9.1 -- 2026-10-23
+--------------------
+- The Settings "Sync now" button now uses 🔃 instead of 🔄, so it no longer shares an icon with "Replay welcome tour".
+
 10.9.0 -- 2026-10-23
 --------------------
 - Swiping down at the top of a screen no longer triggers the browser's pull-to-refresh reload (overscroll-behavior on the page).

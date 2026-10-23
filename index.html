@@ -965,7 +965,7 @@
     <div class="settings-block">
       <div class="settings-row-title">Sync</div>
       <div class="settings-row-sub" style="margin-bottom:10px;">Pulls the latest list straight from the server and reconnects live sync &mdash; use this if your phone ever looks out of date</div>
-      <button class="btn btn-ghost" id="forceSyncBtn">🔄 Sync now</button>
+      <button class="btn btn-ghost" id="forceSyncBtn">🔃 Sync now</button>
     </div>
 
     <div class="settings-block">
@@ -990,7 +990,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.9.0</footer>
+    <footer>Freezr &mdash; Version: 10.9.1</footer>
   </div>
 </div>
 
@@ -1981,9 +1981,9 @@
     var code = getStoredFreezrCode();
     if (!code || !docRef) return;
     var btn = els.forceSyncBtn;
-    btn.disabled = true; btn.textContent = '🔄 Syncing…';
+    btn.disabled = true; btn.textContent = '🔃 Syncing…';
     setSyncState('connecting');
-    function done(){ btn.disabled = false; btn.textContent = '🔄 Sync now'; }
+    function done(){ btn.disabled = false; btn.textContent = '🔃 Sync now'; }
     docRef.get({ source: 'server' }).then(function(snap){
       done();
       if (!snap.exists){ handleFreezrGone(code); return; }
