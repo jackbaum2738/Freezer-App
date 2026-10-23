@@ -1022,7 +1022,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 11.0.4<div class="copyright">&copy; 2026 Jack Baum</div></footer>
+    <footer>Freezr &mdash; Version: 11.0.5<div class="copyright">&copy; 2026 Jack Baum</div></footer>
   </div>
 </div>
 
@@ -4774,6 +4774,9 @@
   var tourRenderToken = 0;
   function paintTourStep(step){
     clearTourExamples();
+    // a tab that was visited earlier still carries .tab-anim, and re-showing it replays that slide-in,
+    // which would shift the page while the highlight is being measured
+    [els.inventoryView, els.shoppingView, els.settingsView].forEach(function(v){ v.classList.remove('tab-anim'); });
     setActiveTab(step.tab);
     if (step.example) addTourExample(step.example);
     window.scrollTo(0, 0);
