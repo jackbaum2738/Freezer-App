@@ -994,7 +994,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.10.2</footer>
+    <footer>Freezr &mdash; Version: 10.10.3</footer>
   </div>
 </div>
 
@@ -2085,6 +2085,8 @@
   async function persistState(opts){
     if (!docRef) return;
     var silent = opts && opts.silent;
+    // never send an empty key (Firestore rejects the whole write); clears any stray one already in memory
+    [state.products, state.categoryByBarcode, state.weightByBarcode].forEach(function(m){ delete m['']; });
     try{
       await docRef.set({ items: state.items, products: state.products, categories: state.categories, categoryByBarcode: state.categoryByBarcode, weightByBarcode: state.weightByBarcode, freezers: state.freezers, history: state.history, categoryColors: state.categoryColors, shoppingList: state.shoppingList, lastBackup: state.lastBackup }, { merge: true });
       setSyncState('synced');
@@ -3595,11 +3597,15 @@
     var freezerChanged = pendingFreezer !== originalFreezer;
 
     if (nameChanged || categoryChanged || weightChanged || freezerChanged){
-      if (nameChanged) state.products[oldKey.barcode] = newName;
-      if (categoryChanged) state.categoryByBarcode[oldKey.barcode] = pendingCategory;
-      if (weightChanged){
-        if (newWeight) state.weightByBarcode[oldKey.barcode] = newWeight;
-        else delete state.weightByBarcode[oldKey.barcode];
+      // items added by name have no barcode, and Firestore rejects an empty field name, so only
+      // remember name/category/weight per barcode when there is one
+      if (oldKey.barcode){
+        if (nameChanged) state.products[oldKey.barcode] = newName;
+        if (categoryChanged) state.categoryByBarcode[oldKey.barcode] = pendingCategory;
+        if (weightChanged){
+          if (newWeight) state.weightByBarcode[oldKey.barcode] = newWeight;
+          else delete state.weightByBarcode[oldKey.barcode];
+        }
       }
       state.items.forEach(function(i){
         if (i.barcode === oldKey.barcode && i.name === oldKey.name){
