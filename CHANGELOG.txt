@@ -4,6 +4,12 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+11.0.0 -- 2026-10-23
+--------------------
+- The welcome tour is now an interactive spotlight walkthrough instead of pages to swipe through. After an intro screen ("Show me around" / "Skip tour"), the real app is dimmed and the control being explained is lit up with a short card: scanning in and out, your freezer list (tap an item to edit; Browse by category and History buttons), the shopping list, and sharing your code. The tour switches tabs for you, and the sample rows and code it shows are labelled EXAMPLE and are never saved.
+- Move between steps by tapping Next / Back or swiping left and right (Skip only appears on the intro). The phone's Back button goes back one step; on the intro it does nothing.
+- The tour now comes first on a brand-new phone, before the join/create-a-Freezr screen, and ends on the Freezr tab with that screen open. It is only marked as seen once finished or skipped, so closing the app mid-tour brings it back at the intro. "Replay welcome tour" in Settings runs the same tour and ends on the Freezr tab.
+
 10.10.3 -- 2026-10-23
 ---------------------
 - Fixed editing an item that was added by typing its name (no barcode) failing to save and turning the sync pill to "Sync failed". Saving a rename/category/weight change tried to remember it under the item's barcode, which is empty for these items, and Firestore rejects an empty field name. Those per-barcode memories are now only written when the item has a barcode. Not related to emoji: any edit of a barcode-less item hit this, the emoji just happened to be in an edit.
