@@ -701,7 +701,7 @@
   .fallback-icon{ font-size:36px; margin-bottom:6px; }
 
   /* ---------- welcome tour — intro screen, then a spotlight walkthrough of the real app ---------- */
-  #welcomeTourGate{ display:none; position:fixed; inset:0; z-index:90; touch-action:none; }
+  #welcomeTourGate{ display:none; position:fixed; inset:0; z-index:90; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
   #welcomeTourGate.show{ display:block; }
   #tourIntro{
     display:none; position:absolute; inset:0; background: var(--bg); flex-direction:column; align-items:center;
@@ -1018,7 +1018,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 11.0.2<div class="copyright">&copy; 2026 Jack Baum</div></footer>
+    <footer>Freezr &mdash; Version: 11.0.3<div class="copyright">&copy; 2026 Jack Baum</div></footer>
   </div>
 </div>
 
@@ -4817,10 +4817,30 @@
     if (top && top.kind === 'tour' && !top.stale) history.back(); // popstate restores the previous step
     else { tourStep--; renderTour(); }
   }
-  els.tourStartBtn.onclick = tourNext;
-  els.tourSkipBtn.onclick = endWelcomeTour;
-  els.tourNextBtn.onclick = tourNext;
-  els.tourBackBtn.onclick = tourBack;
+  // Act on the finger lifting as well as on the click, so a tap right after a swipe never needs a
+  // second try. A touch that moved (a swipe that started on a button) is not a tap; the click that
+  // follows a handled tap is ignored so nothing fires twice.
+  function onTourTap(btn, fn){
+    var start = null, handledAt = 0;
+    btn.addEventListener('touchstart', function(e){ var t = e.touches[0]; start = { x: t.clientX, y: t.clientY }; }, { passive: true });
+    btn.addEventListener('touchend', function(e){
+      if (!start) return;
+      var t = e.changedTouches[0], moved = Math.abs(t.clientX - start.x) > 10 || Math.abs(t.clientY - start.y) > 10;
+      start = null;
+      if (moved) return;
+      e.preventDefault(); // stops the browser's follow-up click
+      handledAt = Date.now();
+      fn();
+    });
+    btn.addEventListener('click', function(){
+      if (Date.now() - handledAt < 600) return;
+      fn();
+    });
+  }
+  onTourTap(els.tourStartBtn, tourNext);
+  onTourTap(els.tourSkipBtn, endWelcomeTour);
+  onTourTap(els.tourNextBtn, tourNext);
+  onTourTap(els.tourBackBtn, tourBack);
   els.replayTourBtn.onclick = showWelcomeTour;
   window.addEventListener('resize', layoutTourSpot);
 

@@ -4,6 +4,10 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+11.0.3 -- 2026-10-23
+--------------------
+- Welcome tour: fixed needing to tap a button twice after swiping between steps. The tour's buttons now respond as soon as the finger lifts (a swipe that happens to start on a button is still not a tap), and text on the tour can no longer be accidentally selected by a swipe, which could make the first tap just clear the selection.
+
 11.0.2 -- 2026-10-23
 --------------------
 - Fixed the app icon on the first screen of the welcome tour being stretched into a wide squashed strip. A full-width rule meant for the text and buttons was also stretching the icon's box.
