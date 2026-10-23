@@ -4,6 +4,10 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+10.10.1 -- 2026-10-23
+---------------------
+- Placeholder text in input fields (e.g. "e.g. Chicken thighs", "Search inventory…") now uses the app's own dim text colour instead of the browser's default grey, which didn't match anything else on screen. Applies to every input in the app.
+
 10.10.0 -- 2026-10-23
 ---------------------
 - The app now picks up new versions on its own even if it's never closed or backgrounded: every 5 minutes (and whenever it comes back to the foreground) it checks the live version number, and if a newer one is out it reloads itself -- but only once the app is idle. It never reloads while any popup or sheet is open (item add/edit, share/join Freezr, etc.), while scanning or batch scanning is on, or while you're typing in a field; it waits and updates the moment you're back to just looking at the list, shopping list or Settings. No banner. "Sync now" also checks for a new version and updates if one is found.
