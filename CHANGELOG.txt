@@ -4,6 +4,11 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+11.0.1 -- 2026-10-23
+--------------------
+- The red error banner at the top of the Freezr tab (save failures, sync errors, camera errors, app errors) now has a ✕ so it can be dismissed. It stays gone until the next error. Previously it stayed until the app was reloaded, even after a later save worked.
+- Added a copyright line (© 2026 Jack Baum) under the version number at the bottom of Settings.
+
 11.0.0 -- 2026-10-23
 --------------------
 - The welcome tour is now an interactive spotlight walkthrough instead of pages to swipe through. After an intro screen ("Show me around" / "Skip tour"), the real app is dimmed and the control being explained is lit up with a short card: scanning in and out, your freezer list (tap an item to edit; Browse by category and History buttons), the shopping list, and sharing your code. The tour switches tabs for you, and the sample rows and code it shows are labelled EXAMPLE and are never saved.

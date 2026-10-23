@@ -27,12 +27,11 @@
 <script>
   function showJsErrorBanner(text){
     function apply(){
-      var b = document.getElementById('setupBanner');
-      if (b){
+      var b = document.getElementById('setupBanner'), t = document.getElementById('setupBannerText');
+      if (b && t){
         b.style.display = 'block';
-        b.style.background = '#5c1c1c';
-        b.style.borderColor = '#f0806b';
-        b.textContent = '⚠️ ' + text;
+        b.classList.add('err');
+        t.textContent = '⚠️ ' + text;
       }
     }
     if (document.readyState !== 'loading') apply();
@@ -782,6 +781,14 @@
     background: var(--amber-dim); border: 1px solid var(--amber); color: var(--frost);
     border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 12.5px; line-height:1.5;
   }
+  .setup-banner{ position:relative; }
+  .setup-banner.err{ background:#5c1c1c; border-color:#f0806b; padding-right:40px; }
+  .setup-banner-x{
+    display:none; position:absolute; top:6px; right:6px; width:30px; height:30px; border:none; border-radius:8px;
+    background:transparent; color: var(--frost); font-size:15px; line-height:1; cursor:pointer;
+  }
+  .setup-banner.err .setup-banner-x{ display:block; }
+  .setup-banner-x:active{ background: rgba(0,0,0,.25); }
   .setup-banner code{ font-family: var(--mono); background: rgba(0,0,0,.25); padding: 1px 5px; border-radius: 4px; }
   .conn-dot{ display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; background: var(--frost-dim); }
   .conn-dot.live{ background: var(--cyan); }
@@ -828,7 +835,8 @@
   </header>
 
   <div class="setup-banner" id="setupBanner" style="display:none">
-    ⚠️ Add your Firebase config to start syncing. Open this file, find <code>firebaseConfig</code> near the bottom, and paste in the values from your Firebase project's web app settings.
+    <span id="setupBannerText">⚠️ Add your Firebase config to start syncing. Open this file, find <code>firebaseConfig</code> near the bottom, and paste in the values from your Firebase project's web app settings.</span>
+    <button class="setup-banner-x" id="setupBannerClose" aria-label="Dismiss">✕</button>
   </div>
 
   <div id="inventoryView">
@@ -1010,7 +1018,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 11.0.0</footer>
+    <footer>Freezr &mdash; Version: 11.0.1<div class="copyright">&copy; 2026 Jack Baum</div></footer>
   </div>
 </div>
 
@@ -2188,13 +2196,7 @@
       if (err){
         console.error(err);
         var detail = err && (err.name || err.message) ? ((err.name || '') + (err.message ? ': ' + err.message : '')) : String(err);
-        var banner = document.getElementById('setupBanner');
-        if (banner){
-          banner.style.display = 'block';
-          banner.style.background = '#5c1c1c';
-          banner.style.borderColor = '#f0806b';
-          banner.textContent = '⚠️ Camera error — ' + detail;
-        }
+        showJsErrorBanner('Camera error — ' + detail);
         toast('Could not access camera — see banner above', 'err');
         try{ if (Quagga.CameraAccess && Quagga.CameraAccess.release) Quagga.CameraAccess.release(); }catch(e2){}
         stopScan();
@@ -4878,6 +4880,13 @@
       if (changed){ saveItems(); render(); }
     }
     toast(n ? 'Name saved' : 'Name cleared', 'ok');
+  };
+
+  // the red error banner can be dismissed (the next error shows it again)
+  document.getElementById('setupBannerClose').onclick = function(){
+    var b = document.getElementById('setupBanner');
+    b.style.display = 'none';
+    b.classList.remove('err');
   };
 
   // ---------- refresh on reopen — Firestore's live listener doesn't reliably survive the app
