@@ -89,7 +89,7 @@
   }
   :root[data-theme="light"] body{ background: var(--bg); }
   *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
-  html,body{ margin:0; padding:0; overflow-x:hidden; }
+  html,body{ margin:0; padding:0; overflow-x:hidden; overscroll-behavior-y:none; } /* none: stops the browser's pull-down-to-reload gesture */
   body{
     background:
       radial-gradient(ellipse 900px 500px at 50% -10%, #14283f 0%, transparent 60%),
@@ -963,6 +963,12 @@
     </div>
 
     <div class="settings-block">
+      <div class="settings-row-title">Sync</div>
+      <div class="settings-row-sub" style="margin-bottom:10px;">Pulls the latest list straight from the server and reconnects live sync &mdash; use this if your phone ever looks out of date</div>
+      <button class="btn btn-ghost" id="forceSyncBtn">🔄 Sync now</button>
+    </div>
+
+    <div class="settings-block">
       <div class="settings-row-title">Help</div>
       <div class="settings-row-sub" style="margin-bottom:10px;">See the welcome tour again — how scanning, the shopping list, and Freezr sharing all work</div>
       <button class="btn btn-ghost" id="replayTourBtn">🔄 Replay welcome tour</button>
@@ -984,7 +990,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.8.0</footer>
+    <footer>Freezr &mdash; Version: 10.9.0</footer>
   </div>
 </div>
 
@@ -1887,6 +1893,7 @@
     welcomeTourGate: document.getElementById('welcomeTourGate'),
     welcomeTourContent: document.getElementById('welcomeTourContent'),
     replayTourBtn: document.getElementById('replayTourBtn'),
+    forceSyncBtn: document.getElementById('forceSyncBtn'),
   };
 
   function toast(msg, kind, onUndo){
@@ -1966,6 +1973,30 @@
       toast('Sync error — check Firestore rules/config', 'err');
     });
   }
+
+  // Settings → "Sync now": fetch the doc straight from the server (bypassing any cached copy),
+  // then tear down and re-attach the live listener so a listener that died in the background
+  // is replaced. Reconnecting delivers the fresh data through the normal onSnapshot path.
+  function forceResync(){
+    var code = getStoredFreezrCode();
+    if (!code || !docRef) return;
+    var btn = els.forceSyncBtn;
+    btn.disabled = true; btn.textContent = '🔄 Syncing…';
+    setSyncState('connecting');
+    function done(){ btn.disabled = false; btn.textContent = '🔄 Sync now'; }
+    docRef.get({ source: 'server' }).then(function(snap){
+      done();
+      if (!snap.exists){ handleFreezrGone(code); return; }
+      connectToFreezr(code);
+      toast('Synced — your list is up to date', 'ok');
+    }).catch(function(err){
+      console.error(err);
+      done();
+      setSyncState('failed');
+      toast("Couldn't reach the server — check your connection", 'err');
+    });
+  }
+  els.forceSyncBtn.onclick = forceResync;
 
   // ---------- Freezr deletion — this device's own delete, or discovering one deleted elsewhere ----------
   var freezrJustDeletedLocally = false;
@@ -2861,6 +2892,7 @@
   function setListView(view, category){
     state.listView = view;
     state.activeCategory = category || null;
+    if (view === 'items') dropViewLayer(); else pushViewLayer();
     render();
   }
 
@@ -4057,6 +4089,71 @@
 
   // ---------- tabs ----------
   var TAB_ORDER = ['inventory', 'shopping', 'settings'];
+  // ---------- phone back button ----------
+  // Every "deeper" screen (a tab other than Freezr, the history/category list views, any open
+  // modal) pushes one browser-history entry, so the phone's Back button peels one layer off
+  // instead of closing the app. With nothing pushed (Freezr tab, plain list, no modal) Back
+  // behaves natively and exits. `layers` mirrors the pushed history entries, oldest first.
+  var layers = [];
+  var ignorePops = 0; // popstate events we caused ourselves with history.go() and must not act on
+  var viewLayer = null;
+  function pushLayer(layer){
+    layers.push(layer);
+    try{ history.pushState({ fz: layers.length }, ''); }catch(e){}
+    return layer;
+  }
+  // Removes layers that were closed in-app (✕, tab bar, etc.). Only entries at the top of the
+  // stack can actually be popped from history; any buried ones are marked stale and swept later.
+  function dropLayers(list){
+    list.forEach(function(l){ l.stale = true; });
+    trimStaleTop();
+  }
+  function trimStaleTop(){
+    var n = 0;
+    while (layers.length && layers[layers.length-1].stale){ layers.pop(); n++; }
+    if (n){ ignorePops++; try{ history.go(-n); }catch(e){ ignorePops--; } }
+  }
+  function pushViewLayer(){ if (!viewLayer) viewLayer = pushLayer({ kind: 'view' }); }
+  function dropViewLayer(){ if (viewLayer){ var l = viewLayer; viewLayer = null; dropLayers([l]); } }
+  function topModalLayer(){
+    for (var i = layers.length - 1; i >= 0; i--) if (layers[i].kind === 'modal' && !layers[i].stale) return layers[i];
+    return null;
+  }
+  // one history entry per open modal-back, discovered by watching for the `show` class
+  var modalLayerByEl = new Map();
+  var modalObserver = new MutationObserver(function(muts){
+    muts.forEach(function(m){
+      var el = m.target;
+      var shown = el.classList.contains('show'), has = modalLayerByEl.has(el);
+      if (shown && !has) modalLayerByEl.set(el, pushLayer({ kind: 'modal', el: el }));
+      else if (!shown && has){ var l = modalLayerByEl.get(el); modalLayerByEl.delete(el); dropLayers([l]); }
+    });
+  });
+  document.querySelectorAll('.modal-back').forEach(function(el){
+    modalObserver.observe(el, { attributes: true, attributeFilter: ['class'] });
+    if (el.classList.contains('show')) modalLayerByEl.set(el, pushLayer({ kind: 'modal', el: el }));
+  });
+  window.addEventListener('popstate', function(){
+    if (ignorePops > 0){ ignorePops--; return; }
+    var layer = layers.pop();
+    if (!layer){ return; }
+    if (layer.stale){ layers.push(layer); trimStaleTop(); return; }
+    if (layer.kind === 'modal'){
+      modalLayerByEl.delete(layer.el);
+      var x = layer.el.querySelector('.modal-x');
+      if (x && getComputedStyle(x).display !== 'none') x.click();
+      if (layer.el.classList.contains('show')){ // mandatory modal (no ✕): Back can't dismiss it
+        modalLayerByEl.set(layer.el, pushLayer({ kind: 'modal', el: layer.el }));
+      }
+    } else if (layer.kind === 'view'){
+      viewLayer = null;
+      els.listBackBtn.click(); // one step back (category items → tiles → list); re-pushes if still deeper
+    } else if (layer.kind === 'tab'){
+      setActiveTab(layer.from, TAB_ORDER.indexOf(layer.from) > TAB_ORDER.indexOf(activeTab) ? 1 : -1);
+    }
+    trimStaleTop();
+  });
+
   var activeTab = 'inventory';
   function setActiveTab(tab, dir){
     els.inventoryView.style.display = tab === 'inventory' ? '' : 'none';
@@ -4078,6 +4175,8 @@
   function switchToTab(tab){
     if (tab === activeTab) return;
     var dir = TAB_ORDER.indexOf(tab) > TAB_ORDER.indexOf(activeTab) ? 1 : -1;
+    if (tab === 'inventory') dropLayers(layers.filter(function(l){ return l.kind === 'tab'; }));
+    else pushLayer({ kind: 'tab', from: activeTab });
     setActiveTab(tab, dir);
   }
   els.tabInventoryBtn.onclick = function(){ switchToTab('inventory'); };

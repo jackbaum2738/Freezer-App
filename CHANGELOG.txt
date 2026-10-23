@@ -4,6 +4,12 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+10.9.0 -- 2026-10-23
+--------------------
+- Swiping down at the top of a screen no longer triggers the browser's pull-to-refresh reload (overscroll-behavior on the page).
+- The phone's Back button now steps back one screen instead of closing the app: it returns to the previous tab, closes an open popup/sheet, or leaves the History / Browse-by-category view. Back only exits the app from the plain Freezr list with nothing open. Popups with no close button (first-run join/create, name prompt) still can't be backed out of.
+- New "Sync now" button in Settings: fetches the latest list straight from the server, reconnects live sync, and reports success or a connection error, so an out-of-date phone can be fixed on demand.
+
 10.8.0 -- 2026-10-09
 --------------------
 - The "Confirm item" popup (scan-to-add and manual add) now has a Quantity stepper alongside Name/Category/Freezer/Weight, same +/- control already used in the item detail popup. Saving with a quantity above 1 adds that many individual units in one go instead of needing to scan or confirm repeatedly -- the toast reads "Added 3× Chicken Thighs" rather than three separate "Added" toasts.
