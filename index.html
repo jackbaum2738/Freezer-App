@@ -992,7 +992,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.9.1</footer>
+    <footer>Freezr &mdash; Version: 10.10.0</footer>
   </div>
 </div>
 
@@ -1991,6 +1991,9 @@
       if (!snap.exists){ handleFreezrGone(code); return; }
       connectToFreezr(code);
       toast('Synced — your list is up to date', 'ok');
+      checkForUpdate().then(function(newer){
+        if (newer){ toast('New version found — updating…', 'ok'); setTimeout(applyUpdateIfIdle, 900); }
+      });
     }).catch(function(err){
       console.error(err);
       done();
@@ -4817,6 +4820,43 @@
       if (awayMs > 30000) location.reload();
     }
   });
+
+  // ---------- pick up new app versions while the app stays open in the foreground ----------
+  // The reload-on-reopen above only helps once the app has been backgrounded. For a phone left
+  // open, poll the live index.html for its footer version; if it differs from the running one,
+  // reload — but only once the app is idle (no popup, scan, batch, or half-typed input open),
+  // so nothing in progress is ever interrupted. Silent by design: no banner.
+  var UPDATE_CHECK_MS = 5 * 60 * 1000, UPDATE_IDLE_POLL_MS = 3000;
+  var updatePending = false;
+  function runningVersion(){
+    var f = document.querySelector('footer');
+    var m = f && /Version:\s*([0-9.]+)/.exec(f.textContent);
+    return m ? m[1] : null;
+  }
+  function checkForUpdate(){ // resolves true if a different version is live
+    var mine = runningVersion();
+    if (!mine) return Promise.resolve(false);
+    return fetch(location.pathname + '?vcheck=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ return r.ok ? r.text() : ''; })
+      .then(function(html){
+        var m = /Version:\s*([0-9.]+)/.exec(html);
+        if (m && m[1] !== mine) updatePending = true;
+        return updatePending;
+      })
+      .catch(function(){ return updatePending; }); // offline etc. — just try again later
+  }
+  function appIsIdle(){
+    if (anyModalOrGateOpen()) return false; // any popup/sheet, install gate, welcome tour
+    if (state.scanning || state.batchMode || (state.batchQueue && state.batchQueue.length)) return false;
+    var a = document.activeElement;
+    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return false; // mid-typing
+    if (els.manualInput && els.manualInput.value.trim()) return false; // typed but not yet added
+    return true;
+  }
+  function applyUpdateIfIdle(){ if (updatePending && appIsIdle()) location.reload(); }
+  setInterval(function(){ if (!document.hidden) checkForUpdate(); }, UPDATE_CHECK_MS);
+  setInterval(applyUpdateIfIdle, UPDATE_IDLE_POLL_MS);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) checkForUpdate(); });
 
   // ---------- init ----------
   if (!isStandalonePwa() && !isDevBypass()){
