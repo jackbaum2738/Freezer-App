@@ -4,6 +4,10 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+11.0.6 -- 2026-10-23
+--------------------
+- Welcome tour: removed the quick fade that covered tab switches between steps (it looked worse than the switch itself). The highlight alignment fix from 11.0.5 stays, so the page no longer slides while the highlight is measured.
+
 11.0.5 -- 2026-10-23
 --------------------
 - Welcome tour: fixed the highlight box being shifted to the side on the Settings step (and sometimes others). A tab you had already visited replays its small slide-in animation whenever it is shown again, and the highlight was being measured while the page was still mid-slide. The tour now switches tabs without that animation.
