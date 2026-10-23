@@ -7,6 +7,7 @@ Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/change
 11.0.1 -- 2026-10-23
 --------------------
 - The red error banner at the top of the Freezr tab (save failures, sync errors, camera errors, app errors) now has a ✕ so it can be dismissed. It stays gone until the next error. Previously it stayed until the app was reloaded, even after a later save worked.
+- Added a copyright line (© 2026 Jack Baum) under the version number at the bottom of Settings.
 
 11.0.0 -- 2026-10-23
 --------------------
