@@ -4,6 +4,10 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+10.10.3 -- 2026-10-23
+---------------------
+- Fixed editing an item that was added by typing its name (no barcode) failing to save and turning the sync pill to "Sync failed". Saving a rename/category/weight change tried to remember it under the item's barcode, which is empty for these items, and Firestore rejects an empty field name. Those per-barcode memories are now only written when the item has a barcode. Not related to emoji: any edit of a barcode-less item hit this, the emoji just happened to be in an edit.
+
 10.10.2 -- 2026-10-23
 ---------------------
 - When saving to the server fails, the red banner at the top now shows the real error from Firestore (code and message) and flags any item name containing a broken emoji character, instead of just turning the sync pill to "Sync failed". Added to track down emoji in item names failing to save; no behaviour change when saving works.
