@@ -6,7 +6,7 @@ Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/change
 
 10.9.1 -- 2026-10-23
 --------------------
-- The Settings "Sync now" button now uses 🔃 instead of 🔄, so it no longer shares an icon with "Replay welcome tour".
+- The Settings "Sync now" button now uses 📡 instead of 🔄, so it no longer shares an icon with "Replay welcome tour".
 
 10.9.0 -- 2026-10-23
 --------------------
