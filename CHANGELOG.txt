@@ -4,6 +4,10 @@ FREEZR CHANGELOG
 Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/changes, batched) | 1.0.x = patch (tiny fixes/tweaks)
 
 
+11.0.2 -- 2026-10-23
+--------------------
+- Fixed the app icon on the first screen of the welcome tour being stretched into a wide squashed strip. A full-width rule meant for the text and buttons was also stretching the icon's box.
+
 11.0.1 -- 2026-10-23
 --------------------
 - The red error banner at the top of the Freezr tab (save failures, sync errors, camera errors, app errors) now has a ✕ so it can be dismissed. It stays gone until the next error. Previously it stayed until the app was reloaded, even after a later save worked.
