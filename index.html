@@ -701,57 +701,53 @@
   }
   .fallback-icon{ font-size:36px; margin-bottom:6px; }
 
-  /* ---------- welcome tour (first-run) ---------- */
-  #welcomeTourGate{
-    display:none; position:fixed; inset:0; z-index:90; background: var(--bg);
-  }
+  /* ---------- welcome tour — intro screen, then a spotlight walkthrough of the real app ---------- */
+  #welcomeTourGate{ display:none; position:fixed; inset:0; z-index:90; touch-action:none; }
   #welcomeTourGate.show{ display:block; }
-  #welcomeTourContent{ position:relative; height:100%; overflow:hidden; }
-  .tour-page{
-    position:relative; height:100%; display:flex; flex-direction:column;
-    padding: calc(54px + env(safe-area-inset-top)) 22px calc(22px + env(safe-area-inset-bottom));
-    max-width: 480px; margin: 0 auto; background: var(--bg);
+  #tourIntro{
+    display:none; position:absolute; inset:0; background: var(--bg); flex-direction:column; align-items:center;
+    justify-content:center; text-align:center; max-width:none;
+    padding: calc(30px + env(safe-area-inset-top)) 28px calc(26px + env(safe-area-inset-bottom));
   }
-  .tour-page.tour-slide{ position:absolute; top:0; left:0; right:0; margin:0 auto; will-change:transform; }
-  .tour-back{
-    position:absolute; top: calc(18px + env(safe-area-inset-top)); left:18px; z-index:2;
-    background:transparent; border:none; color: var(--frost-dim); font-size:13px;
-    font-family: var(--sans); font-weight:600; cursor:pointer; padding:4px 6px; border-radius:8px;
-  }
-  .tour-back[hidden]{ display:none; }
-  .tour-dots{ display:flex; gap:7px; justify-content:center; margin-bottom: 26px; }
-  .tour-dot{
-    width:7px; height:7px; border-radius:50%; background: var(--frost-dim); opacity:.45;
-    cursor:pointer; transition: opacity .15s, box-shadow .15s;
-  }
-  .tour-dot.active{ background: var(--cyan); opacity:1; box-shadow: 0 0 6px var(--cyan); }
-  .tour-body{ flex:1; display:flex; flex-direction:column; overflow-y:auto; }
-  .tour-hero-icon{
-    width:76px; height:76px; border-radius:20px; overflow:hidden; margin: 8px auto 22px; flex-shrink:0;
-  }
+  #welcomeTourGate.intro #tourIntro{ display:flex; }
+  #tourIntro > *{ width:100%; max-width:340px; }
+  .tour-hero-icon{ width:76px; height:76px; border-radius:20px; overflow:hidden; margin: 0 auto 22px; flex-shrink:0; }
   .tour-hero-icon img{ width:100%; height:100%; object-fit:cover; display:block; }
-  .tour-page.tour-welcome h2, .tour-page.tour-welcome .tour-tagline, .tour-page.tour-welcome .tour-lede{ text-align:center; }
-  .tour-eyebrow-row{ display:flex; align-items:center; gap:7px; margin-bottom: 10px; }
-  .tour-eyebrow-icon{ font-size:15px; line-height:1; flex-shrink:0; }
-  .tour-eyebrow-label{
-    font-family: var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
-    color: var(--cyan); font-weight:700;
-  }
-  .tour-page h2{ font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 6px; }
+  #tourIntro h2{ font-size: 24px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 6px; }
   .tour-tagline{ color: var(--frost); font-weight:700; font-size: 15px; line-height:1.4; margin: 0 0 12px; }
-  .tour-lede{ color: var(--frost-dim); font-size: 13px; line-height:1.6; margin: 0 auto 4px; max-width: 300px; }
-  .tour-feature-list{ display:flex; flex-direction:column; gap:9px; }
-  .tour-feature-row{
-    display:flex; align-items:flex-start; gap:11px; text-align:left;
-    background: var(--panel); border: 1px solid var(--edge); border-radius: 13px; padding: 12px 13px;
-  }
-  .tour-feature-icon{ font-size:19px; line-height:1; width:26px; text-align:center; flex-shrink:0; margin-top:1px; }
-  .tour-feature-title{ font-weight:700; font-size:13.5px; margin-bottom:1px; }
-  .tour-feature-sub{ font-size:11.5px; color: var(--frost-dim); line-height:1.4; }
-  .tour-footer{ margin-top: 16px; }
+  .tour-lede{ color: var(--frost-dim); font-size: 13px; line-height:1.6; margin: 0 auto 28px; max-width: 300px; }
   .tour-btn{
     width:100%; border:none; border-radius:12px; padding:14px 16px; font-weight:700;
     font-size:14px; font-family: var(--sans); cursor:pointer; background: var(--cyan); color: var(--on-cyan);
+  }
+  .tour-skip{
+    margin-top:10px; background:transparent; border:none; color: var(--frost-dim); font-family: var(--sans);
+    font-weight:700; font-size:13px; padding:10px; cursor:pointer;
+  }
+  #tourSpot{ display:none; position:absolute; inset:0; }
+  #welcomeTourGate:not(.intro) #tourSpot{ display:block; }
+  #tourDimmer{ position:absolute; inset:0; background: rgba(4,8,15,.78); pointer-events:none; }
+  :root[data-theme="light"] #tourDimmer{ background: rgba(16,32,47,.72); }
+  #tourRings{ position:absolute; inset:0; pointer-events:none; }
+  .tour-ring{ position:absolute; border:2px solid var(--cyan); border-radius:11px; box-shadow:0 0 12px rgba(111,227,214,.35); }
+  #tourCard{
+    position:absolute; left:12px; right:12px; max-width:456px; margin:0 auto; background: var(--panel); color: var(--frost);
+    border:1px solid var(--edge); border-radius:16px; padding:15px 16px 13px; box-shadow:0 12px 32px rgba(0,0,0,.4);
+  }
+  #tourCard h4{ margin:0 0 4px; font-size:15px; }
+  #tourCard p{ margin:0 0 13px; font-size:13px; line-height:1.5; color: var(--frost-dim); }
+  .tour-card-row{ display:flex; align-items:center; gap:8px; }
+  .tour-dots{ display:flex; gap:5px; margin-right:auto; }
+  .tour-dot{ width:7px; height:7px; border-radius:50%; background: var(--edge); }
+  .tour-dot.active{ width:18px; border-radius:4px; background: var(--cyan); }
+  .tour-card-back{ background:transparent; border:none; color: var(--frost-dim); font-family: var(--sans); font-weight:700; font-size:13px; padding:9px 8px; cursor:pointer; }
+  .tour-card-next{ border:none; border-radius:10px; background: var(--cyan); color: var(--on-cyan); font-family: var(--sans); font-weight:700; font-size:13px; padding:10px 18px; cursor:pointer; }
+  /* sample rows shown only while the tour runs; never saved */
+  .tour-example-wrap{ position:relative; pointer-events:none; }
+  .tour-example-wrap ~ .empty{ display:none; }
+  .tour-ex-tag{
+    position:absolute; bottom:8px; right:14px; z-index:1; font-family: var(--mono); font-size:9px; letter-spacing:.12em;
+    color: var(--amber); border:1px dashed var(--amber); border-radius:5px; padding:1px 6px;
   }
 
   .segmented{
@@ -798,7 +794,27 @@
 </div>
 
 <div id="welcomeTourGate">
-  <div id="welcomeTourContent"></div>
+  <div id="tourIntro">
+    <div class="tour-hero-icon"><img src="icon-192.png" alt=""></div>
+    <h2>Welcome to Freezr</h2>
+    <p class="tour-tagline">Let’s break the ice.</p>
+    <p class="tour-lede">We’ve all opened the freezer and drawn a total blank. Freezr keeps track for you — across every freezer in the house, synced live with everyone in your household.</p>
+    <button class="tour-btn" id="tourStartBtn">Show me around</button>
+    <button class="tour-skip" id="tourSkipBtn">Skip tour</button>
+  </div>
+  <div id="tourSpot">
+    <div id="tourDimmer"></div>
+    <div id="tourRings"></div>
+    <div id="tourCard">
+      <h4 id="tourCardTitle"></h4>
+      <p id="tourCardText"></p>
+      <div class="tour-card-row">
+        <div class="tour-dots" id="tourDots"></div>
+        <button class="tour-card-back" id="tourBackBtn">Back</button>
+        <button class="tour-card-next" id="tourNextBtn">Next</button>
+      </div>
+    </div>
+  </div>
 </div>
 <div class="wrap">
   <header>
@@ -994,7 +1010,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.10.3</footer>
+    <footer>Freezr &mdash; Version: 11.0.0</footer>
   </div>
 </div>
 
@@ -1895,7 +1911,16 @@
     installGate: document.getElementById('installGate'),
     installGateContent: document.getElementById('installGateContent'),
     welcomeTourGate: document.getElementById('welcomeTourGate'),
-    welcomeTourContent: document.getElementById('welcomeTourContent'),
+    tourStartBtn: document.getElementById('tourStartBtn'),
+    tourSkipBtn: document.getElementById('tourSkipBtn'),
+    tourDimmer: document.getElementById('tourDimmer'),
+    tourRings: document.getElementById('tourRings'),
+    tourCard: document.getElementById('tourCard'),
+    tourCardTitle: document.getElementById('tourCardTitle'),
+    tourCardText: document.getElementById('tourCardText'),
+    tourDots: document.getElementById('tourDots'),
+    tourBackBtn: document.getElementById('tourBackBtn'),
+    tourNextBtn: document.getElementById('tourNextBtn'),
     replayTourBtn: document.getElementById('replayTourBtn'),
     forceSyncBtn: document.getElementById('forceSyncBtn'),
   };
@@ -2073,7 +2098,8 @@
         els.subline.textContent = 'Join or create a Freezr to start syncing';
         setSyncState('failed');
         render();
-        showFreezrChoiceModal();
+        // brand-new device: tour first, which hands over to join/create when it ends
+        if (getTourSeen()) showFreezrChoiceModal(); else showWelcomeTour();
       }
     }catch(e){
       console.error(e);
@@ -4178,8 +4204,18 @@
     modalObserver.observe(el, { attributes: true, attributeFilter: ['class'] });
     if (el.classList.contains('show')) modalLayerByEl.set(el, pushLayer({ kind: 'modal', el: el }));
   });
+  // run something once any history.go() we started has actually finished (pushing state before it
+  // lands would get tangled up with the traversal)
+  var afterPops = [];
+  function whenHistorySettled(fn){
+    if (ignorePops > 0) afterPops.push(fn); else fn();
+  }
   window.addEventListener('popstate', function(){
-    if (ignorePops > 0){ ignorePops--; return; }
+    if (ignorePops > 0){
+      ignorePops--;
+      if (ignorePops === 0){ var q = afterPops; afterPops = []; q.forEach(function(fn){ fn(); }); }
+      return;
+    }
     var layer = layers.pop();
     if (!layer){ return; }
     if (layer.stale){ layers.push(layer); trimStaleTop(); return; }
@@ -4201,6 +4237,11 @@
     } else if (layer.kind === 'mode'){
       modeLayer = null;
       setMode('add');
+    } else if (layer.kind === 'tour'){
+      tourStep = layer.prev;
+      renderTour();
+    } else if (layer.kind === 'tourhold'){
+      if (tourActive) tourHoldLayer = pushLayer({ kind: 'tourhold' }); // Back on the intro does nothing
     } else if (layer.kind === 'tab'){
       setActiveTab(layer.from, TAB_ORDER.indexOf(layer.from) > TAB_ORDER.indexOf(activeTab) ? 1 : -1);
     }
@@ -4618,9 +4659,11 @@
     try{ localStorage.setItem(NAME_PROMPTED_KEY, '1'); }catch(e){}
   }
 
-  // ---------- welcome tour (first-run) — shown once, right after a brand-new device
-  // finishes the name prompt above. Devices that had already onboarded before this shipped
-  // are migrated straight to "seen" so they're never shown it retroactively. ----------
+  // ---------- welcome tour — shown once on a brand-new device, right after install and BEFORE the
+  // join/create-a-Freezr screen: an intro page, then a spotlight walkthrough that dims the real app
+  // and lights up the control being explained. Devices that already onboarded before this shipped
+  // are migrated straight to "seen". The seen flag is only set when the tour is finished or
+  // skipped, so closing the app mid-tour brings it back at the intro next time. ----------
   var TOUR_SEEN_KEY = 'freezr-tour-seen';
   function getTourSeen(){
     try{ return localStorage.getItem(TOUR_SEEN_KEY) === '1'; }catch(e){ return false; }
@@ -4628,166 +4671,172 @@
   function setTourSeen(){
     try{ localStorage.setItem(TOUR_SEEN_KEY, '1'); }catch(e){}
   }
-  if (getNamePrompted() && !getTourSeen()) setTourSeen();
+  if (!getTourSeen() && (getNamePrompted() || getStoredFreezrCode())) setTourSeen();
 
-  var TOUR_PAGES = [
-    { type: 'welcome' },
+  // each step: which tab to show, what to light up, and the card text. Step 0 is the intro page.
+  var TOUR_STEPS = [
+    { intro: true },
     {
-      eyebrowIcon: '❄️', eyebrow: 'FREEZR', title: 'Scan it in, scan it out',
-      features: [
-        ['📷','Scan a barcode','Point your camera at any barcode to add or remove it instantly.'],
-        ['🖼️','Or snap a photo','Camera being fussy? Use your phone’s own camera app instead.'],
-        ['⌨️','Add by hand','No barcode? Just type the item’s name.'],
-        ['✏️','Edit anytime','Tap an item to change its name, quantity, or opened status.'],
-        ['📚','Batch scan','Doing a big shop? Queue up a whole stack of barcodes at once.'],
-        ['🕘','Full history','Everything you’ve ever removed, searchable and filterable.']
-      ],
-      cta: 'Continue'
+      tab: 'inventory',
+      lit: function(){ return [document.querySelector('.mode-toggle'), els.scanToggle]; },
+      title: 'Scan in, scan out',
+      text: 'Pick Add or Remove stock, then scan a barcode. No barcode? Use a photo or type the name.'
     },
     {
-      eyebrowIcon: '🛒', eyebrow: 'SHOPPING LIST', title: 'Never run out again',
-      features: [
-        ['🔄','Added automatically','The moment you run out of something, it lands here.'],
-        ['➕','Add anything by hand','Want something that’s not in the freezer yet? Add it yourself.'],
-        ['✅','Tick things off','Check items off as you shop — they grey out and sink to the bottom.'],
-        ['❄️','Restock in one tap','Send everything you ticked straight back into Freezr.']
-      ],
-      cta: 'Continue'
+      tab: 'inventory', example: 'inventory',
+      lit: function(){ return [els.categoryViewBtn, els.historyViewBtn, document.querySelector('#listContainer .tour-example-wrap')]; },
+      title: 'Your freezer list',
+      text: 'Tap an item to edit it: name, quantity, category, weight, freezer. ▦ browses by category, 🕘 shows what you’ve removed.'
     },
     {
-      eyebrowIcon: '⚙️', eyebrow: 'SETTINGS', title: 'Built for the whole family',
-      features: [
-        ['🔗','Share your code','Share a two-word code — everyone who joins sees the same Freezr, live.'],
-        ['🔁','Switch Freezrs','Part of more than one household? Jump between them instantly.'],
-        ['🎨','Customize categories','Rename, recolor, and reorder categories to fit your freezer.'],
-        ['🧊','Add more freezers','Got more than one? Track them separately.']
-      ],
-      cta: 'Start Freezing'
+      tab: 'shopping', example: 'shopping',
+      lit: function(){ return [els.shopAddToggleBtn, document.querySelector('#shopListContainer .tour-example-wrap')]; },
+      title: 'Your shopping list fills itself',
+      text: 'Run out of something and it lands here. Add your own with +, tick things off, and restock them in one tap.'
+    },
+    {
+      tab: 'settings', example: 'code',
+      lit: function(){ return [els.freezrIdName.closest('.settings-block')]; },
+      title: 'Share your household',
+      text: 'Anyone with your code sees the same freezer.',
+      cta: 'Get started'
     }
   ];
-  var tourPageIndex = 0;
+  var tourActive = false, tourStep = 0, tourHoldLayer = null;
 
-  function buildTourPageHtml(index){
-    var p = TOUR_PAGES[index];
-    var html = '<div class="tour-page' + (index === 0 ? ' tour-welcome' : '') + '">';
-    html += '<button class="tour-back" id="tourBackBtn"' + (index === 0 ? ' hidden' : '') + '>&lsaquo; Back</button>';
-    html += '<div class="tour-dots">';
-    for (var i = 0; i < TOUR_PAGES.length; i++){
-      html += '<div class="tour-dot' + (i === index ? ' active' : '') + '" data-i="' + i + '"></div>';
-    }
-    html += '</div><div class="tour-body">';
-    if (index === 0){
-      html += '<div class="tour-hero-icon"><img src="icon-192.png" alt=""></div><h2>Welcome to Freezr</h2>' +
-        '<p class="tour-tagline">Let’s break the ice.</p>' +
-        '<p class="tour-lede">We’ve all opened the freezer and drawn a total blank. Freezr keeps track for you — across every freezer in the house, synced live with everyone in your household.</p>';
-    } else {
-      html += '<div class="tour-eyebrow-row"><div class="tour-eyebrow-icon">' + p.eyebrowIcon + '</div>' +
-        '<div class="tour-eyebrow-label">' + p.eyebrow + '</div></div>' +
-        '<h2>' + p.title + '</h2><div class="tour-feature-list">' +
-        p.features.map(function(f){
-          return '<div class="tour-feature-row"><div class="tour-feature-icon">' + f[0] + '</div>' +
-            '<div><div class="tour-feature-title">' + f[1] + '</div><div class="tour-feature-sub">' + f[2] + '</div></div></div>';
-        }).join('') + '</div>';
-    }
-    html += '</div><div class="tour-footer"><button class="tour-btn" id="tourNextBtn">' + (p.cta || 'Let’s go') + '</button></div></div>';
-    return html;
+  // sample rows so a brand-new (empty) app has something to point at; removed again afterwards
+  function clearTourExamples(){
+    Array.prototype.forEach.call(document.querySelectorAll('.tour-example-wrap'), function(n){ n.parentNode.removeChild(n); });
+    renderFreezrCodeInSettings();
   }
-  function wireTourPageEvents(container){
-    container.querySelector('#tourNextBtn').onclick = function(){
-      if (tourPageIndex === TOUR_PAGES.length - 1){ closeWelcomeTour(); return; }
-      goToTourPage(tourPageIndex + 1);
-    };
-    var backBtn = container.querySelector('#tourBackBtn');
-    if (backBtn) backBtn.onclick = function(){ goToTourPage(Math.max(0, tourPageIndex - 1)); };
-    Array.prototype.forEach.call(container.querySelectorAll('.tour-dot'), function(dot){
-      dot.onclick = function(){ goToTourPage(parseInt(dot.getAttribute('data-i'), 10)); };
+  function addTourExample(kind){
+    var tag = '<span class="tour-ex-tag">EXAMPLE</span>';
+    if (kind === 'inventory'){
+      var d = new Date(Date.now() - 3 * 86400000).toISOString();
+      var ac = ageClass(d), color = categoryColor('Meat');
+      els.listContainer.insertAdjacentHTML('afterbegin',
+        '<div class="tour-example-wrap">' + tag +
+          '<div class="item ' + ac + '"><div class="item-main"><div class="item-name">Chicken thighs</div>' +
+            '<div class="item-meta"><span class="cat-pill" style="color:' + color + '; border-color:' + color + '66; background:' + color + '22;">Meat</span>' +
+            '<span>900 g</span><span class="qty-badge">×4</span></div>' +
+            '<div class="item-meta-2">Added ' + fmtDate(d) + '</div></div>' +
+            '<span class="chip ' + ac + '">' + daysLabel(d) + '</span><button class="item-edit" tabindex="-1">✎</button></div>' +
+        '</div>');
+    } else if (kind === 'shopping'){
+      var c2 = categoryColor('Meat');
+      els.shopListContainer.insertAdjacentHTML('afterbegin',
+        '<div class="tour-example-wrap">' + tag +
+          '<div class="shop-row"><div class="shop-tick"></div><div class="row-main"><div class="shop-row-name">Chicken thighs</div>' +
+            '<div class="item-meta"><span class="cat-pill" style="color:' + c2 + '; border-color:' + c2 + '66; background:' + c2 + '22;">Meat</span></div>' +
+            '<div class="stockout-note">Ran out today</div></div><button class="shop-row-remove" tabindex="-1">✕</button></div>' +
+        '</div>');
+    } else if (kind === 'code'){
+      els.freezrIdName.textContent = 'Example household';
+      els.freezrIdCode.textContent = 'EXAMPLE-CODE';
+    }
+  }
+
+  function layoutTourSpot(){
+    var step = TOUR_STEPS[tourStep];
+    if (!tourActive || !step || step.intro) return;
+    var W = els.tourDimmer.offsetWidth, H = els.tourDimmer.offsetHeight;
+    var d = 'M0 0H' + W + 'V' + H + 'H0Z', rings = '', top = 1e9, bottom = 0;
+    step.lit().forEach(function(el){
+      if (!el) return;
+      var r = el.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      var pad = 4, rad = 11, x = r.left - pad, y = r.top - pad, w = r.width + pad * 2, h = r.height + pad * 2;
+      d += ' M' + (x + rad) + ' ' + y + 'H' + (x + w - rad) + 'Q' + (x + w) + ' ' + y + ' ' + (x + w) + ' ' + (y + rad) +
+        'V' + (y + h - rad) + 'Q' + (x + w) + ' ' + (y + h) + ' ' + (x + w - rad) + ' ' + (y + h) +
+        'H' + (x + rad) + 'Q' + x + ' ' + (y + h) + ' ' + x + ' ' + (y + h - rad) +
+        'V' + (y + rad) + 'Q' + x + ' ' + y + ' ' + (x + rad) + ' ' + y + 'Z';
+      rings += '<div class="tour-ring" style="left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px;"></div>';
+      top = Math.min(top, y); bottom = Math.max(bottom, y + h);
     });
+    els.tourDimmer.style.clipPath = "path(evenodd, '" + d + "')";
+    els.tourRings.innerHTML = rings;
+    // the card sits above the tab bar, or at the top when the lit area would be covered there
+    var card = els.tourCard, tab = document.querySelector('.tab-bar'), tabH = tab ? tab.offsetHeight : 56;
+    card.style.top = ''; card.style.bottom = (tabH + 10) + 'px';
+    var cardH = card.offsetHeight;
+    if (bottom + 12 > H - tabH - 10 - cardH && top - 12 > cardH + 70){
+      card.style.bottom = ''; card.style.top = 'calc(10px + env(safe-area-inset-top))';
+    }
   }
-  function renderTourPage(){
-    els.welcomeTourContent.innerHTML = buildTourPageHtml(tourPageIndex);
-    wireTourPageEvents(els.welcomeTourContent);
-  }
-  function goToTourPage(index){
-    tourPageIndex = index;
-    renderTourPage();
+
+  function renderTour(){
+    var step = TOUR_STEPS[tourStep];
+    els.welcomeTourGate.classList.toggle('intro', !!step.intro);
+    clearTourExamples();
+    if (step.intro) return;
+    setActiveTab(step.tab);
+    if (step.example) addTourExample(step.example);
+    window.scrollTo(0, 0);
+    els.tourCardTitle.textContent = step.title;
+    els.tourCardText.textContent = step.text;
+    els.tourNextBtn.textContent = step.cta || 'Next';
+    els.tourDots.innerHTML = TOUR_STEPS.map(function(_, i){ return '<div class="tour-dot' + (i === tourStep ? ' active' : '') + '"></div>'; }).join('');
+    layoutTourSpot();
   }
   function showWelcomeTour(){
-    tourPageIndex = 0;
-    renderTourPage();
+    tourActive = true; tourStep = 0;
+    if (state.listView !== 'items') setListView('items');
     els.welcomeTourGate.classList.add('show');
+    // one history entry so the phone's Back button can't close the app from the intro
+    tourHoldLayer = pushLayer({ kind: 'tourhold' });
+    renderTour();
   }
-  function closeWelcomeTour(){
+  function endWelcomeTour(){
+    tourActive = false;
+    els.welcomeTourGate.classList.remove('show', 'intro');
+    clearTourExamples();
+    dropLayers(layers.filter(function(l){ return l.kind === 'tour' || l.kind === 'tourhold' || l.kind === 'tab'; }));
+    tourHoldLayer = null;
+    setActiveTab('inventory');
+    window.scrollTo(0, 0);
     setTourSeen();
-    els.welcomeTourGate.classList.remove('show');
+    // first run: no Freezr yet, so land on the (mandatory) join/create screen
+    if (!getStoredFreezrCode()){
+      whenHistorySettled(function(){
+        freezrFlowContext = 'onboarding';
+        showFreezrChoiceModal();
+      });
+    }
   }
+  function tourNext(){
+    if (tourStep >= TOUR_STEPS.length - 1){ endWelcomeTour(); return; }
+    pushLayer({ kind: 'tour', prev: tourStep });
+    tourStep++;
+    renderTour();
+  }
+  function tourBack(){
+    if (tourStep === 0) return;
+    var top = layers[layers.length - 1];
+    if (top && top.kind === 'tour' && !top.stale) history.back(); // popstate restores the previous step
+    else { tourStep--; renderTour(); }
+  }
+  els.tourStartBtn.onclick = tourNext;
+  els.tourSkipBtn.onclick = endWelcomeTour;
+  els.tourNextBtn.onclick = tourNext;
+  els.tourBackBtn.onclick = tourBack;
   els.replayTourBtn.onclick = showWelcomeTour;
+  window.addEventListener('resize', layoutTourSpot);
 
-  // swipe between tour pages, tracking the finger so the incoming page slides in as you drag —
-  // in addition to the Continue/Back buttons and tap-a-dot. A vertical drag (scrolling a long
-  // feature list) is left alone; only once the gesture reads as horizontal do we take over.
-  var tourDrag = null;
-  function tourNeighborIndex(dir){
-    var n = tourPageIndex + dir;
-    return (n >= 0 && n < TOUR_PAGES.length) ? n : null;
-  }
-  function tourDragSettle(commit){
-    var dir = tourDrag.dir, currentEl = tourDrag.currentEl, neighborEl = tourDrag.neighborEl;
-    var targetIndex = commit ? tourDrag.neighborIndex : tourPageIndex;
-    currentEl.style.transition = neighborEl.style.transition = 'transform 200ms ease';
-    currentEl.style.transform = 'translateX(' + (commit ? -dir * 100 : 0) + '%)';
-    neighborEl.style.transform = 'translateX(' + (commit ? 0 : dir * 100) + '%)';
-    tourDrag = null;
-    setTimeout(function(){
-      tourPageIndex = targetIndex;
-      renderTourPage();
-    }, 200);
-  }
+  // swipe left/right between steps (not on the intro, and never off the last step)
+  var tourSwipe = null;
   els.welcomeTourGate.addEventListener('touchstart', function(e){
+    if (!tourActive || tourStep === 0){ tourSwipe = null; return; }
     var t = e.touches[0];
-    tourDrag = { startX: t.clientX, startY: t.clientY, axis: null, dx: 0 };
+    tourSwipe = { x: t.clientX, y: t.clientY };
   }, { passive: true });
-  els.welcomeTourGate.addEventListener('touchmove', function(e){
-    if (!tourDrag) return;
-    var t = e.touches[0];
-    var dx = t.clientX - tourDrag.startX, dy = t.clientY - tourDrag.startY;
-    if (tourDrag.axis === null){
-      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-      tourDrag.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
-      if (tourDrag.axis === 'x'){
-        var dir = dx < 0 ? 1 : -1;
-        var neighborIndex = tourNeighborIndex(dir);
-        if (neighborIndex === null){ tourDrag.axis = 'none'; return; }
-        tourDrag.dir = dir;
-        tourDrag.neighborIndex = neighborIndex;
-        tourDrag.width = els.welcomeTourContent.clientWidth || 1;
-        tourDrag.currentEl = els.welcomeTourContent.querySelector('.tour-page');
-        tourDrag.currentEl.classList.add('tour-slide');
-        var wrap = document.createElement('div');
-        wrap.innerHTML = buildTourPageHtml(neighborIndex);
-        tourDrag.neighborEl = wrap.firstChild;
-        tourDrag.neighborEl.classList.add('tour-slide');
-        tourDrag.neighborEl.style.transform = 'translateX(' + (dir * 100) + '%)';
-        els.welcomeTourContent.appendChild(tourDrag.neighborEl);
-      }
-    }
-    if (tourDrag.axis === 'x'){
-      e.preventDefault();
-      tourDrag.dx = dx;
-      var pct = (dx / tourDrag.width) * 100;
-      tourDrag.currentEl.style.transform = 'translateX(' + pct + '%)';
-      tourDrag.neighborEl.style.transform = 'translateX(' + (tourDrag.dir * 100 + pct) + '%)';
-    }
-  }, { passive: false });
-  function tourTouchEnd(){
-    if (!tourDrag) return;
-    if (tourDrag.axis === 'x'){
-      tourDragSettle(Math.abs(tourDrag.dx / tourDrag.width) > 0.3);
-    } else {
-      tourDrag = null;
-    }
-  }
-  els.welcomeTourGate.addEventListener('touchend', tourTouchEnd, { passive: true });
-  els.welcomeTourGate.addEventListener('touchcancel', tourTouchEnd, { passive: true });
+  els.welcomeTourGate.addEventListener('touchend', function(e){
+    if (!tourSwipe) return;
+    var t = e.changedTouches[0], dx = t.clientX - tourSwipe.x, dy = t.clientY - tourSwipe.y;
+    tourSwipe = null;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
+    if (dx < 0){ if (tourStep < TOUR_STEPS.length - 1) tourNext(); }
+    else tourBack();
+  }, { passive: true });
 
   var currentDisplayName = getStoredDisplayName();
   els.displayNameInput.value = currentDisplayName;
@@ -4795,7 +4844,6 @@
   function closeNameEntryModal(){
     setNamePrompted();
     els.nameEntryModalBack.classList.remove('show');
-    if (!getTourSeen()) showWelcomeTour();
   }
   function maybeShowNamePrompt(){
     if (!getNamePrompted() && !currentDisplayName){
