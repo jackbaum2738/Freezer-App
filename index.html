@@ -89,7 +89,9 @@
   }
   :root[data-theme="light"] body{ background: var(--bg); }
   *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
-  html,body{ margin:0; padding:0; overflow-x:hidden; overscroll-behavior-y:none; } /* none: stops the browser's pull-down-to-reload gesture */
+  html,body{ margin:0; padding:0; overflow-x:hidden; }
+  /* html only, never body: body is a (non-overflowing) scroll container because of overflow-x:hidden above, and overscroll-behavior:none on it stops touch scrolling chaining up to the page, which kills vertical scrolling. On html it just blocks pull-down-to-reload. */
+  html{ overscroll-behavior-y:none; }
   body{
     background:
       radial-gradient(ellipse 900px 500px at 50% -10%, #14283f 0%, transparent 60%),
@@ -990,7 +992,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.9.0</footer>
+    <footer>Freezr &mdash; Version: 10.9.1</footer>
   </div>
 </div>
 
@@ -2095,7 +2097,9 @@
 
   // ---------- mode ----------
   function setMode(mode){
+    var modeChanged = mode !== state.mode;
     state.mode = mode;
+    if (modeChanged) setModeLayer(mode === 'remove');
     document.body.classList.toggle('remove-mode', mode === 'remove');
     els.modeAdd.classList.toggle('active', mode === 'add');
     els.modeRemove.classList.toggle('active', mode === 'remove');
@@ -2154,6 +2158,7 @@
       }
       Quagga.start();
       state.scanning = true;
+      pushScanLayer();
       state.quaggaReady = true;
       els.scanToggle.textContent = 'Stop scanning';
 
@@ -2200,6 +2205,7 @@
       try{ if (Quagga.CameraAccess && Quagga.CameraAccess.release) Quagga.CameraAccess.release(); }catch(e){}
     }
     state.scanning = false;
+    dropScanLayer();
     state.quaggaReady = false;
     els.video.style.display = 'none';
     els.video.innerHTML = '';
@@ -2890,9 +2896,13 @@
   }
 
   function setListView(view, category){
+    var prev = { view: state.listView, cat: state.activeCategory };
     state.listView = view;
     state.activeCategory = category || null;
-    if (view === 'items') dropViewLayer(); else pushViewLayer();
+    if (!restoringView){
+      if (view === 'items') dropViewLayers();
+      else if (prev.view !== view || prev.cat !== state.activeCategory) viewLayers.push(pushLayer({ kind: 'view', prev: prev }));
+    }
     render();
   }
 
@@ -4096,7 +4106,9 @@
   // behaves natively and exits. `layers` mirrors the pushed history entries, oldest first.
   var layers = [];
   var ignorePops = 0; // popstate events we caused ourselves with history.go() and must not act on
-  var viewLayer = null;
+  var viewLayers = [];      // one per step deeper (items → tiles → category items), so Back retraces them
+  var restoringView = false; // true while Back is restoring a view, so that doesn't push/drop layers
+  var scanLayer = null, modeLayer = null;
   function pushLayer(layer){
     layers.push(layer);
     try{ history.pushState({ fz: layers.length }, ''); }catch(e){}
@@ -4113,8 +4125,13 @@
     while (layers.length && layers[layers.length-1].stale){ layers.pop(); n++; }
     if (n){ ignorePops++; try{ history.go(-n); }catch(e){ ignorePops--; } }
   }
-  function pushViewLayer(){ if (!viewLayer) viewLayer = pushLayer({ kind: 'view' }); }
-  function dropViewLayer(){ if (viewLayer){ var l = viewLayer; viewLayer = null; dropLayers([l]); } }
+  function dropViewLayers(){ var l = viewLayers; viewLayers = []; dropLayers(l); }
+  function pushScanLayer(){ if (!scanLayer) scanLayer = pushLayer({ kind: 'scan' }); }
+  function dropScanLayer(){ if (scanLayer){ var l = scanLayer; scanLayer = null; dropLayers([l]); } }
+  function setModeLayer(on){ // Remove mode is the "deeper" one; Back returns to Add
+    if (on && !modeLayer) modeLayer = pushLayer({ kind: 'mode' });
+    else if (!on && modeLayer){ var l = modeLayer; modeLayer = null; dropLayers([l]); }
+  }
   function topModalLayer(){
     for (var i = layers.length - 1; i >= 0; i--) if (layers[i].kind === 'modal' && !layers[i].stale) return layers[i];
     return null;
@@ -4146,8 +4163,16 @@
         modalLayerByEl.set(layer.el, pushLayer({ kind: 'modal', el: layer.el }));
       }
     } else if (layer.kind === 'view'){
-      viewLayer = null;
-      els.listBackBtn.click(); // one step back (category items → tiles → list); re-pushes if still deeper
+      viewLayers.splice(viewLayers.indexOf(layer), 1);
+      restoringView = true;
+      setListView(layer.prev.view, layer.prev.cat);
+      restoringView = false;
+    } else if (layer.kind === 'scan'){
+      scanLayer = null;
+      stopScan();
+    } else if (layer.kind === 'mode'){
+      modeLayer = null;
+      setMode('add');
     } else if (layer.kind === 'tab'){
       setActiveTab(layer.from, TAB_ORDER.indexOf(layer.from) > TAB_ORDER.indexOf(activeTab) ? 1 : -1);
     }
