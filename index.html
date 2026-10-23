@@ -994,7 +994,7 @@
       <button class="btn btn-danger" id="openDeleteFreezrBtn">Delete this Freezr</button>
     </div>
 
-    <footer>Freezr &mdash; Version: 10.10.1</footer>
+    <footer>Freezr &mdash; Version: 10.10.2</footer>
   </div>
 </div>
 
@@ -2090,8 +2090,19 @@
       setSyncState('synced');
     }catch(e){
       setSyncState('failed');
+      console.error('Firestore write failed', e);
+      // show Firestore's real reason in the banner instead of swallowing it, plus a check for
+      // broken (unpaired-surrogate) emoji text, which Firestore rejects when it hits the server
+      var bad = [];
+      [state.items, state.history, state.shoppingList].forEach(function(list){
+        (list || []).forEach(function(r){ if (r && r.name && hasUnpairedSurrogate(r.name)) bad.push(r.name); });
+      });
+      showJsErrorBanner('SYNC WRITE FAILED: ' + (e && (e.code || e.name) || 'error') + ' — ' + (e && e.message || e) + (bad.length ? ' | unpaired emoji character in: ' + bad.slice(0,3).join(', ') : ''));
       if (!silent) toast('Could not sync — check connection', 'err');
     }
+  }
+  function hasUnpairedSurrogate(str){
+    return /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(str);
   }
   function saveItems(){ return persistState(); }
   function saveProducts(){ return persistState({ silent: true }); }
