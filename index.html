@@ -3658,7 +3658,13 @@
   els.searchInput.addEventListener('input', render);
   els.categoryViewBtn.onclick = function(){ setListView('categoryTiles'); };
   els.historyViewBtn.onclick = function(){ setListView('history'); };
-  els.listBackBtn.onclick = function(){ setListView('items'); };
+  // "‹ Back" steps up one level (category items → category list → main list) by going through the
+  // same history layer the phone's Back button uses, so the two always agree
+  els.listBackBtn.onclick = function(){
+    var top = layers[layers.length - 1];
+    if (top && top.kind === 'view' && !top.stale) history.back();
+    else setListView('items');
+  };
 
   // ---------- backup / restore ----------
   function renderBackupInfo(){

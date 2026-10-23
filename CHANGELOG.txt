@@ -7,6 +7,7 @@ Versioning: x.0.0 = major (new features) | 1.x.0 = minor (small additions/change
 10.10.0 -- 2026-10-23
 ---------------------
 - The app now picks up new versions on its own even if it's never closed or backgrounded: every 5 minutes (and whenever it comes back to the foreground) it checks the live version number, and if a newer one is out it reloads itself -- but only once the app is idle. It never reloads while any popup or sheet is open (item add/edit, share/join Freezr, etc.), while scanning or batch scanning is on, or while you're typing in a field; it waits and updates the moment you're back to just looking at the list, shopping list or Settings. No banner. "Sync now" also checks for a new version and updates if one is found.
+- The on-screen "‹ Back" next to a category's name now returns to the category list (it used to jump all the way to the main list).
 
 10.9.1 -- 2026-10-23
 --------------------
